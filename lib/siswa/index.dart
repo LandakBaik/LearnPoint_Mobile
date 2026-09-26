@@ -4,6 +4,7 @@ import '../models/student_profile_model.dart';
 import '../models/task_model.dart';
 import '../models/material_model.dart';
 import '../models/schedule_model.dart';
+import 'notifikasi.dart';
 
 import '../widget/section_header.dart';
 import 'widgets/header_profile_widget.dart';
@@ -158,8 +159,9 @@ class SiswaDashboardScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 1. Header Profile & Notifications
-              const HeaderProfileWidget(
+              HeaderProfileWidget(
                 profile: studentProfile,
+                onNotificationTap: () => _openNotifications(context),
               ),
 
               const SizedBox(height: 16),
@@ -235,5 +237,11 @@ class SiswaDashboardScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static void _openNotifications(BuildContext context) {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const NotificationScreen()));
   }
 }
