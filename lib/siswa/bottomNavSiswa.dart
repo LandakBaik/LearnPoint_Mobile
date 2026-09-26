@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+
 import '../widget/bottomNavBar.dart';
 import 'index.dart';
+import 'materi.dart';
 
 class BottomNavSiswa extends StatefulWidget {
   const BottomNavSiswa({super.key});
@@ -14,7 +16,7 @@ class _BottomNavSiswaState extends State<BottomNavSiswa> {
 
   final List<Widget> _pages = [
     const SiswaDashboardScreen(),
-    const Center(child: Text('Halaman Materi')),
+    const Materi(),
     const Center(child: Text('Halaman Tugas')),
     const Center(child: Text('Halaman Ujian')),
     const Center(child: Text('Halaman Kuis')),
@@ -23,10 +25,7 @@ class _BottomNavSiswaState extends State<BottomNavSiswa> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: BottomNav(
         currentIndex: _currentIndex,
         onTap: (index) {

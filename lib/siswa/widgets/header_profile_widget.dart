@@ -27,7 +27,7 @@ class HeaderProfileWidget extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1E293B),
+                color: Color.fromARGB(255, 200, 219, 248),
               ),
             ),
             const SizedBox(height: 2),
@@ -36,7 +36,7 @@ class HeaderProfileWidget extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF64748B),
+                color: Color.fromARGB(255, 49, 2, 70),
               ),
             ),
           ],
