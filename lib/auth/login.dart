@@ -150,7 +150,7 @@ class _LoginState extends State<Login> {
                                   width: 68,
                                   height: 68,
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
+                                    color: Colors.white.withValues(alpha: 0.2),
                                     shape: BoxShape.circle,
                                   ),
                                   child: const Icon(
@@ -202,7 +202,12 @@ class _LoginState extends State<Login> {
                                   topRight: Radius.circular(32),
                                 ),
                               ),
-                              padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+                              padding: const EdgeInsets.fromLTRB(
+                                24,
+                                32,
+                                24,
+                                24,
+                              ),
                               child: Form(
                                 key: _formKey,
                                 child: Column(
@@ -287,21 +292,24 @@ class _LoginState extends State<Login> {
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: _bluePrimary,
                                           elevation: 6,
-                                          shadowColor:
-                                              _bluePrimary.withOpacity(0.35),
+                                          shadowColor: _bluePrimary.withValues(
+                                            alpha: 0.35,
+                                          ),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(24),
+                                            borderRadius: BorderRadius.circular(
+                                              24,
+                                            ),
                                           ),
                                         ),
                                         child: _isLoading
                                             ? const SizedBox(
                                                 width: 20,
                                                 height: 20,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  color: Colors.white,
-                                                ),
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: Colors.white,
+                                                    ),
                                               )
                                             : const Text(
                                                 'Login',
@@ -348,14 +356,15 @@ class _LoginState extends State<Login> {
                                         onPressed: _isLoading
                                             ? null
                                             : () {
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
                                                   const SnackBar(
                                                     content: Text(
                                                       'Login Google belum tersedia.',
                                                     ),
-                                                    behavior:
-                                                        SnackBarBehavior.floating,
+                                                    behavior: SnackBarBehavior
+                                                        .floating,
                                                   ),
                                                 );
                                               },
@@ -364,24 +373,28 @@ class _LoginState extends State<Login> {
                                             color: Colors.grey.shade200,
                                           ),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(24),
+                                            borderRadius: BorderRadius.circular(
+                                              24,
+                                            ),
                                           ),
                                         ),
                                         child: Row(
                                           mainAxisAlignment:
                                               MainAxisAlignment.center,
                                           children: [
-                                            Image.network(
-                                              'https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg',
+                                            Image.asset(
+                                              'assets/images/google_logo.png',
                                               height: 18,
                                               width: 18,
                                               errorBuilder:
-                                                  (context, error, stackTrace) =>
-                                                      const Icon(
-                                                Icons.g_mobiledata,
-                                                size: 22,
-                                              ),
+                                                  (
+                                                    context,
+                                                    error,
+                                                    stackTrace,
+                                                  ) => const Icon(
+                                                    Icons.g_mobiledata,
+                                                    size: 22,
+                                                  ),
                                             ),
                                             const SizedBox(width: 8),
                                             const Text(
