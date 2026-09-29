@@ -4,6 +4,7 @@ import '../models/student_profile_model.dart';
 import '../models/task_model.dart';
 import '../models/material_model.dart';
 import '../models/schedule_model.dart';
+import 'notifikasi.dart';
 
 import '../widget/section_header.dart';
 import 'widgets/dashboard_header_widget.dart';
@@ -87,12 +88,11 @@ class SiswaDashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Menggunakan MediaQuery 
     final mediaQuery = MediaQuery.of(context);
+    final isTablet = mediaQuery.size.width > 600;
 
     return Scaffold(
       backgroundColor: const Color(0xFF4338CA),
-      // 2. Menggunakan SafeArea
       body: SafeArea(
         top: false,
         bottom: true,
@@ -100,28 +100,19 @@ class SiswaDashboardScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.only(
-                  top: mediaQuery.padding.top + 16,
-                  left: 20,
-                  right: 20,
-                  bottom: 24,
-                ),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color(0xFF3730A3),
-                      Color(0xFF4338CA),
-                      Color(0xFF4F46E5),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+              // ========================================
+              // HEADER DASHBOARD (BACKGROUND INDIGO)
+              // ========================================
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  isTablet ? 28.0 : 18.0,
+                  mediaQuery.padding.top + 16.0,
+                  isTablet ? 28.0 : 18.0,
+                  20.0,
                 ),
                 child: DashboardHeaderWidget(
                   profile: studentProfile,
-                  onNotificationTap: () {},
+                  onNotificationTap: () => _openNotifications(context),
                   onProfileTap: () {},
                 ),
               ),
@@ -140,10 +131,9 @@ class SiswaDashboardScreen extends StatelessWidget {
                 ),
                 child: Padding(
                   padding: EdgeInsets.symmetric(
-                    horizontal: mediaQuery.size.width > 600 ? 28.0 : 18.0,
+                    horizontal: isTablet ? 28.0 : 18.0,
                     vertical: 24.0,
                   ),
-                  // 3. Menggunakan LayoutBuilder untuk layouting yang presisi dan responsif
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       final itemWidth = (constraints.maxWidth - 12) / 2;
@@ -262,5 +252,11 @@ class SiswaDashboardScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static void _openNotifications(BuildContext context) {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const NotificationScreen()));
   }
 }
