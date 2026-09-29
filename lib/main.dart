@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'siswa/bottomNavSiswa.dart';
+import 'auth/login.dart';
 
 void main() {
   runApp(const LearnPointApp());
@@ -22,7 +23,7 @@ class LearnPointApp extends StatelessWidget {
         ),
         scaffoldBackgroundColor: const Color(0xFFF8FAFC),
       ),
-      home: const BottomNavSiswa(),
+      home: const Login(),
     );
   }
 }
