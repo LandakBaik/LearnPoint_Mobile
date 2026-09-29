@@ -4,12 +4,14 @@ class SectionHeader extends StatelessWidget {
   final String title;
   final String actionText;
   final VoidCallback? onActionTap;
+  final Color actionColor;
 
   const SectionHeader({
     super.key,
     required this.title,
     this.actionText = 'Lihat Semua',
     this.onActionTap,
+    this.actionColor = const Color(0xFF4F46E5),
   });
 
   @override
@@ -20,23 +22,23 @@ class SectionHeader extends StatelessWidget {
         Text(
           title,
           style: const TextStyle(
-            fontSize: 18,
+            fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF1F2937),
+            color: Color(0xFF1E293B),
           ),
         ),
         if (actionText.isNotEmpty)
           InkWell(
             onTap: onActionTap,
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(6),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
               child: Text(
                 actionText,
-                style: const TextStyle(
-                  fontSize: 13,
+                style: TextStyle(
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF3B82F6),
+                  color: actionColor,
                 ),
               ),
             ),
@@ -45,3 +47,4 @@ class SectionHeader extends StatelessWidget {
     );
   }
 }
+
