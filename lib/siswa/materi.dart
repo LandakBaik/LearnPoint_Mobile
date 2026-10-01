@@ -13,6 +13,7 @@ import 'widgets/header_profile_widget.dart';
 import 'widgets/inverted_top_curve_clipper.dart';
 import 'widgets/subject_materi_card_widget.dart';
 import '../models/materi_page.dart';
+import 'notifikasi.dart';
 
 class Materi extends StatelessWidget {
   const Materi({super.key});
@@ -41,7 +42,16 @@ class Materi extends StatelessWidget {
                   horizontal: 16,
                   vertical: 12,
                 ),
-                child: HeaderProfileWidget(profile: studentProfile),
+                child: HeaderProfileWidget(
+                  profile: studentProfile,
+                  onNotificationTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const NotificationScreen(),
+                      ),
+                    );
+                  },
+                ),
               ),
               // Header
               Padding(
