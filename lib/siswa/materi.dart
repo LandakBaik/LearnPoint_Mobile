@@ -1,5 +1,13 @@
 import 'package:flutter/material.dart';
 
+
+// nama    : IDEA BRILIANTA
+// nim     : E41251668
+// kelompok: 2
+// golongan: E
+
+
+import 'materimapel.dart';
 import '../models/student_profile_model.dart';
 import 'widgets/header_profile_widget.dart';
 import 'widgets/inverted_top_curve_clipper.dart';
@@ -20,6 +28,9 @@ class Materi extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final textScale = (screenWidth / 400).clamp(0.9, 1.1).toDouble();
+
     return Scaffold(
       body: SafeArea(
         child: Container(
@@ -48,32 +59,35 @@ class Materi extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Materi Pembelajaran',
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        shadows: [
-                          Shadow(
-                            color: Color(0xFF3D168F),
-                            offset: Offset(0, 4),
-                            blurRadius: 0,
+                    Stack(
+                      children: [
+                        Text(
+                          'Materi Pembelajaran',
+                          style: TextStyle(
+                            fontSize: 30 * textScale,
+                            fontWeight: FontWeight.w900,
+                            foreground: Paint()
+                              ..style = PaintingStyle.stroke
+                              ..strokeWidth = 2
+                              ..color = const Color(0xB32C2C2C),
                           ),
-                          Shadow(
-                            color: Color(0x55000000),
-                            offset: Offset(0, 7),
-                            blurRadius: 3,
+                        ),
+                        Text(
+                          'Materi Pembelajaran',
+                          style: TextStyle(
+                            fontSize: 30 * textScale,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.only(top: 8),
                       child: Text(
                         'Temukan materi untuk belajarmu',
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 15 * textScale,
                           color: Colors.white70,
                           fontWeight: FontWeight.w400,
                         ),
@@ -85,7 +99,7 @@ class Materi extends StatelessWidget {
 
               // Search
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+                padding: const EdgeInsets.fromLTRB(15, 10, 15, 20),
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: 'Cari materi...',
@@ -93,7 +107,7 @@ class Materi extends StatelessWidget {
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
+                      borderRadius: BorderRadius.circular(30),
                     ),
                   ),
                 ),
@@ -102,7 +116,12 @@ class Materi extends StatelessWidget {
               // Daftar mata pelajaran
               Expanded(
                 child: ClipPath(
-                  clipper: InvertedTopCurveClipper(),
+                  clipper: InvertedTopCurveClipper(
+                    cornerRadius: 15,
+                    curveDepth: 20,
+                    centerX: 0.5,
+                    curveHalfWidth: 0.42,
+                  ),
                   child: Container(
                     margin: const EdgeInsets.only(top: 5),
                     padding: const EdgeInsets.fromLTRB(0, 45, 0, 20),
@@ -113,16 +132,32 @@ class Materi extends StatelessWidget {
                         topRight: Radius.circular(35.0),
                       ),
                     ),
-                    child: ListView.builder(
-                      itemCount: subjek.length,
-                      itemBuilder: (context, index) {
-                        final sub = subjek[index];
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final cardHorizontalMargin = constraints.maxWidth < 360
+                            ? 12.0
+                            : 20.0;
 
-                        return SubjectMateriCardWidget(
-                          subject: sub,
-                          imageUrl:
-                              'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=1200&q=80',
-                          elevation: index.isEven ? 2 : 0,
+                        return ListView.builder(
+                          itemCount: subjek.length,
+                          itemBuilder: (context, index) {
+                            final sub = subjek[index];
+
+                            return SubjectMateriCardWidget(
+                              subject: sub,
+                              imageUrl: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=1200&q=80',
+                              elevation: index.isEven ? 2 : 0,
+                              horizontalMargin: cardHorizontalMargin,
+                              ontap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => Materimapel(),
+                                  ),
+                                );
+                              },
+                            );
+                          },
                         );
                       },
                     ),

@@ -14,6 +14,43 @@ class DashboardHeaderWidget extends StatelessWidget {
     this.onProfileTap,
   });
 
+  Widget _buildAvatar() {
+    final avatar = profile.avatarUrl;
+    if (avatar != null && avatar.isNotEmpty) {
+      if (avatar.startsWith('assets/')) {
+        return Image.asset(
+          avatar,
+          width: 40,
+          height: 40,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _buildInitials(),
+        );
+      } else {
+        return Image.network(
+          avatar,
+          width: 40,
+          height: 40,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _buildInitials(),
+        );
+      }
+    }
+    return _buildInitials();
+  }
+
+  Widget _buildInitials() {
+    return Center(
+      child: Text(
+        profile.initials,
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w800,
+          color: Color(0xFF4338CA),
+        ),
+      ),
+    );
+  }
+
   String _getGreeting() {
     final hour = DateTime.now().hour;
     if (hour >= 4 && hour < 11) {
@@ -146,10 +183,14 @@ class DashboardHeaderWidget extends StatelessWidget {
                   child: Container(
                     width: 40,
                     height: 40,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
-                      boxShadow: [
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        width: 1.5,
+                      ),
+                      boxShadow: const [
                         BoxShadow(
                           color: Colors.black12,
                           blurRadius: 6,
@@ -157,14 +198,8 @@ class DashboardHeaderWidget extends StatelessWidget {
                         ),
                       ],
                     ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      profile.initials,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF4338CA),
-                      ),
+                    child: ClipOval(
+                      child: _buildAvatar(),
                     ),
                   ),
                 ),
