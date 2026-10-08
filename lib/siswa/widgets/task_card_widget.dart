@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
+
 import '../../models/task_model.dart';
 
 class TaskCardWidget extends StatelessWidget {
   final TaskModel task;
   final VoidCallback? onTap;
 
-  const TaskCardWidget({
-    super.key,
-    required this.task,
-    this.onTap,
-  });
+  const TaskCardWidget({super.key, required this.task, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -27,138 +24,228 @@ class TaskCardWidget extends StatelessWidget {
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: IntrinsicHeight(
-          child: Row(
-            children: [
-              // Content Area
-              Expanded(
-                child: InkWell(
-                  onTap: onTap,
-                  child: Padding(
-                    padding: const EdgeInsets.all(14.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Subject Icon Container
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: task.iconBgColor,
-                            borderRadius: BorderRadius.circular(22),
-                          ),
-                          child: Icon(
-                            task.icon,
-                            color: task.subjectColor,
-                            size: 22,
-                          ),
-                        ),
 
-                        const SizedBox(width: 12),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
 
-                        // Detail Information
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+// HEADER SECTION (Nama Mapel Tanpa Badge & Status Kanan)
+                Row(
+                  children: [
+                    // 1. Nama Mapel (Teks biasa tanpa Container/Badge)
+                    Text(
+                      task.subject,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: task.subjectColor,
+                      ),
+                    ),
+
+                    const Spacer(),
+
+                    // 2. Badge Status Kanan Atas (Terlambat / Sisa Waktu / Tepat Waktu)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: task.accentBorderColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            task.isSubmitted
+                                ? Icons.check_circle
+                                : Icons.access_time_filled,
+                            size: 12,
+                            color: task.accentBorderColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            task.timeRemainingTag,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: task.accentBorderColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // CONTENT SECTION (Ikon Kotak + Judul + Deadline)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Container Ikon Tugas Berbentuk Kotak
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: task.iconBgColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        task.icon,
+                        color: task.subjectColor,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // Detail Judul Tugas dan Info Tenggat
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Judul Utama Tugas
+                          Text(
+                            task.title,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1E293B),
+                              height: 1.3,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+
+                          // Baris Tanggal Deadline
+                          Row(
                             children: [
-                              // Top Row: Subject Title + Time Remaining Badge
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    task.subject,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: task.subjectColor,
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 3,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: task.subjectColor ==
-                                              const Color(0xFF2563EB)
-                                          ? const Color(0xFFFEE2E2)
-                                          : const Color(0xFFEEF2FF),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      task.timeRemainingTag,
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: task.subjectColor ==
-                                                const Color(0xFF2563EB)
-                                            ? const Color(0xFFDC2626)
-                                            : const Color(0xFF4F46E5),
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                              const Icon(
+                                Icons.calendar_today_outlined,
+                                size: 12,
+                                color: Colors.grey,
                               ),
-
-                              const SizedBox(height: 4),
-
-                              // Task Title
-                              Text(
-                                task.title,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1E293B),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  task.deadline,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey,
+                                  ),
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-
-                              const SizedBox(height: 6),
-
-                              // Deadline Info
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.access_time_rounded,
-                                    size: 14,
-                                    color: Color(0xFF64748B),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Deadline: ${task.deadline}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Color(0xFF64748B),
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
                               ),
                             ],
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ),
 
-              // Right Accent Bar
-              Container(
-                width: 6,
-                decoration: BoxDecoration(
-                  color: task.accentBorderColor,
-                  borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(14),
-                    bottomRight: Radius.circular(14),
-                  ),
+                const SizedBox(height: 12),
+
+                // Garis Pemisah (Divider) Antara Konten dan Footer
+                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+
+                const SizedBox(height: 12),
+
+                // FOOTER SECTION (Catatan & Tombol Aksi)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        task.footerNote ?? "",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+
+                    if (!task.isSubmitted)
+                      ElevatedButton(
+                        onPressed: onTap,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: task.subjectColor,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              "Kumpulkan",
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(width: 4),
+                            Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 14,
+                              color: Colors.white,
+                            ),
+                          ],
+                        ),
+                      )
+                    else if (task.score != null)
+                      RichText(
+                        text: TextSpan(
+                          text: "Nilai Tugas: ",
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: task.score,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.teal,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      const Text(
+                        "Menunggu hasil",
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                  ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
