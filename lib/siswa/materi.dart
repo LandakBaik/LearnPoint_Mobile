@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 
-
 // nama    : IDEA BRILIANTA
 // nim     : E41251668
 // kelompok: 2
 // golongan: E
 
-
 import 'materimapel.dart';
+import 'changepass.dart';
 import '../models/student_profile_model.dart';
 import 'widgets/header_profile_widget.dart';
 import 'widgets/inverted_top_curve_clipper.dart';
@@ -48,6 +47,13 @@ class Materi extends StatelessWidget {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => const NotificationScreen(),
+                      ),
+                    );
+                  },
+                  onProfileTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const Changepass(),
                       ),
                     );
                   },
