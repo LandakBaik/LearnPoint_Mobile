@@ -7,9 +7,9 @@ import 'package:flutter/material.dart';
 
 import 'widgets/materi_header_widget.dart';
 import 'widgets/header_profile_widget.dart';
+import 'changepass.dart';
 import '../models/student_profile_model.dart';
 import 'widgets/materi_section.dart';
-
 
 class Materimapel extends StatelessWidget {
   const Materimapel({super.key});
@@ -37,7 +37,16 @@ class Materimapel extends StatelessWidget {
                   horizontal: 16,
                   vertical: 12,
                 ),
-                child: HeaderProfileWidget(profile: studentProfile),
+                child: HeaderProfileWidget(
+                  profile: studentProfile,
+                  onProfileTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const Changepass(),
+                      ),
+                    );
+                  },
+                ),
               ),
 
               Padding(
@@ -50,7 +59,7 @@ class Materimapel extends StatelessWidget {
                 child: const MateriHeaderWidget(),
               ),
 
-              const MateriSectionWidget()
+              const MateriSectionWidget(),
             ],
           ),
         ),
