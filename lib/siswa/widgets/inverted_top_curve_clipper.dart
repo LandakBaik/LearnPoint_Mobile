@@ -1,18 +1,33 @@
 import 'package:flutter/material.dart';
 
 class InvertedTopCurveClipper extends CustomClipper<Path> {
+  final double cornerRadius;
+  final double curveDepth;
+  final double centerX;
+  final double curveHalfWidth;
+
+  const InvertedTopCurveClipper({
+    this.cornerRadius = 15.0,
+    this.curveDepth = 20.0,
+    this.centerX = 0.5,
+    this.curveHalfWidth = 0.42,
+  });
+
   @override
   Path getClip(Size size) {
-    const cornerRadius = 15.0;
-    const curveDepth = 20.0;
-    final centerX = size.width / 2;
-    final curveHalfWidth = size.width * 0.46;
+    final curveCenterX = size.width * centerX;
+    final curveHalfWidthPixels = size.width * curveHalfWidth;
 
     return Path()
       ..moveTo(2, cornerRadius)
       ..quadraticBezierTo(0, 0, cornerRadius, 0)
-      ..lineTo(centerX - curveHalfWidth, 0)
-      ..quadraticBezierTo(centerX, curveDepth * 2, centerX + curveHalfWidth, 0)
+      ..lineTo(curveCenterX - curveHalfWidthPixels, 0)
+      ..quadraticBezierTo(
+        curveCenterX,
+        curveDepth * 2,
+        curveCenterX + curveHalfWidthPixels,
+        0,
+      )
       ..lineTo(size.width - cornerRadius, 0)
       ..quadraticBezierTo(size.width, 0, size.width, cornerRadius)
       ..lineTo(size.width, size.height)

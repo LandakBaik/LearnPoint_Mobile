@@ -8,6 +8,9 @@ class MaterialModel {
   final IconData typeIcon;
   final Color subjectBadgeColor;
   final Color thumbnailBgColor;
+  final String duration;
+  final String? imageUrl;
+  final Color? subjectColor;
 
   const MaterialModel({
     required this.id,
@@ -16,6 +19,9 @@ class MaterialModel {
     required this.typeLabel,
     required this.typeIcon,
     this.subjectBadgeColor = const Color(0xFFEBF3FE),
-    this.thumbnailBgColor = const Color(0xFFCCCCCC),
+    this.thumbnailBgColor = const Color(0xFFF1F5F9),
+    this.duration = '15 Menit',
+    this.imageUrl,
+    this.subjectColor,
   });
 }

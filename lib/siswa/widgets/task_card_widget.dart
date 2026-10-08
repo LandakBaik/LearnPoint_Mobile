@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../../models/task_model.dart';
 
 class TaskCardWidget extends StatelessWidget {
@@ -10,37 +9,42 @@ class TaskCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Logic warna tag dari versi 2
+    final isMatematika = task.subject.toLowerCase().contains('matematika');
+    final tagBgColor = isMatematika
+        ? const Color(0xFFFFECE5)
+        : task.accentBorderColor.withValues(alpha: 0.1);
+    final tagTextColor =
+        isMatematika ? const Color(0xFFEA580C) : task.accentBorderColor;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFF1F5F9), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
-// HEADER SECTION (Nama Mapel Tanpa Badge & Status Kanan)
+                // HEADER SECTION (Nama Mapel & Status)
                 Row(
                   children: [
-                    // 1. Nama Mapel (Teks biasa tanpa Container/Badge)
                     Text(
                       task.subject,
                       style: TextStyle(
@@ -49,17 +53,14 @@ class TaskCardWidget extends StatelessWidget {
                         color: task.subjectColor,
                       ),
                     ),
-
                     const Spacer(),
-
-                    // 2. Badge Status Kanan Atas (Terlambat / Sisa Waktu / Tepat Waktu)
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: task.accentBorderColor.withValues(alpha: 0.1),
+                        color: tagBgColor,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -70,7 +71,7 @@ class TaskCardWidget extends StatelessWidget {
                                 ? Icons.check_circle
                                 : Icons.access_time_filled,
                             size: 12,
-                            color: task.accentBorderColor,
+                            color: tagTextColor,
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -78,7 +79,7 @@ class TaskCardWidget extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
-                              color: task.accentBorderColor,
+                              color: tagTextColor,
                             ),
                           ),
                         ],
@@ -93,7 +94,6 @@ class TaskCardWidget extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Container Ikon Tugas Berbentuk Kotak
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
@@ -107,13 +107,10 @@ class TaskCardWidget extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 12),
-
-                    // Detail Judul Tugas dan Info Tenggat
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Judul Utama Tugas
                           Text(
                             task.title,
                             style: const TextStyle(
@@ -126,24 +123,22 @@ class TaskCardWidget extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
-
-                          // Baris Tanggal Deadline
                           Row(
                             children: [
                               const Icon(
                                 Icons.calendar_today_outlined,
                                 size: 12,
-                                color: Colors.grey,
+                                color: Color(0xFF64748B),
                               ),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
-                                  task.deadline,
+                                  'Deadline: ${task.deadline}',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
                                     fontSize: 11,
-                                    color: Colors.grey,
+                                    color: Color(0xFF64748B),
                                   ),
                                 ),
                               ),
@@ -156,10 +151,7 @@ class TaskCardWidget extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 12),
-
-                // Garis Pemisah (Divider) Antara Konten dan Footer
                 const Divider(height: 1, color: Color(0xFFF1F5F9)),
-
                 const SizedBox(height: 12),
 
                 // FOOTER SECTION (Catatan & Tombol Aksi)
@@ -178,7 +170,6 @@ class TaskCardWidget extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-
                     if (!task.isSubmitted)
                       ElevatedButton(
                         onPressed: onTap,

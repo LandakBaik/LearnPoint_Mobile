@@ -1,66 +1,87 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
-class HeroBannerWidget extends StatelessWidget {
+class HeroBannerWidget extends StatefulWidget {
   final String title;
   final String subtitle;
-  final String timeString;
 
   const HeroBannerWidget({
     super.key,
     this.title = 'Mau belajar apa\nhari ini?',
     this.subtitle = 'Yuk lanjutkan kegiatan\nbelajarmu.',
-    this.timeString = '06:30',
   });
+
+  @override
+  State<HeroBannerWidget> createState() => _HeroBannerWidgetState();
+}
+
+class _HeroBannerWidgetState extends State<HeroBannerWidget> {
+  late String _timeString;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _updateTime();
+
+    _timer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _updateTime(),
+    );
+  }
+
+  void _updateTime() {
+    final now = DateTime.now();
+
+    final hour = now.hour.toString().padLeft(2, '0');
+    final minute = now.minute.toString().padLeft(2, '0');
+
+    if (mounted) {
+      setState(() {
+        _timeString = '$hour:$minute';
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 22),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF6B93C7),
-            Color(0xFF5A82B8),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF5A82B8).withOpacity(0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 16,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.transparent,
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Left Text Content
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  title,
+                  widget.title,
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    height: 1.25,
+                    color: Color(0xFF1E293B),
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 5),
                 Text(
-                  subtitle,
+                  widget.subtitle,
                   style: const TextStyle(
-                    fontSize: 12.5,
-                    color: Color(0xFFE2E8F0),
-                    height: 1.3,
+                    fontSize: 12,
+                    color: Color(0xFF64748B),
                   ),
                 ),
               ],
@@ -69,33 +90,45 @@ class HeroBannerWidget extends StatelessWidget {
 
           const SizedBox(width: 12),
 
-          // Right Digital Clock Style Graphics
+          // Live Clock
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.25),
-                width: 1,
-              ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 7,
             ),
-            child: Text(
-              timeString,
-              style: const TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 34,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                letterSpacing: 2.0,
-                shadows: [
-                  Shadow(
-                    blurRadius: 8.0,
-                    color: Colors.white70,
-                    offset: Offset(0, 0),
+            decoration: BoxDecoration(
+              color: const Color(0xFF312E81),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.access_time_rounded,
+                  color: Colors.white70,
+                  size: 14,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  _timeString,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 1,
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 3),
+                const Text(
+                  'WIB',
+                  style: TextStyle(
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

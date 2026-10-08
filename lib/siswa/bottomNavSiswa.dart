@@ -52,7 +52,7 @@ class _BottomNavSiswaState extends State<BottomNavSiswa> {
             label: 'Ujian',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
+            icon: Icon(Icons.quiz),
             label: 'Kuis',
           ),
         ],
