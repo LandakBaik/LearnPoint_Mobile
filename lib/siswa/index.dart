@@ -5,6 +5,7 @@ import '../models/task_model.dart';
 import '../models/material_model.dart';
 import '../models/schedule_model.dart';
 import 'notifikasi.dart';
+import 'akun.dart';
 
 import '../widget/section_header.dart';
 import 'widgets/dashboard_header_widget.dart';
@@ -22,6 +23,15 @@ class SiswaDashboardScreen extends StatelessWidget {
     schoolName: 'SMPN 14 Jember',
     initials: 'AP',
     hasNotification: true,
+    username: 'abimanyu_putra',
+    email: 'abimanyu.putra@learnpoint.sch.id',
+    address: 'Jl. Kalimantan No. 37, Sumbersari, Jember, Jawa Timur',
+    dateOfBirth: '14 Mei 2011',
+    gender: 'Laki-laki',
+    parentName: 'Bambang Sudarmono',
+    parentPhone: '0812-3456-7890',
+    nisn: '0098234112',
+    academicYear: '2025/2026',
   );
 
   // Dummy Tasks Data (Tugas Mendatang)
@@ -113,7 +123,7 @@ class SiswaDashboardScreen extends StatelessWidget {
                 child: DashboardHeaderWidget(
                   profile: studentProfile,
                   onNotificationTap: () => _openNotifications(context),
-                  onProfileTap: () {},
+                  onProfileTap: () => _openProfile(context),
                 ),
               ),
 
@@ -258,5 +268,11 @@ class SiswaDashboardScreen extends StatelessWidget {
     Navigator.of(
       context,
     ).push(MaterialPageRoute<void>(builder: (_) => const NotificationScreen()));
+  }
+
+  static void _openProfile(BuildContext context) {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const AkunScreen(profile: studentProfile)));
   }
 }

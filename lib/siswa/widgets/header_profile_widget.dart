@@ -111,22 +111,58 @@ class HeaderProfileWidget extends StatelessWidget {
             // Avatar
             GestureDetector(
               onTap: onProfileTap,
-              child: CircleAvatar(
-                radius: 19,
-                backgroundColor: const Color(0xFFEDE9FE),
-                child: Text(
-                  profile.initials,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF4338CA),
-                  ),
+              child: Container(
+                width: 38,
+                height: 38,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFFEDE9FE),
+                ),
+                child: ClipOval(
+                  child: _buildAvatar(),
                 ),
               ),
             ),
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildAvatar() {
+    final avatar = profile.avatarUrl;
+    if (avatar != null && avatar.isNotEmpty) {
+      if (avatar.startsWith('assets/')) {
+        return Image.asset(
+          avatar,
+          width: 38,
+          height: 38,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _buildInitials(),
+        );
+      } else {
+        return Image.network(
+          avatar,
+          width: 38,
+          height: 38,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _buildInitials(),
+        );
+      }
+    }
+    return _buildInitials();
+  }
+
+  Widget _buildInitials() {
+    return Center(
+      child: Text(
+        profile.initials,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF4338CA),
+        ),
+      ),
     );
   }
 }
