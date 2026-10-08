@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'siswa/bottomNavSiswa.dart';
 import 'auth/login.dart';
 
 void main() {

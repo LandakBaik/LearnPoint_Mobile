@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../siswa/bottomNavSiswa.dart';
 import '../siswa/widgets/inverted_top_curve_clipper.dart';
 
 class Login extends StatefulWidget {
@@ -34,20 +35,11 @@ class _LoginState extends State<Login> {
     super.dispose();
   }
 
-  Future<void> _submit() async {
+  void _submit() {
     FocusScope.of(context).unfocus();
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-
-    setState(() => _isLoading = true);
-    await Future<void>.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Data login siap diproses.'),
-        behavior: SnackBarBehavior.floating,
-      ),
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const BottomNavSiswa()),
     );
   }
 

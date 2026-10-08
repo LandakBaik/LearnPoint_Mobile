@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../auth/login.dart';
 import '../models/student_profile_model.dart';
 import 'edit_profil.dart';
 
@@ -849,6 +850,10 @@ class _AkunScreenState extends State<AkunScreen> {
                   content: Text('Berhasil keluar dari akun'),
                   behavior: SnackBarBehavior.floating,
                 ),
+              );
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const Login()),
+                (route) => false,
               );
             },
             style: ElevatedButton.styleFrom(
