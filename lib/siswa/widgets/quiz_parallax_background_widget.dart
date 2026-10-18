@@ -30,10 +30,19 @@ class QuizParallaxBackgroundWidget extends StatelessWidget {
             ValueListenableBuilder<double>(
               valueListenable: scrollOffset,
               builder: (context, offset, child) {
-                return Transform.translate(
-                  // Gerak ke kanan (dx positif) dan sedikit ke bawah (dy positif kecil)
-                  offset: Offset(offset * 0.35, offset * 0.08),
-                  child: child,
+                final boundedOffset = offset.clamp(0.0, 800.0);
+
+                return ClipRRect(
+                  child: OverflowBox(
+                    alignment: Alignment.center,
+                    minWidth: 0,
+                    maxWidth: double.infinity,
+                    child: Transform.translate(
+                    // Gerak ke kanan (dx positif) dan sedikit ke bawah (dy positif kecil)
+                    offset: Offset(boundedOffset * 0.35, boundedOffset * 0.08),
+                    child: child,
+                  ),
+                  ),
                 );
               },
               child: Image.asset(
@@ -42,11 +51,28 @@ class QuizParallaxBackgroundWidget extends StatelessWidget {
                 alignment: Alignment.center,
               ),
             ),
-            Image.asset(
-              'assets/images/lands.png',
-              fit: BoxFit.cover,
-              alignment: Alignment.center,
+            ValueListenableBuilder<double>(
+              valueListenable: scrollOffset,
+              builder: (context, offset, child) {
+                final boundedOffset = offset.clamp(0.0, 100.0);
+
+                return Transform.translate(
+                  // Gerak ke kanan (dx positif) dan sedikit ke bawah (dy positif kecil)
+                  offset: Offset(boundedOffset * 0, boundedOffset * -0.4),
+                  child: child,
+                );
+              },
+              child: Image.asset(
+                'assets/images/lands.png',
+                fit: BoxFit.cover,
+                alignment: Alignment.center,
+              ),
             ),
+            // Image.asset(
+            //   'assets/images/lands.png',
+            //   fit: BoxFit.cover,
+            //   alignment: Alignment.center,
+            // ),
           ],
         ),
       ),
