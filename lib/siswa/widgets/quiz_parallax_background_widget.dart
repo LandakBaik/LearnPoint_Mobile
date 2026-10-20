@@ -13,6 +13,9 @@ class QuizParallaxBackgroundWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    final screenWidth = MediaQuery.sizeOf(context).width;
+
     return Positioned(
       top: 0,
       left: 0,
@@ -28,29 +31,33 @@ class QuizParallaxBackgroundWidget extends StatelessWidget {
               alignment: Alignment.center,
             ),
             ValueListenableBuilder<double>(
-              valueListenable: scrollOffset,
-              builder: (context, offset, child) {
-                final boundedOffset = offset.clamp(0.0, 800.0);
-
-                return ClipRRect(
-                  child: OverflowBox(
-                    alignment: Alignment.center,
-                    minWidth: 0,
-                    maxWidth: double.infinity,
-                    child: Transform.translate(
-                    // Gerak ke kanan (dx positif) dan sedikit ke bawah (dy positif kecil)
-                    offset: Offset(boundedOffset * 0.35, boundedOffset * 0.08),
-                    child: child,
-                  ),
-                  ),
-                );
-              },
-              child: Image.asset(
-                'assets/images/stars1.png',
-                fit: BoxFit.cover,
-                alignment: Alignment.center,
-              ),
-            ),
+                valueListenable: scrollOffset,
+                builder: (context, offset, child) {
+                    return ClipRect(
+                    child: OverflowBox(
+                        alignment: Alignment.topCenter,
+                        minWidth: 0,
+                        maxWidth: double.infinity,
+                        minHeight: 0,
+                        maxHeight: double.infinity,
+                        child: Transform.rotate(
+                        angle: offset * 0.001,
+                        alignment: Alignment.center,
+                        child: child,
+                            ),
+                        ),
+                    );
+                },
+                child: SizedBox(
+                    width: 600,
+                    height: 600,
+                    child: Image.asset(
+                    'assets/images/stars1.png',
+                    fit: BoxFit.cover,
+                    alignment: Alignment.topCenter,
+                    ),
+                ),
+                ),
             ValueListenableBuilder<double>(
               valueListenable: scrollOffset,
               builder: (context, offset, child) {
