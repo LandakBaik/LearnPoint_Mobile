@@ -1,744 +1,271 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 
-class TugasDetailPage extends StatefulWidget {
-  const TugasDetailPage({super.key});
+class DetailTugasPage extends StatefulWidget {
+  const DetailTugasPage({super.key});
 
   @override
-  State<TugasDetailPage> createState() => _TugasDetailPageState();
+  State<DetailTugasPage> createState() => _DetailTugasPageState();
 }
 
-class _TugasDetailPageState extends State<TugasDetailPage> {
-  // Ubah tanggal ini sesuai deadline tugas
-  DateTime deadline = DateTime(2026, 10, 5, 23, 59);
+class _DetailTugasPageState extends State<DetailTugasPage> {
+  static const Color primary = Color(0xFF0369A1);
+  static const Color background = Color(0xFFF8FAFC);
+  static const Color textDark = Color(0xFF0F172A);
+  static const Color textMuted = Color(0xFF64748B);
 
-  Timer? timer;
-  Duration remaining = Duration.zero;
+  PlatformFile? selectedFile;
+  bool isSubmitting = false;
 
-  bool get isLate => DateTime.now().isAfter(deadline);
-
-  @override
-  void initState() {
-    super.initState();
-
-    updateCountdown();
-
-    timer = Timer.periodic(
-      const Duration(seconds: 1),
-      (_) => updateCountdown(),
+  Future<void> pickFile() async {
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx', 'zip', 'rar'],
     );
-  }
 
-  void updateCountdown() {
-    final now = DateTime.now();
+    if (!mounted || result.isEmpty) return;
 
-    if (now.isBefore(deadline)) {
-      setState(() {
-        remaining = deadline.difference(now);
-      });
-    } else {
-      setState(() {
-        remaining = Duration.zero;
-      });
-    }
-  }
+    final file = result.first;
+    final fileSize = await file.length();
 
-  String twoDigits(int number) {
-    return number.toString().padLeft(2, '0');
-  }
+    if (!mounted) return;
 
-  String countdownText() {
-    if (isLate) {
-      return 'Terlambat';
+    if (fileSize != null && fileSize > 5 * 1024 * 1024) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ukuran file maksimal 5 MB.')),
+      );
+      return;
     }
 
-    final days = remaining.inDays;
-    final hours = remaining.inHours % 24;
-    final minutes = remaining.inMinutes % 60;
-    final seconds = remaining.inSeconds % 60;
-
-    if (days > 0) {
-      return '$days Hari ${twoDigits(hours)}:${twoDigits(minutes)}:${twoDigits(seconds)}';
-    }
-
-    return '${twoDigits(hours)}:${twoDigits(minutes)}:${twoDigits(seconds)}';
+    setState(() {
+      selectedFile = file;
+    });
   }
 
-  @override
-  void dispose() {
-    timer?.cancel();
-    super.dispose();
+  Future<void> submitTask() async {
+    if (selectedFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pilih file jawaban terlebih dahulu.')),
+      );
+      return;
+    }
+
+    // Hubungkan proses ini ke API/backend pengumpulan tugas.
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('File dipilih. Hubungkan API untuk mengirim tugas.'),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    const primary = Color(0xFFEC1747);
-    const background = Color(0xFFF7F9FC);
-    const textDark = Color(0xFF202733);
-    const textGrey = Color(0xFF8992A3);
-
     return Scaffold(
       backgroundColor: background,
-
-      // =========================
-      // BOTTOM BUTTON
-      // =========================
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(18, 12, 18, 14),
-          color: Colors.white,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: isLate ? null : () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primary,
-                    disabledBackgroundColor: Colors.grey.shade300,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: Text(
-                    isLate
-                        ? 'Tugas Terlambat'
-                        : 'Kirim Tugas Sekarang  →',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 7),
-
-              Text(
-                isLate
-                    ? 'Pengumpulan sudah melewati tenggat'
-                    : 'Simpan sebagai draft?',
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: textGrey,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-
-      // =========================
-      // APP BAR
-      // =========================
       appBar: AppBar(
         backgroundColor: Colors.white,
+        foregroundColor: textDark,
         elevation: 0,
-        surfaceTintColor: Colors.white,
-
+        surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            size: 19,
-            color: textDark,
-          ),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.maybePop(context),
         ),
-
-        titleSpacing: 0,
-
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Pengumpulan Tugas',
-              style: TextStyle(
-                color: textDark,
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            SizedBox(height: 1),
-            Text(
-              'Pengumpulan Tugas • Bahasa...',
-              style: TextStyle(
-                color: textGrey,
-                fontSize: 10,
-              ),
-            ),
-          ],
+        title: const Text(
+          'Detail Tugas',
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
         ),
-
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(
-              Icons.more_horiz_rounded,
-              color: textDark,
-            ),
-          ),
-        ],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: Color(0xFFE2E8F0)),
+        ),
       ),
-
-      // =========================
-      // BODY
-      // =========================
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(18, 16, 18, 120),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-
-            // =========================================================
-            // CARD INFORMASI TUGAS
-            // =========================================================
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(17),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.035),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 680),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildBreadcrumb(),
+                  const SizedBox(height: 18),
+                  _buildTaskCard(),
+                  const SizedBox(height: 16),
+                  _buildSubmissionCard(),
+                  const SizedBox(height: 20),
                 ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-                  // STATUS
-                  Row(
+  Widget _buildBreadcrumb() {
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 7,
+      runSpacing: 8,
+      children: [
+        InkWell(
+          onTap: () => Navigator.maybePop(context),
+          borderRadius: BorderRadius.circular(30),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.arrow_back, size: 15, color: textMuted),
+                SizedBox(width: 7),
+                Text(
+                  'Kembali',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: textDark,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const Icon(Icons.chevron_right, size: 16, color: Color(0xFFCBD5E1)),
+        const Text(
+          'Tugas',
+          style: TextStyle(
+            fontSize: 12,
+            color: textMuted,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTaskCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0F9FF),
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: const Color(0xFFE0F2FE)),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.calendar_month_outlined, size: 15, color: primary),
+                SizedBox(width: 7),
+                Text(
+                  'Deadline: 25 Okt 2024, 23:59',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 17),
+          const Text(
+            'Tugas 1: Studi Kasus Penyederhanaan Eksponensial Terapan',
+            style: TextStyle(
+              fontSize: 21,
+              height: 1.4,
+              fontWeight: FontWeight.w800,
+              color: textDark,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Divider(color: Color(0xFFF1F5F9)),
+          const SizedBox(height: 15),
+          _sectionTitle('DESKRIPSI TUGAS'),
+          const SizedBox(height: 9),
+          const Text(
+            'Silakan pelajari materi penyederhanaan bentuk '
+            'Pada tugas mandiri ini, peserta didik diharapkan mampu '
+            'menerapkan kaidah eksponen untuk memecahkan estimasi '
+            'pertumbuhan populasi bakteri yang diberikan pada berkas soal.',
+            style: TextStyle(fontSize: 13, height: 1.8, color: textMuted),
+          ),
+          const SizedBox(height: 20),
+          const Divider(color: Color(0xFFF1F5F9)),
+          const SizedBox(height: 15),
+          _sectionTitle('BERKAS LAMPIRAN'),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(13),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 43,
+                  height: 43,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFE4E6),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.picture_as_pdf_outlined,
+                    color: Color(0xFFE11D48),
+                    size: 23,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      statusBadge(
-                        isLate ? 'TERLAMBAT' : 'AKTIF',
-                        isLate ? const Color(0xFFFFE8ED) : const Color(0xFFFFE9EF),
-                        primary,
-                      ),
-
-                      const SizedBox(width: 7),
-
-                      const Text(
-                        '•',
+                      Text(
+                        'Lampiran Tugas',
                         style: TextStyle(
-                          color: textGrey,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: textDark,
                         ),
                       ),
-
-                      const SizedBox(width: 7),
-
-                      const Text(
-                        'Bahasa Indonesia',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: textGrey,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-
-                      const Spacer(),
-
-                      statusBadge(
-                        isLate ? 'TERLAMBAT' : 'MENDESAK',
-                        isLate
-                            ? const Color(0xFFFFE8ED)
-                            : const Color(0xFFFFE8ED),
-                        primary,
+                      SizedBox(height: 5),
+                      Text(
+                        'Modul_Studi_Kasus_Eksponensial_VII.pdf',
+                        style: TextStyle(fontSize: 10, color: textMuted),
                       ),
                     ],
                   ),
-
-                  const SizedBox(height: 16),
-
-                  // JUDUL
-                  const Text(
-                    'Latihan Soal: Penggunaan Python...',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                      color: textDark,
-                    ),
-                  ),
-
-                  const SizedBox(height: 13),
-
-                  // DEADLINE
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 13,
-                      vertical: 11,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFD),
-                      borderRadius: BorderRadius.circular(11),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 30,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFE7ED),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.calendar_today_rounded,
-                            size: 15,
-                            color: primary,
-                          ),
-                        ),
-
-                        const SizedBox(width: 10),
-
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Batas waktu pengumpulan',
-                              style: TextStyle(
-                                fontSize: 9,
-                                color: textGrey,
-                              ),
-                            ),
-
-                            const SizedBox(height: 2),
-
-                            Text(
-                              '05 Okt 2026, 23:59 WIB',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: isLate
-                                    ? primary
-                                    : primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 17),
-
-                  const Text(
-                    'Petunjuk Pengerjaan',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: textDark,
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  instruction(
-                    '1.',
-                    'Buat program Python sederhana sesuai instruksi yang diberikan.',
-                  ),
-
-                  instruction(
-                    '2.',
-                    'Tuliskan source code dengan rapi dan mudah dipahami.',
-                  ),
-
-                  instruction(
-                    '3.',
-                    'Simpan program dalam format file Python (.py) kemudian upload.',
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // FILE MATERI
-                  Container(
-                    padding: const EdgeInsets.all(11),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F9FF),
-                      borderRadius: BorderRadius.circular(11),
-                      border: Border.all(
-                        color: const Color(0xFFE2EBF8),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 34,
-                          height: 34,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFE7ED),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Center(
-                            child: Text(
-                              'PDF',
-                              style: TextStyle(
-                                color: primary,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(width: 10),
-
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Modul_Soal_Penggunaan_Python.pdf',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: textDark,
-                                ),
-                              ),
-                              SizedBox(height: 3),
-                              Text(
-                                '2.4 MB • PDF',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  color: textGrey,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const Icon(
-                          Icons.download_rounded,
-                          size: 18,
-                          color: Color(0xFF5790E8),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 14),
-
-            // =========================================================
-            // FILE YANG SUDAH DIUPLOAD
-            // =========================================================
-            sectionCard(
-              title: 'UNGGAH BERKAS JAWABAN',
-              icon: Icons.upload_file_rounded,
-              child: Column(
-                children: [
-
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF7FAFD),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 37,
-                          height: 37,
-                          decoration: BoxDecoration(
-                            color: primary,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Center(
-                            child: Text(
-                              'PY',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(width: 9),
-
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Jawaban_Penggunaan_Python.py',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-
-                              SizedBox(height: 3),
-
-                              Text(
-                                '2.8 KB  •  Terupload',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  color: Color(0xFF22A879),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const Icon(
-                          Icons.close_rounded,
-                          size: 17,
-                          color: Colors.grey,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  // PROGRESS
-                  Container(
-                    height: 4,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFDDE6E2),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: FractionallySizedBox(
-                      alignment: Alignment.centerLeft,
-                      widthFactor: 1,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF20B58A),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 13),
-
-                  // TAMBAH FILE
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: const Color(0xFFD9E0E8),
-                        width: 1.2,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: [
-                        const Icon(
-                          Icons.add_circle_outline_rounded,
-                          color: Color(0xFF9AA4B2),
-                          size: 22,
-                        ),
-
-                        const SizedBox(height: 5),
-
-                        const Text(
-                          'Tambahkan atau pilih file',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF7C8796),
-                          ),
-                        ),
-
-                        const SizedBox(height: 2),
-
-                        const Text(
-                          'PDF, DOCX, PPTX • Maks. 10 MB',
-                          style: TextStyle(
-                            fontSize: 8,
-                            color: Color(0xFFADB5C0),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 14),
-
-            // =========================================================
-            // CATATAN
-            // =========================================================
-            sectionCard(
-              title: 'CATATAN UNTUK GURU',
-              icon: Icons.edit_note_rounded,
-              child: Container(
-                width: double.infinity,
-                height: 78,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(11),
                 ),
-                child: const Text(
-                  'Tuliskan catatan atau pesan untuk guru...',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Color(0xFFADB5C0),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 14),
-
-            // =========================================================
-            // PERINGATAN
-            // =========================================================
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(13),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFFBEB),
-                borderRadius: BorderRadius.circular(11),
-                border: Border.all(
-                  color: const Color(0xFFF8E8A7),
-                ),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    Icons.info_outline_rounded,
-                    color: Color(0xFFE5A900),
-                    size: 17,
-                  ),
-
-                  const SizedBox(width: 9),
-
-                  Expanded(
-                    child: Text(
-                      isLate
-                          ? 'Tugas ini sudah melewati batas waktu pengumpulan.'
-                          : 'Pastikan file yang diunggah sudah benar sebelum mengirim tugas. Setelah dikirim, pengumpulan tidak dapat diubah.',
-                      style: const TextStyle(
-                        fontSize: 9,
-                        height: 1.4,
-                        color: Color(0xFF75651F),
-                        fontWeight: FontWeight.w500,
+                IconButton(
+                  onPressed: () {
+                    // Tambahkan aksi unduh atau buka PDF di sini.
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Hubungkan tombol ini ke URL lampiran PDF.',
+                        ),
                       ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // =========================================================
-            // COUNTDOWN
-            // =========================================================
-            Center(
-              child: Column(
-                children: [
-                  Text(
-                    isLate
-                        ? 'STATUS PENGUMPULAN'
-                        : 'WAKTU TERSISA',
-                    style: const TextStyle(
-                      fontSize: 9,
-                      color: textGrey,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-
-                  const SizedBox(height: 4),
-
-                  Text(
-                    countdownText(),
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                      color: isLate ? primary : textDark,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ===============================================================
-  // STATUS BADGE
-  // ===============================================================
-  Widget statusBadge(
-    String text,
-    Color background,
-    Color textColor,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 5,
-      ),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 8,
-          fontWeight: FontWeight.w900,
-          color: textColor,
-        ),
-      ),
-    );
-  }
-
-  // ===============================================================
-  // INSTRUCTION
-  // ===============================================================
-  Widget instruction(String number, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 7),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            number,
-            style: const TextStyle(
-              fontSize: 10,
-              color: Color(0xFF687386),
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-
-          const SizedBox(width: 7),
-
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                fontSize: 10,
-                height: 1.35,
-                color: Color(0xFF687386),
-              ),
+                    );
+                  },
+                  icon: const Icon(Icons.download_rounded, color: primary),
+                  tooltip: 'Unduh berkas',
+                ),
+              ],
             ),
           ),
         ],
@@ -746,68 +273,255 @@ class _TugasDetailPageState extends State<TugasDetailPage> {
     );
   }
 
-  // ===============================================================
-  // SECTION CARD
-  // ===============================================================
-  Widget sectionCard({
-    required String title,
-    required IconData icon,
-    required Widget child,
-  }) {
+  Widget _buildSubmissionCard() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(17),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.all(20),
+      decoration: _cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                icon,
-                size: 16,
-                color: const Color(0xFFEC1747),
-              ),
-
-              const SizedBox(width: 7),
-
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF303846),
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.cloud_upload_outlined,
+                  color: Color(0xFF059669),
+                  size: 23,
                 ),
               ),
-
-              const Spacer(),
-
-              if (title == 'UNGGAH BERKAS JAWABAN')
-                const Text(
-                  '1 file',
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pengumpulan Tugas',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: textDark,
+                      ),
+                    ),
+                    SizedBox(height: 5),
+                    Text(
+                      'Kirimkan hasil pekerjaan kamu',
+                      style: TextStyle(fontSize: 11, color: textMuted),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 5),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF1F2),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: const Color(0xFFFFE4E6)),
+                ),
+                child: const Text(
+                  'Belum Terkirim',
                   style: TextStyle(
-                    fontSize: 8,
-                    color: Color(0xFF9AA4B2),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFFE11D48),
                   ),
                 ),
+              ),
             ],
           ),
-
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 18),
+            child: Divider(color: Color(0xFFF1F5F9)),
+          ),
+          _sectionTitle('UNGGAH BERKAS JAWABAN'),
           const SizedBox(height: 12),
-
-          child,
+          InkWell(
+            onTap: pickFile,
+            borderRadius: BorderRadius.circular(15),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 25),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(
+                  color: selectedFile == null
+                      ? const Color(0xFFCBD5E1)
+                      : primary,
+                  width: 1.5,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 47,
+                    height: 47,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: const Icon(
+                      Icons.cloud_upload_outlined,
+                      color: primary,
+                      size: 25,
+                    ),
+                  ),
+                  const SizedBox(height: 13),
+                  Text(
+                    selectedFile == null
+                        ? 'Klik untuk memilih file'
+                        : 'File berhasil dipilih',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: primary,
+                    ),
+                  ),
+                  const SizedBox(height: 7),
+                  const Text(
+                    'Format PDF, DOC, DOCX',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 11, color: textMuted),
+                  ),
+                  const SizedBox(height: 5),
+                  const Text(
+                    'Ukuran maksimal 5 MB',
+                    style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    constraints: const BoxConstraints(maxWidth: 300),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F9FF),
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(color: const Color(0xFFE0F2FE)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          selectedFile == null
+                              ? Icons.insert_drive_file_outlined
+                              : Icons.check_circle_outline,
+                          size: 15,
+                          color: primary,
+                        ),
+                        const SizedBox(width: 7),
+                        Flexible(
+                          child: Text(
+                            selectedFile?.name ?? 'Belum ada file dipilih',
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 15),
+          Container(
+            padding: const EdgeInsets.all(13),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0F9FF),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE0F2FE)),
+            ),
+            child: const Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline_rounded, color: primary, size: 18),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Pastikan berkas jawaban sudah benar sebelum '
+                    'dikirim. Format yang didukung adalah PDF, DOC, '
+                    'DOCX, ZIP, dan RAR.',
+                    style: TextStyle(
+                      fontSize: 11,
+                      height: 1.7,
+                      color: Color(0xFF075985),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: isSubmitting ? null : submitTask,
+              icon: const Icon(Icons.send_rounded, size: 17),
+              label: const Text(
+                'Kirim Tugas Sekarang',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primary,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: const Color(0xFF94A3B8),
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
+
+  Widget _sectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 1.1,
+        color: Color(0xFF94A3B8),
+      ),
+    );
+  }
+
+  BoxDecoration _cardDecoration() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: const Color(0xFFE2E8F0)),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.02),
+          blurRadius: 10,
+          offset: const Offset(0, 3),
+        ),
+      ],
+    );
+  }
+}
+
+void main() {
+  runApp(const MaterialApp(
+    home: DetailTugasPage(),
+  ));
 }

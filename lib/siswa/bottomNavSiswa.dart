@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../widget/bottomNavBar.dart';
 import 'index.dart';
 import 'materi.dart';
-import 'tugas.dart';
 import 'quiz.dart';
 
 class BottomNavSiswa extends StatefulWidget {
@@ -19,7 +18,6 @@ class _BottomNavSiswaState extends State<BottomNavSiswa> {
   final List<Widget> _pages = [
     const SiswaDashboardScreen(),
     const Materi(),
-    const TugasScreen(),
     const Center(child: Text('Halaman Ujian')),
     const Quiz(),
   ];
