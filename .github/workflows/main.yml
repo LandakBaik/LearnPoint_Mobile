@@ -26,7 +26,7 @@ jobs:
         node-version: '20'
         cache: 'npm'
         # Kembalikan ke path subfolder karena pencarian awal dimulai dari root repositori
-        cache-dependency-path: LearnPoint_Mobile/package-lock.json
+        cache-dependency-path: '**/package-lock.json'
 
     # Sekarang semua langkah di bawah ini otomatis berjalan di dalam folder 'LearnPoint_Mobile'
     # Tanpa perlu menuliskan 'working-directory' lagi di setiap step.
