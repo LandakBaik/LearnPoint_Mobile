@@ -10,26 +10,21 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
-    # SOLUSI: Menetapkan folder proyek sebagai direktori kerja utama untuk JOB ini
-    defaults:
-      run:
-        working-directory: LearnPoint_Mobile
+    # 1. PASTIKAN TIDAK ADA blok 'defaults: run: working-directory' di sini
 
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
-      # Catatan: Checkout tidak terpengaruh oleh 'defaults.run', ia akan tetap mengunduh ke root repositori.
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
         cache: 'npm'
-        # Kembalikan ke path subfolder karena pencarian awal dimulai dari root repositori
-        cache-dependency-path: '**/package-lock.json'
+        # 2. Karena file ada di root, cukup tulis nama filenya langsung
+        cache-dependency-path: package-lock.json 
 
-    # Sekarang semua langkah di bawah ini otomatis berjalan di dalam folder 'LearnPoint_Mobile'
-    # Tanpa perlu menuliskan 'working-directory' lagi di setiap step.
+    # 3. Semua perintah di bawah ini berjalan langsung di root repositori
     - name: Install Dependencies
       run: npm ci
 
