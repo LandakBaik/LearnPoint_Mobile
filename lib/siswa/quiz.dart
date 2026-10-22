@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'materimapel.dart';
+import 'quizPerMapel.dart';
 import 'changepass.dart';
 import 'notifikasi.dart';
 import '../models/student_profile_model.dart';
@@ -97,11 +97,11 @@ class _QuizState extends State<Quiz> {
                       // Daftar mata pelajaran / kuis
                       body: QuizSubjectListSectionWidget(
                         subjects: subjek,
-                        onSubjectTap: (_) {
+                        onSubjectTap: (subject) {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const Materimapel(),
+                              builder: (_) => QuizPerMapel(subject: subject),
                             ),
                           );
                         },
