@@ -1,12 +1,12 @@
-name: Flutter CI/CD - Stagging
+name: Flutter CI/CD - Staging
 
 on:
   push:
     branches:
-      - stagging
+      - staging
   pull_request:
     branches:
-      - stagging
+      - staging
   workflow_dispatch:
 
 permissions:
@@ -28,7 +28,7 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Flutter version
+      - name: Verify Flutter version
         run: flutter --version
 
       - name: Install dependencies
@@ -73,31 +73,3 @@ jobs:
         with:
           name: staging-android-apk
           path: build/app/outputs/apk/release/*.apk
-
-  build_web:
-    name: Build Web
-    needs: lint_and_test
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.13.1'
-          channel: 'stable'
-          cache: true
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Build web release
-        run: flutter build web --release
-
-      - name: Upload web artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: staging-web-build
-          path: build/web
