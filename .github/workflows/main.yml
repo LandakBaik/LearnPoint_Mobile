@@ -39,7 +39,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
           # Memberitahu setup-node lokasi file lock Anda
-          cache-dependency-path: LearnPoint_Mobile/package-lock.json
+          cache-dependency-path: '**/package-lock.json'
 
       - name: Install Dependencies
         # Menjalankan perintah di dalam subfolder
