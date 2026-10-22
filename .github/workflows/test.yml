@@ -1,0 +1,32 @@
+name: CI/CD Pipeline Pemula
+
+# 1. Menentukan pemicu (Trigger) pipeline
+on:
+  push:
+    branches: [ "Stagging" ]
+  pull_request:
+    branches: [ "stagging"]
+
+# 2. Daftar pekerjaan yang akan dijalankan
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest # Menjalankan pipeline di server Ubuntu milik GitHub
+
+    steps:
+    # Langkah A: Mengambil (checkout) kode dari repositori ke server GitHub
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # Langkah B: Memasang lingkungan Node.js
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    # Langkah C: Mengunduh dependencies aplikasi
+    - name: Install Dependencies
+      run: npm install
+
+    # Langkah D: Menjalankan automated testing
+    - name: Run Tests
+      run: npm test
