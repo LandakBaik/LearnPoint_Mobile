@@ -43,7 +43,7 @@ jobs:
 
       - name: Install Dependencies
         # Menjalankan perintah di dalam subfolder
-        working-directory: LearnPoint_Mobile
+        # working-directory: LearnPoint_Mobile
         run: npm ci
 
       - name: Run Linter & Typecheck
