@@ -1,0 +1,74 @@
+name: Production CI/CD Pipeline
+
+on:
+  push:
+    branches: [stagging]
+  pull_request:
+    branches: [stagging]
+  workflow_dispatch:
+    inputs:
+      deploy_target:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+# Principle of least privilege: default to minimal permissions
+permissions:
+  contents: read
+
+# Concurrency control: automatically cancel outdated in-progress runs
+concurrency:
+  group:  github.workflow -{{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-test:
+    name: Lint & Run Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (Active LTS)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          # Memberitahu setup-node lokasi file lock Anda
+          cache-dependency-path: LearnPoint_Mobile/package-lock.json
+
+      - name: Install Dependencies
+        # Menjalankan perintah di dalam subfolder
+        working-directory: LearnPoint_Mobile
+        run: npm ci
+
+      - name: Run Linter & Typecheck
+        working-directory: LearnPoint_Mobile
+        run: |
+          npm run lint
+          npm run typecheck
+
+      - name: Run Tests with Coverage
+        working-directory: LearnPoint_Mobile
+        run: npm test -- --coverage
+
+      - name: Generate Job Summary Report
+        run: |
+          echo "### 📊 Test Results Summary" >> \$GITHUB_STEP_SUMMARY
+          echo "| Metric | Status |" >> \$GITHUB_STEP_SUMMARY
+          echo "| --- | --- |" >> \$GITHUB_STEP_SUMMARY
+          echo "| Unit Tests | ✅ Passed |" >> \$GITHUB_STEP_SUMMARY
+          echo "| Commit SHA | \`${{ github.sha }}\` |" >> \$GITHUB_STEP_SUMMARY
+          echo "| Triggered By | @ github.actor |" >> GITHUB_STEP_SUMMARY
+
+      - name: Upload Test Coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          # Sesuaikan folder coverage jika posisinya ada di dalam subfolder juga
+          path: LearnPoint_Mobile/coverage/
+          retention-days: 7
