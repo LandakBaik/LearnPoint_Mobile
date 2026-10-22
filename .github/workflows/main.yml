@@ -1,37 +1,103 @@
-name: CI Pipeline
+name: Flutter CI/CD - Stagging
 
 on:
   push:
-    branches: [ "stagging" ]
+    branches:
+      - stagging
   pull_request:
-    branches: [ "stagging" ]
+    branches:
+      - stagging
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  build-and-test:
+  lint_and_test:
+    name: Lint & Test
     runs-on: ubuntu-latest
 
-    # 1. PASTIKAN TIDAK ADA blok 'defaults: run: working-directory' di sini
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.13.1'
+          channel: 'stable'
+          cache: true
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze project
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
+  build_android:
+    name: Build Android APK
+    needs: lint_and_test
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-        # 2. Karena file ada di root, cukup tulis nama filenya langsung
-        cache-dependency-path: package-lock.json 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
-    # 3. Semua perintah di bawah ini berjalan langsung di root repositori
-    - name: Install Dependencies
-      run: npm ci
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.13.1'
+          channel: 'stable'
+          cache: true
 
-    - name: Run Linter & Typecheck
-      run: |
-        npm run lint
-        npm run typecheck
+      - name: Install dependencies
+        run: flutter pub get
 
-    - name: Run Tests
-      run: npm test
+      - name: Build Android APK release
+        run: flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-android-apk
+          path: build/app/outputs/apk/release/*.apk
+
+  build_web:
+    name: Build Web
+    needs: lint_and_test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.13.1'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build web release
+        run: flutter build web --release
+
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-web-build
+          path: build/web
