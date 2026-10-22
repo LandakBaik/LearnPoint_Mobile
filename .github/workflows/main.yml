@@ -1,74 +1,42 @@
-name: Production CI/CD Pipeline
+name: CI Pipeline
 
 on:
   push:
-    branches: [stagging]
+    branches: [ "stagging" ]
   pull_request:
-    branches: [stagging]
-  workflow_dispatch:
-    inputs:
-      deploy_target:
-        description: 'Target environment'
-        required: true
-        default: 'staging'
-        type: choice
-        options:
-          - staging
-          - production
-
-# Principle of least privilege: default to minimal permissions
-permissions:
-  contents: read
-
-# Concurrency control: automatically cancel outdated in-progress runs
-concurrency:
-  group:  github.workflow -{{ github.ref }}
-  cancel-in-progress: true
+    branches: [ "stagging" ]
 
 jobs:
-  lint-and-test:
-    name: Lint & Run Unit Tests
+  build-and-test:
     runs-on: ubuntu-latest
+
+    # SOLUSI: Menetapkan folder proyek sebagai direktori kerja utama untuk JOB ini
+    defaults:
+      run:
+        working-directory: LearnPoint_Mobile
+
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      # Catatan: Checkout tidak terpengaruh oleh 'defaults.run', ia akan tetap mengunduh ke root repositori.
 
-      - name: Setup Node.js (Active LTS)
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          # Memberitahu setup-node lokasi file lock Anda
-          cache-dependency-path: '**/package-lock.json'
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        # Kembalikan ke path subfolder karena pencarian awal dimulai dari root repositori
+        cache-dependency-path: LearnPoint_Mobile/package-lock.json
 
-      - name: Install Dependencies
-        # Menjalankan perintah di dalam subfolder
-        # working-directory: LearnPoint_Mobile
-        run: npm ci
+    # Sekarang semua langkah di bawah ini otomatis berjalan di dalam folder 'LearnPoint_Mobile'
+    # Tanpa perlu menuliskan 'working-directory' lagi di setiap step.
+    - name: Install Dependencies
+      run: npm ci
 
-      - name: Run Linter & Typecheck
-        working-directory: LearnPoint_Mobile
-        run: |
-          npm run lint
-          npm run typecheck
+    - name: Run Linter & Typecheck
+      run: |
+        npm run lint
+        npm run typecheck
 
-      - name: Run Tests with Coverage
-        working-directory: LearnPoint_Mobile
-        run: npm test -- --coverage
-
-      - name: Generate Job Summary Report
-        run: |
-          echo "### 📊 Test Results Summary" >> \$GITHUB_STEP_SUMMARY
-          echo "| Metric | Status |" >> \$GITHUB_STEP_SUMMARY
-          echo "| --- | --- |" >> \$GITHUB_STEP_SUMMARY
-          echo "| Unit Tests | ✅ Passed |" >> \$GITHUB_STEP_SUMMARY
-          echo "| Commit SHA | \`${{ github.sha }}\` |" >> \$GITHUB_STEP_SUMMARY
-          echo "| Triggered By | @ github.actor |" >> GITHUB_STEP_SUMMARY
-
-      - name: Upload Test Coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          # Sesuaikan folder coverage jika posisinya ada di dalam subfolder juga
-          path: LearnPoint_Mobile/coverage/
-          retention-days: 7
+    - name: Run Tests
+      run: npm test
