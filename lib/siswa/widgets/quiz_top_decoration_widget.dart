@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../inventory.dart';
 
 class QuizTopDecorationWidget extends StatelessWidget {
   const QuizTopDecorationWidget({super.key});
@@ -92,10 +93,17 @@ class QuizTopDecorationWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 IconButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const Inventory()
+                            ),
+                        );
+                  },
                   icon: const Icon(
                     Icons.star_rounded,
-                    color: Colors.white,
+                    color: Color.fromARGB(255, 225, 23, 23),
                     size: 28,
                   ),
                 ),
@@ -115,6 +123,9 @@ class QuizTopDecorationWidget extends StatelessWidget {
                     size: 28,
                   ),
                 ),
+                SizedBox(
+                    height:  38,
+                )
               ],
             ),
           ),

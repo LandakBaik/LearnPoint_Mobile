@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-class QuizParallaxBackgroundWidget extends StatelessWidget {
+class QuizParallaxBackgroundWidget extends StatefulWidget {
   final double topBgHeight;
   final ValueListenable<double> scrollOffset;
 
@@ -12,15 +12,34 @@ class QuizParallaxBackgroundWidget extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  State<QuizParallaxBackgroundWidget> createState() =>
+      _QuizParallaxBackgroundWidgetState();
+}
 
+class _QuizParallaxBackgroundWidgetState
+    extends State<QuizParallaxBackgroundWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+        vsync: this,
+        duration: const Duration(seconds: 40),
+        )..repeat();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
 
     return Positioned(
       top: 0,
       left: 0,
       right: 0,
-      height: topBgHeight,
+      height: widget.topBgHeight,
       child: ClipRect(
         child: Stack(
           fit: StackFit.expand,
@@ -31,35 +50,38 @@ class QuizParallaxBackgroundWidget extends StatelessWidget {
               alignment: Alignment.center,
             ),
             ValueListenableBuilder<double>(
-                valueListenable: scrollOffset,
-                builder: (context, offset, child) {
-                    return ClipRect(
-                    child: OverflowBox(
-                        alignment: Alignment.topCenter,
-                        minWidth: 0,
-                        maxWidth: double.infinity,
-                        minHeight: 0,
-                        maxHeight: double.infinity,
-                        child: Transform.rotate(
-                        angle: offset * 0.001,
-                        alignment: Alignment.center,
-                        child: child,
-                            ),
-                        ),
-                    );
-                },
-                child: SizedBox(
-                    width: 600,
-                    height: 600,
-                    child: Image.asset(
-                    'assets/images/stars1.png',
-                    fit: BoxFit.cover,
+              valueListenable: widget.scrollOffset,
+              builder: (context, offset, child) {
+                return ClipRect(
+                  child: OverflowBox(
                     alignment: Alignment.topCenter,
+                    minWidth: 0,
+                    maxWidth: double.infinity,
+                    minHeight: 0,
+                    maxHeight: double.infinity,
+                    child: Transform.rotate(
+                      angle: offset * 0.001,
+                      alignment: Alignment.center,
+                      child: child,
                     ),
+                  ),
+                );
+              },
+              child: SizedBox(
+                width: 600,
+                height: 600,
+                child: RotationTransition(
+                    turns: _controller,
+                    child: Image.asset(
+                  'assets/images/stars1.png',
+                  fit: BoxFit.cover,
+                  alignment: Alignment.topCenter,
                 ),
-                ),
+                    ),
+              ),
+            ),
             ValueListenableBuilder<double>(
-              valueListenable: scrollOffset,
+              valueListenable: widget.scrollOffset,
               builder: (context, offset, child) {
                 final boundedOffset = offset.clamp(0.0, 100.0);
 

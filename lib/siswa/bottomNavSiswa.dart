@@ -43,10 +43,6 @@ class _BottomNavSiswaState extends State<BottomNavSiswa> {
             label: 'Materi',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.assignment_outlined),
-            label: 'Tugas',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.help_outline_rounded),
             label: 'Ujian',
           ),
