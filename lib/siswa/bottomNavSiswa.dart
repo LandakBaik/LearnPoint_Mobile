@@ -6,14 +6,21 @@ import 'materi.dart';
 import 'quiz.dart';
 
 class BottomNavSiswa extends StatefulWidget {
-  const BottomNavSiswa({super.key});
+  final int initialIndex;
+  const BottomNavSiswa({super.key, this.initialIndex = 0});
 
   @override
   State<BottomNavSiswa> createState() => _BottomNavSiswaState();
 }
 
 class _BottomNavSiswaState extends State<BottomNavSiswa> {
-  int _currentIndex = 0;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+  }
 
   final List<Widget> _pages = [
     const SiswaDashboardScreen(),

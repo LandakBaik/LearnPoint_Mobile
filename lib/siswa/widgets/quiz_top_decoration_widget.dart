@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../gacha.dart';
 import '../inventory.dart';
 
 class QuizTopDecorationWidget extends StatelessWidget {
@@ -108,10 +109,17 @@ class QuizTopDecorationWidget extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const Gacha(),
+                      ),
+                    );
+                  },
                   icon: const Icon(
                     Icons.star_rounded,
-                    color: Colors.white,
+                    color: Colors.amber,
                     size: 28,
                   ),
                 ),
