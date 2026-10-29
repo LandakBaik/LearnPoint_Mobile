@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'soal_ujian.dart';
 
+import 'detail_ujian.dart';
+
+import 'hasil_ujian.dart';
+
 // ============================================================
 // COLORS
 // ============================================================
@@ -98,7 +102,7 @@ class _UjianScreenState extends State<UjianScreen> {
                       statusColor: const Color(0xFFE4EDFA),
                       buttonText: 'Lihat Detail',
                       buttonIcon: Icons.info_outline,
-                      buttonEnabled: false,
+                      buttonEnabled: true,
                     ),
                   ),
                   SliverToBoxAdapter(
@@ -119,9 +123,9 @@ class _UjianScreenState extends State<UjianScreen> {
                       bottomColor: const Color(0xFF007A58),
                       status: 'Lihat Hasil',
                       statusColor: const Color(0xFFE7F7F1),
-                      buttonText: '',
+                      buttonText: 'Lihat Hasil',
                       buttonIcon: Icons.check,
-                      buttonEnabled: false,
+                      buttonEnabled: true,
                       completed: true,
                     ),
                   ),
@@ -147,7 +151,9 @@ class _UjianScreenState extends State<UjianScreen> {
       child: Row(
         children: [
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.pop(context);
+            },
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
             icon: const Icon(Icons.menu, color: darkText, size: 25),
@@ -669,14 +675,33 @@ class _UjianScreenState extends State<UjianScreen> {
                   child: TextButton(
                     onPressed: buttonEnabled
                         ? () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const QuizStartPage(),
-                              ),
-                            );
+                            if (buttonText == 'Lihat Detail') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const DetailUjianPage(),
+                                ),
+                              );
+                            } else if (buttonText == 'Mulai Ujian') {
+                              // Navigasi ke halaman mulai ujian
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const QuizStartPage(),
+                                ),
+                              );
+                            } else if (buttonText == 'Lihat Hasil') {
+                              // Navigasi ke halaman hasil ujian
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const HasilUjianPage(),
+                                ),
+                              );
+                            }
                           }
-                        : null, // dinonaktifkan sementara
+                        : null,
+                    // dinonaktifkan sementara
                     style: TextButton.styleFrom(
                       backgroundColor: buttonEnabled
                           ? primaryBlue
