@@ -9,6 +9,7 @@ import 'akun.dart';
 
 import '../widget/section_header.dart';
 import 'widgets/dashboard_header_widget.dart';
+import 'widgets/live_clock_widget.dart';
 import 'widgets/task_card_widget.dart';
 import 'widgets/material_card_widget.dart';
 import 'widgets/schedule_table_widget.dart';
@@ -96,6 +97,19 @@ class SiswaDashboardScreen extends StatelessWidget {
     ),
   ];
 
+  static String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour >= 4 && hour < 11) {
+      return 'Selamat pagi';
+    } else if (hour >= 11 && hour < 15) {
+      return 'Selamat siang';
+    } else if (hour >= 15 && hour < 18) {
+      return 'Selamat sore';
+    } else {
+      return 'Selamat malam';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
@@ -120,10 +134,47 @@ class SiswaDashboardScreen extends StatelessWidget {
                   isTablet ? 28.0 : 18.0,
                   20.0,
                 ),
-                child: DashboardHeaderWidget(
-                  profile: studentProfile,
-                  onNotificationTap: () => _openNotifications(context),
-                  onProfileTap: () => _openProfile(context),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DashboardHeaderWidget(
+                      profile: studentProfile,
+                      onNotificationTap: () => _openNotifications(context),
+                      onProfileTap: () => _openProfile(context),
+                    ),
+                    const SizedBox(height: 18),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Greeting Capsule
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.22),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            _getGreeting(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+
+                        // Realtime Digital Clock Widget with Digital7 Font
+                        const DigitalClockWidget(),
+                      ],
+                    ),
+                  ],
                 ),
               ),
 
