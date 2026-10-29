@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/materi_page.dart';
 
-class QuizSubjectItemCardWidget extends StatelessWidget {
+class QuizSubjectItemCardWidget extends StatefulWidget {
   final MateriModel subject;
   final bool isCircleOnLeft;
   final double horizontalMargin;
@@ -17,27 +17,68 @@ class QuizSubjectItemCardWidget extends StatelessWidget {
   });
 
   @override
+  State<QuizSubjectItemCardWidget> createState() =>
+      _QuizSubjectItemCardWidgetState();
+}
+
+class _QuizSubjectItemCardWidgetState extends State<QuizSubjectItemCardWidget>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _rotationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _rotationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 28),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _rotationController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Widget Lingkaran Polos Warna
-    final circleWidget = Container(
-      width: 158,
-      height: 158,
-      decoration: BoxDecoration(
-        color: subject.iconColor,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: subject.iconColor.withValues(alpha: 0.35),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    final subject = widget.subject;
+
+    // Widget Lingkaran Planet (Berputar Pelan) / Polos Warna dengan Hero ke halaman QuizPerMapel
+    final circleWidget = Hero(
+      tag: 'quiz_planet_${subject.materi}',
+      child: subject.planetImageAsset != null
+          ? SizedBox(
+              width: 158,
+              height: 158,
+              child: RotationTransition(
+                turns: _rotationController,
+                child: Image.asset(
+                  subject.planetImageAsset!,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            )
+          : Container(
+              width: 158,
+              height: 158,
+              decoration: BoxDecoration(
+                color: subject.iconColor,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: subject.iconColor.withValues(alpha: 0.35),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+            ),
     );
 
     final textWidget = Expanded(
       child: Column(
-        crossAxisAlignment: isCircleOnLeft
+        crossAxisAlignment: widget.isCircleOnLeft
             ? CrossAxisAlignment.start
             : CrossAxisAlignment.end,
         children: [
@@ -63,7 +104,7 @@ class QuizSubjectItemCardWidget extends StatelessWidget {
 
     return Container(
       margin: EdgeInsets.symmetric(
-        horizontal: horizontalMargin,
+        horizontal: widget.horizontalMargin,
         vertical: 8,
       ),
       padding: const EdgeInsets.all(16),
@@ -78,10 +119,10 @@ class QuizSubjectItemCardWidget extends StatelessWidget {
         ],
       ),
       child: InkWell(
-        onTap: onTap,
+        onTap: widget.onTap,
         borderRadius: BorderRadius.circular(20),
         child: Row(
-          children: isCircleOnLeft
+          children: widget.isCircleOnLeft
               ? [
                   circleWidget,
                   const SizedBox(width: 16),

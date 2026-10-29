@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'changepass.dart';
-import 'notifikasi.dart';
-import '../models/student_profile_model.dart';
+
 import '../models/quiz_per_mapel.dart';
 import '../models/quiz_level_model.dart';
-import 'widgets/dashboard_header_widget.dart';
 import 'widgets/quiz_level_map_section_widget.dart';
 
 class QuizLevel extends StatefulWidget {
@@ -21,13 +18,6 @@ class QuizLevel extends StatefulWidget {
 }
 
 class _QuizLevelState extends State<QuizLevel> {
-  static const studentProfile = StudentProfileModel(
-    name: 'Abimanyu',
-    gradeClass: 'Kelas VIII-A',
-    schoolName: 'SMP Merdeka',
-    initials: 'AP',
-    hasNotification: true,
-  );
 
   @override
   Widget build(BuildContext context) {
@@ -41,29 +31,6 @@ class _QuizLevelState extends State<QuizLevel> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 1. Header Atas
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-              child: DashboardHeaderWidget(
-                profile: studentProfile,
-                onNotificationTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const NotificationScreen(),
-                    ),
-                  );
-                },
-                onProfileTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const Changepass(),
-                    ),
-                  );
-                },
-              ),
-            ),
 
             // 2. Konten Utama Peta Level
             Expanded(

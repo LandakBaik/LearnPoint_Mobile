@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 
-import 'changepass.dart';
-import 'notifikasi.dart';
 import 'quizLevel.dart';
-import '../models/student_profile_model.dart';
 import '../models/materi_page.dart';
 import '../models/quiz_per_mapel.dart';
-import 'widgets/dashboard_header_widget.dart';
+import 'widgets/quiz_back_header_widget.dart';
+import 'widgets/quiz_evaporating_hand_decoration_widget.dart';
+import 'widgets/quiz_per_mapel_background_widget.dart';
 import 'widgets/quiz_theme_list_section_widget.dart';
-import 'widgets/quiz_character_area_widget.dart';
 
 class QuizPerMapel extends StatefulWidget {
   final MateriModel? subject;
@@ -20,72 +18,49 @@ class QuizPerMapel extends StatefulWidget {
 }
 
 class _QuizPerMapelState extends State<QuizPerMapel> {
-  final ScrollController _scrollController = ScrollController();
-
-  // Dummy Profile Data
-  static const studentProfile = StudentProfileModel(
-    name: 'Abimanyu',
-    gradeClass: 'Kelas VIII-A',
-    schoolName: 'SMP Merdeka',
-    initials: 'AP',
-    hasNotification: true,
-  );
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final subjectTitle = widget.subject?.materi ?? 'Matematika';
+    final rawTitle = widget.subject?.materi ?? 'Matematika';
+    final subjectTitle = rawTitle.isNotEmpty
+        ? '${rawTitle[0].toUpperCase()}${rawTitle.substring(1)}'
+        : rawTitle;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF4338CA),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            // Layer Background
-            Positioned.fill(
-              child: Container(color: const Color(0xFF4338CA)),
+      backgroundColor: const Color.fromARGB(255, 5, 51, 60),
+      body: Stack(
+        children: [
+          // 1. Layer Background: Satu warna sesuai planet (sedikit lebih gelap)
+          //    + efek kabut gelap bergelombang di atas dan bawah layar
+          const Positioned.fill(
+            child: QuizPerMapelBackgroundWidget(
+              baseColor: Color(0xFF042228),
             ),
+          ),
 
-            // Layer Konten Utama
-            Column(
+          // 2. Layer Hiasan hand1.png dengan efek animasi menguap
+          const Positioned.fill(
+            child: QuizEvaporatingHandDecorationWidget(),
+          ),
+
+          // 3. Layer Konten Utama
+          SafeArea(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. Header Atas menggunakan template DashboardHeaderWidget
+                // Header Atas: Tombol Back & Judul Mapel
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: DashboardHeaderWidget(
-                    profile: studentProfile,
-                    onNotificationTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const NotificationScreen(),
-                        ),
-                      );
-                    },
-                    onProfileTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const Changepass(),
-                        ),
-                      );
-                    },
+                  padding: const EdgeInsets.only(top: 8, bottom: 4),
+                  child: QuizBackHeaderWidget(
+                    title: subjectTitle,
                   ),
                 ),
 
-                // 2. Konten Utama: Daftar Pilihan Quiz (Lingkaran Kiri-Kanan dengan Background Looping)
+                // Area Radial Menu (Planet + Ring Bergelombang + Pilihan Tema)
                 Expanded(
                   child: QuizThemeListSectionWidget(
+                    subject: widget.subject,
                     subjectTitle: subjectTitle,
                     themes: quizMapel,
-                    scrollController: _scrollController,
                     onThemeTap: (item) {
                       Navigator.push(
                         context,
@@ -96,13 +71,10 @@ class _QuizPerMapelState extends State<QuizPerMapel> {
                     },
                   ),
                 ),
-
-                // 3. Area Karakter User di bagian bawah layar
-                const QuizCharacterAreaWidget(),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

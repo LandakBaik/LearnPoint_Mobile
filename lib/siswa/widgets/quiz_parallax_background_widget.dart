@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'wavy_upward_light_painter.dart';
 
 class QuizParallaxBackgroundWidget extends StatefulWidget {
   final double topBgHeight;
@@ -22,16 +23,40 @@ class _QuizParallaxBackgroundWidgetState
     with TickerProviderStateMixin {
   late AnimationController _controller;
   late AnimationController _opacityController;
-late Animation<double> _opacityAnimation;
+  late Animation<double> _opacityAnimation;
+
+  double _lastScrollOffset = 0.0;
+  double _scrollVelocity = 0.0;
+
+  void _onScrollChanged() {
+    final current = widget.scrollOffset.value;
+    final delta = current - _lastScrollOffset;
+    _lastScrollOffset = current;
+    _scrollVelocity = (_scrollVelocity + delta * 0.0025).clamp(-0.08, 0.08);
+  }
+
+  void _decayTrail() {
+    if (_scrollVelocity.abs() > 0.0002) {
+      _scrollVelocity *= 0.86;
+      if (_scrollVelocity.abs() <= 0.0002) {
+        _scrollVelocity = 0.0;
+      }
+    }
+  }
 
   @override
   void initState() {
     super.initState();
 
+    _lastScrollOffset = widget.scrollOffset.value;
+    widget.scrollOffset.addListener(_onScrollChanged);
+
     _controller = AnimationController(
-        vsync: this,
-        duration: const Duration(seconds: 40),
-        )..repeat();
+      vsync: this,
+      duration: const Duration(seconds: 40),
+    )
+      ..addListener(_decayTrail)
+      ..repeat();
 
     _opacityController = AnimationController(
       vsync: this,
@@ -46,6 +71,7 @@ late Animation<double> _opacityAnimation;
 
   @override
   void dispose() {
+    widget.scrollOffset.removeListener(_onScrollChanged);
     _controller.dispose();
     _opacityController.dispose();
     super.dispose();
@@ -55,6 +81,7 @@ late Animation<double> _opacityAnimation;
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
+    final screenHeigh = MediaQuery.sizeOf(context).height;
 
     return Positioned(
       top: 0,
@@ -120,39 +147,76 @@ late Animation<double> _opacityAnimation;
                 );
               },
               child: SizedBox(
- width: screenWidth,
- height: screenWidth,
- child: RotationTransition(
- turns: _controller,
- child: AnimatedBuilder(
-  animation: _opacityAnimation,
-  child: Image.asset(
-    'assets/images/stars1.png',
-    fit: BoxFit.cover,
-    alignment: Alignment.topCenter,
-  ),
-  builder: (context, child) {
-    return ShaderMask(
-      blendMode: BlendMode.dstIn,
-      shaderCallback: (rect) {
-        return LinearGradient(
-          begin: Alignment(_opacityAnimation.value - 1.0, 0),
-          end: Alignment(_opacityAnimation.value + 1.0, 0),
-          tileMode: TileMode.mirror,
-          colors: [
-            Colors.white.withValues(alpha: 0.20),
-            Colors.white,
-            Colors.white.withValues(alpha: 0.20),
-          ],
-          stops: const [0.0, 0.5, 1.0],
-        ).createShader(rect);
-      },
-      child: child,
-    );
-  },
-),
- ),
- ),
+                width: screenWidth,
+                height: screenWidth,
+                child: RotationTransition(
+                  turns: _controller,
+                  child: AnimatedBuilder(
+                    animation: Listenable.merge([
+                      _opacityAnimation,
+                      _controller,
+                    ]),
+                    child: Image.asset(
+                      'assets/images/stars1.png',
+                      fit: BoxFit.cover,
+                      alignment: Alignment.topCenter,
+                    ),
+                    builder: (context, mainStarChild) {
+                      final isScrolling = _scrollVelocity.abs() > 0.0005;
+
+                      return ShaderMask(
+                        blendMode: BlendMode.dstIn,
+                        shaderCallback: (rect) {
+                          return LinearGradient(
+                            begin: Alignment(_opacityAnimation.value - 1.0, 0),
+                            end: Alignment(_opacityAnimation.value + 1.0, 0),
+                            tileMode: TileMode.mirror,
+                            colors: [
+                              Colors.white.withValues(alpha: 0.20),
+                              Colors.white,
+                              Colors.white.withValues(alpha: 0.20),
+                            ],
+                            stops: const [0.0, 0.5, 1.0],
+                          ).createShader(rect);
+                        },
+                        child: isScrolling
+                            ? Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  // Trail 2 (Ekor paling belakang, hanya aktif saat scroll)
+                                  Transform.rotate(
+                                    angle: -_scrollVelocity * 1.1,
+                                    child: Image.asset(
+                                      'assets/images/stars1.png',
+                                      fit: BoxFit.cover,
+                                      alignment: Alignment.topCenter,
+                                      opacity: const AlwaysStoppedAnimation(
+                                        0.22,
+                                      ),
+                                    ),
+                                  ),
+                                  // Trail 1 (Ekor tengah, hanya aktif saat scroll)
+                                  Transform.rotate(
+                                    angle: -_scrollVelocity * 0.55,
+                                    child: Image.asset(
+                                      'assets/images/stars1.png',
+                                      fit: BoxFit.cover,
+                                      alignment: Alignment.topCenter,
+                                      opacity: const AlwaysStoppedAnimation(
+                                        0.45,
+                                      ),
+                                    ),
+                                  ),
+                                  // Bintang Utama
+                                  mainStarChild!,
+                                ],
+                              )
+                            : mainStarChild,
+                      );
+                    },
+                  ),
+                ),
+              ),
             ),
             AnimatedBuilder(
               animation: _controller,
@@ -162,7 +226,7 @@ late Animation<double> _opacityAnimation;
 
                 return CustomPaint(
                   size: Size(screenWidth, widget.topBgHeight),
-                  painter: _WavyUpwardLightPainter(phase: phase),
+                  painter: WavyUpwardLightPainter(phase: phase),
                 );
               },
             ),
@@ -177,11 +241,13 @@ late Animation<double> _opacityAnimation;
                   child: child,
                 );
               },
-              child: Image.asset(
-                'assets/images/lands.png',
-                fit: BoxFit.cover,
-                alignment: Alignment.center,
-              ),
+
+            child: Image.asset(
+            'assets/images/lands.png',
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
+            ),
+
             ),
             // Image.asset(
             //   'assets/images/lands.png',
@@ -192,56 +258,5 @@ late Animation<double> _opacityAnimation;
         ),
       ),
     );
-  }
-}
-
-class _WavyUpwardLightPainter extends CustomPainter {
-  final double phase;
-
-  const _WavyUpwardLightPainter({required this.phase});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Tinggi dasar pancaran cahaya dari bawah ke atas
-    final baseGlowTop = size.height * 0.65;
-    const waveAmplitude = 40.0;
-
-    final path = Path()..moveTo(-40, size.height + 44);
-
-    // Garis atas persegi yang bergelombang mengalir dari kiri ke kanan
-    for (double x = -40; x <= size.width + 40; x += 2) {
-      final normalizedX = (x / size.width) * 2 * math.pi * 1.5;
-      final y = baseGlowTop +
-          math.sin(normalizedX - phase) * waveAmplitude +
-          math.cos(normalizedX * 2 - phase * 1.5) * (waveAmplitude * 0.35);
-      path.lineTo(x, y);
-    }
-
-    path
-      ..lineTo(size.width + 40, size.height + 40)
-      ..close();
-
-    // Gradasi persegi bersinar dari bawah ke atas + MaskFilter blur agar ujung gelombang sangat halus
-    final rect = Rect.fromLTWH(0, baseGlowTop - 40, size.width, size.height - baseGlowTop + 40);
-    final paint = Paint()
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12)
-      ..shader = LinearGradient(
-        begin: Alignment.bottomCenter,
-        end: Alignment.topCenter,
-        colors: [
-          Colors.cyanAccent.withValues(alpha: 0.64),
-          Colors.blue.withValues(alpha: 0.25),
-          Colors.blue.withValues(alpha: 0.08),
-          Colors.transparent,
-        ],
-        stops: const [0.4, 0.7, 0.9, 1.0],
-      ).createShader(rect);
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _WavyUpwardLightPainter oldDelegate) {
-    return oldDelegate.phase != phase;
   }
 }
