@@ -30,7 +30,7 @@ class _QuizSubjectItemCardWidgetState extends State<QuizSubjectItemCardWidget>
     super.initState();
     _rotationController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 28),
+      duration: const Duration(seconds: 98),
     )..repeat();
   }
 
