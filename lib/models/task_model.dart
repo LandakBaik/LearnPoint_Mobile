@@ -10,6 +10,9 @@ class TaskModel {
   final Color accentBorderColor;
   final IconData icon;
   final Color iconBgColor;
+  final bool isSubmitted;
+  final String? score;
+  final String? footerNote;
 
   const TaskModel({
     required this.id,
@@ -21,5 +24,8 @@ class TaskModel {
     required this.accentBorderColor,
     required this.icon,
     required this.iconBgColor,
+    this.isSubmitted = false,
+    this.score,
+    this.footerNote,
   });
 }

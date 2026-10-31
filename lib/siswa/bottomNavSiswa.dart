@@ -4,23 +4,33 @@ import '../widget/bottomNavBar.dart';
 import 'index.dart';
 import 'materi.dart';
 import 'ujian.dart';
+import 'quiz.dart';
 
 class BottomNavSiswa extends StatefulWidget {
-  const BottomNavSiswa({super.key});
+  final int initialIndex;
+  const BottomNavSiswa({super.key, this.initialIndex = 0});
 
   @override
   State<BottomNavSiswa> createState() => _BottomNavSiswaState();
 }
 
 class _BottomNavSiswaState extends State<BottomNavSiswa> {
-  int _currentIndex = 0;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+  }
 
   final List<Widget> _pages = [
     const SiswaDashboardScreen(),
     const Materi(),
-    const Center(child: Text('Halaman Tugas')),
+    // const Center(child: Text('Halaman Tugas')),
     const UjianScreen(),
-    const Center(child: Text('Halaman Kuis')),
+    // const Center(child: Text('Halaman Kuis')),
+    // const Center(child: Text('Halaman Ujian')),
+    const Quiz(),
   ];
 
   @override
@@ -42,10 +52,6 @@ class _BottomNavSiswaState extends State<BottomNavSiswa> {
           BottomNavigationBarItem(
             icon: Icon(Icons.menu_book_rounded),
             label: 'Materi',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.assignment_outlined),
-            label: 'Tugas',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.help_outline_rounded),

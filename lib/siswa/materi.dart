@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 
-
 // nama    : IDEA BRILIANTA
 // nim     : E41251668
 // kelompok: 2
 // golongan: E
 
-
 import 'materimapel.dart';
+import 'changepass.dart';
 import '../models/student_profile_model.dart';
 import 'widgets/header_profile_widget.dart';
 import 'widgets/inverted_top_curve_clipper.dart';
 import 'widgets/subject_materi_card_widget.dart';
 import '../models/materi_page.dart';
 import 'notifikasi.dart';
+import 'widgets/dashboard_header_widget.dart';
+import '../models/student_profile_model.dart';
 
 class Materi extends StatelessWidget {
   const Materi({super.key});
@@ -38,21 +39,28 @@ class Materi extends StatelessWidget {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  child: DashboardHeaderWidget(
+                    profile: studentProfile,
+                    onNotificationTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const NotificationScreen(),
+                        ),
+                      );
+                    },
+                    onProfileTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const Changepass(),
+                        ),
+                      );
+                    },
+                  ),
                 ),
-                child: HeaderProfileWidget(
-                  profile: studentProfile,
-                  onNotificationTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const NotificationScreen(),
-                      ),
-                    );
-                  },
-                ),
-              ),
               // Header
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 30, 20, 16),
@@ -116,20 +124,20 @@ class Materi extends StatelessWidget {
               // Daftar mata pelajaran
               Expanded(
                 child: ClipPath(
-                  clipper: InvertedTopCurveClipper(
+                  clipper: const InvertedTopCurveClipper(
                     cornerRadius: 15,
                     curveDepth: 20,
                     centerX: 0.5,
-                    curveHalfWidth: 0.42,
-                  ),
+                    curveHalfWidth: 0.52,
+                ),
                   child: Container(
                     margin: const EdgeInsets.only(top: 5),
                     padding: const EdgeInsets.fromLTRB(0, 45, 0, 20),
                     decoration: const BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(35.0), // Atas kiri
-                        topRight: Radius.circular(35.0),
+                        topLeft: Radius.circular(25.0), // Atas kiri
+                        topRight: Radius.circular(25.0),
                       ),
                     ),
                     child: LayoutBuilder(
