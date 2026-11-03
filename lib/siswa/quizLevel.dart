@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-
 import '../models/quiz_per_mapel.dart';
 import '../models/quiz_level_model.dart';
+import 'quiz_play_screen.dart';
 import 'widgets/quiz_level_map_section_widget.dart';
 
 class QuizLevel extends StatefulWidget {
@@ -38,7 +38,30 @@ class _QuizLevelState extends State<QuizLevel> {
                 themeTitle: themeTitle,
                 themeColor: themeColor,
                 levels: quizLevels,
-                onLevelTap: (_) {},
+                onLevelTap: (levelNode) {
+                  if (!levelNode.isUnlocked) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          '${levelNode.title} masih terkunci! Selesaikan level sebelumnya dulu.',
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                    return;
+                  }
+
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => QuizPlayScreen(
+                        themeTitle: themeTitle,
+                        levelNumber: levelNode.levelNumber,
+                        themeColor: const Color(0xFF4338CA),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
 

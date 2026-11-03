@@ -38,8 +38,9 @@ class _QuizState extends State<Quiz> {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    final topBgHeight = screenHeight * 0.60 + 25;
+    // Tinggi pas dari atas sampai menyentuh lengkungan border radius container putih list mapel
+    // (Header ~104 + QuizTopDecorationWidget 298 + curveDepth 25 = 427)
+    const double topBgHeight = 427.0;
 
     return Scaffold(
       body: SafeArea(

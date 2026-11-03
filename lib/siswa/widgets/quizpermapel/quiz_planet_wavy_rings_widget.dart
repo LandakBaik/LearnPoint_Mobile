@@ -73,36 +73,38 @@ class _WavyRingsPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
 
-    // Pada gambar planet1.png, bola inti planet memiliki diameter sekitar 76% dari ukuran kanvas gambar
-    // (sisanya adalah aksesoris pedang dan tiang yang menancap keluar).
-    // Maka:
-    // - Ring 1 dibuat sedikit lebih besar dari bola utama planet (sekitar 0.415 * planetSize),
-    //   sehingga pedang/tiang planet menembus/bertabrakan dengan garis ini.
-    // - Ring 2 dibuat sedikit lebih besar dari Ring 1 (sekitar 0.465 * planetSize).
-    final innerBaseRadius = planetSize * 0.415;
-    final outerBaseRadius = planetSize * 0.465;
+    final innerBaseRadius = planetSize * 0.465;
+    final outerBaseRadius = planetSize * 0.515;
+    final thirdBaseRadius = planetSize * 0.565;
 
-    final innerPath = _buildWavyCirclePath(
+    final innerPath = _buildSpacedWavyCirclePath(
       center: center,
       baseRadius: innerBaseRadius,
-      waveCount: 8,
-      amplitude: 3.8,
+      waveCount: 3,
+      amplitude: 20.5,
       phase: phase,
-      secondaryWaveCount: 12,
-      secondaryAmplitude: 1.8,
+      waveDutyCycle: 0.42,
     );
 
-    final outerPath = _buildWavyCirclePath(
+    final outerPath = _buildSpacedWavyCirclePath(
       center: center,
       baseRadius: outerBaseRadius,
-      waveCount: 10,
-      amplitude: 4.5,
-      phase: -phase * 0.85,
-      secondaryWaveCount: 6,
-      secondaryAmplitude: 2.2,
+      waveCount: 3,
+      amplitude: 20.5,
+      phase: phase,
+      waveDutyCycle: 0.42,
     );
 
-    // Efek glow halus untuk kedua garis
+    final thirdPath = _buildSpacedWavyCirclePath(
+      center: center,
+      baseRadius: thirdBaseRadius,
+      waveCount: 3,
+      amplitude: 20.5,
+      phase: phase,
+      waveDutyCycle: 0.42,
+    );
+
+    // Efek glow halus untuk ketiga garis
     final glowPaint = Paint()
       ..color = const Color(0xFF38BDF8).withValues(alpha: 0.25)
       ..style = PaintingStyle.stroke
@@ -119,29 +121,56 @@ class _WavyRingsPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.4;
 
+    final thirdStrokePaint = Paint()
+      ..color = const Color(0xFF06B6D4).withValues(alpha: 0.32)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+
     canvas.drawPath(innerPath, glowPaint);
     canvas.drawPath(outerPath, glowPaint);
+    canvas.drawPath(thirdPath, glowPaint);
     canvas.drawPath(innerPath, innerStrokePaint);
     canvas.drawPath(outerPath, outerStrokePaint);
+    canvas.drawPath(thirdPath, thirdStrokePaint);
   }
 
-  Path _buildWavyCirclePath({
+  /// Membuat jalur lingkaran yang tetap bulat sempurna, namun memiliki beberapa
+  /// riak gelombang (`waveCount`) yang dipisahkan oleh jarak busur lingkaran rata (`waveDutyCycle`),
+  /// serta tiap bukit gelombangnya bergerak naik-turun secara dinamis.
+  Path _buildSpacedWavyCirclePath({
     required Offset center,
     required double baseRadius,
     required int waveCount,
     required double amplitude,
     required double phase,
-    required int secondaryWaveCount,
-    required double secondaryAmplitude,
+    double waveDutyCycle = 0.45,
   }) {
     final path = Path();
-    const int steps = 180;
+    const int steps = 220;
 
     for (int i = 0; i <= steps; i++) {
       final theta = (i / steps) * 2 * math.pi;
-      final waveOffset = math.sin(theta * waveCount + phase) * amplitude +
-          math.cos(theta * secondaryWaveCount - phase * 1.5) *
-              secondaryAmplitude;
+
+      // Posisi lokal di dalam 1 segmen gelombang (0.0 sampai 1.0)
+      final rawCycle = ((theta * waveCount) + phase) / (2 * math.pi);
+      final waveIndex = rawCycle.floor();
+      final localPos = rawCycle - waveIndex;
+
+      double waveOffset = 0.0;
+      // Jika berada di dalam porsi aktif (waveDutyCycle), gambar 1 bukit gelombang halus (Hann window)
+      // Sisanya (1.0 - waveDutyCycle) bernilai 0.0 (busur lingkaran murni sebagai jarak antar gelombang)
+      if (localPos < waveDutyCycle) {
+        final t = localPos / waveDutyCycle; // 0.0 -> 1.0
+        // Kurva dasar bukit mulus dari 0 -> 1 -> 0
+        final smoothCrest = 0.5 * (1.0 - math.cos(2 * math.pi * t));
+
+        // Efek gerakan naik-turun pada tinggi tiap bukit gelombang seiring waktu (phase)
+        final upDownPulse =
+            0.65 + 0.35 * math.sin(phase * 3.0 + (waveIndex * 1.8));
+
+        waveOffset = smoothCrest * amplitude * upDownPulse;
+      }
+
       final r = baseRadius + waveOffset;
 
       final x = center.dx + r * math.cos(theta);
