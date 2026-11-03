@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import '../models/task_model.dart';
+  
 
 class DetailTugasPage extends StatefulWidget {
-  const DetailTugasPage({super.key});
+  final TaskModel task;
+
+  const DetailTugasPage({
+    super.key,
+    required this.task,
+  });
 
   @override
   State<DetailTugasPage> createState() => _DetailTugasPageState();
@@ -518,10 +525,4 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
       ],
     );
   }
-}
-
-void main() {
-  runApp(const MaterialApp(
-    home: DetailTugasPage(),
-  ));
 }
