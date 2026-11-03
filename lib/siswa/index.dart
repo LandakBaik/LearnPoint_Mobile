@@ -7,6 +7,7 @@ import '../models/schedule_model.dart';
 import 'notifikasi.dart';
 import 'akun.dart';
 
+import 'detail_tugas.dart';
 import '../widget/section_header.dart';
 import 'widgets/dashboard_header_widget.dart';
 import 'widgets/live_clock_widget.dart';
@@ -248,13 +249,22 @@ class SiswaDashboardScreen extends StatelessWidget {
                             padding: EdgeInsets.zero,
                             itemCount: upcomingTasks.length,
                             itemBuilder: (context, index) {
+                              final task = upcomingTasks[index];
                               return TaskCardWidget(
-                                task: upcomingTasks[index],
-                                onTap: () {},
+                                task: task,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          DetailTugasPage(task: task),
+                                    ),
+                                  );
+                                },
                               );
                             },
                           ),
-
+                          
                           const SizedBox(height: 12),
 
                           // ========================================
@@ -322,8 +332,10 @@ class SiswaDashboardScreen extends StatelessWidget {
   }
 
   static void _openProfile(BuildContext context) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const AkunScreen(profile: studentProfile)));
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const AkunScreen(profile: studentProfile),
+      ),
+    );
   }
 }
