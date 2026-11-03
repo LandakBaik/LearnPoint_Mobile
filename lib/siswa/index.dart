@@ -6,6 +6,7 @@ import '../models/material_model.dart';
 import '../models/schedule_model.dart';
 import 'notifikasi.dart';
 import 'akun.dart';
+import 'detail_materi.dart';
 
 import '../widget/section_header.dart';
 import 'widgets/dashboard_header_widget.dart';
@@ -280,9 +281,20 @@ class SiswaDashboardScreen extends StatelessWidget {
                                 ),
                             itemCount: latestMaterials.length,
                             itemBuilder: (context, index) {
+                              final item = latestMaterials[index];
                               return MaterialCardWidget(
-                                material: latestMaterials[index],
-                                onTap: () {},
+                                material: item,
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => DetailMateriPage(
+                                        title: item.title,
+                                        subject: item.subject,
+                                        duration: item.duration,
+                                      ),
+                                    ),
+                                  );
+                                },
                               );
                             },
                           ),

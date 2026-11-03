@@ -81,11 +81,35 @@ class _QuizParallaxBackgroundWidgetState
               alignment: Alignment.bottomCenter,
             ),
 
-            // 2. Layer Spiral Angin
-            Image.asset(
-              'assets/images/vg_spiral.png',
-              fit: BoxFit.cover,
-              alignment: Alignment.bottomCenter,
+            // 2. Layer Spiral Angin (Efek gelombang opacity mengalir seperti kedip bintang)
+            AnimatedBuilder(
+              animation: _twinkleSweepAnimation,
+              builder: (context, spiralChild) {
+                return ShaderMask(
+                  blendMode: BlendMode.dstIn,
+                  shaderCallback: (rect) {
+                    return LinearGradient(
+                      begin: Alignment(_twinkleSweepAnimation.value - 1.0, -0.2),
+                      end: Alignment(_twinkleSweepAnimation.value + 1.0, 0.2),
+                      tileMode: TileMode.repeated,
+                      colors: [
+                        Colors.white.withValues(alpha: 0.28),
+                        Colors.white,
+                        Colors.white.withValues(alpha: 0.40),
+                        Colors.white,
+                        Colors.white.withValues(alpha: 0.28),
+                      ],
+                      stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
+                    ).createShader(rect);
+                  },
+                  child: spiralChild,
+                );
+              },
+              child: Image.asset(
+                'assets/images/vg_spiral.png',
+                fit: BoxFit.cover,
+                alignment: Alignment.bottomCenter,
+              ),
             ),
 
             // 3. Layer 3 Bintang Kuning Besar
