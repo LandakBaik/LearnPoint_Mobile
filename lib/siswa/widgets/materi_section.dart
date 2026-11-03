@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+import '../detail_materi.dart';
 
 class MateriSectionWidget extends StatefulWidget {
   const MateriSectionWidget({super.key});
@@ -59,7 +59,7 @@ class _MateriSectionWidgetState extends State<MateriSectionWidget> {
           ),
 
           // Tab semester
-          Container(
+          SizedBox(
             height: 45,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
@@ -120,41 +120,54 @@ class _MateriSectionWidgetState extends State<MateriSectionWidget> {
                 itemCount: materi.length,
 
                 itemBuilder: (context, index) {
-                return Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                    color: const Color(0xFFF0F4FF),
-                    borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                        const Icon(
-                        Icons.menu_book_rounded,
-                        color: Color(0xFF6336ED),
-                        size: 32,
+                return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => DetailMateriPage(
+                            title: materi[index],
+                            subject: 'Matematika',
+                          ),
                         ),
-
-                        Text(
-                        materi[index],
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF28233E),
+                      );
+                    },
+                    child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                        color: const Color(0xFFF0F4FF),
+                        borderRadius: BorderRadius.circular(16),
                         ),
-                        ),
-
-                        const Align(
-                        alignment: Alignment.bottomRight,
-                        child: Icon(
-                            Icons.arrow_forward_rounded,
+                        child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                            const Icon(
+                            Icons.menu_book_rounded,
                             color: Color(0xFF6336ED),
+                            size: 32,
+                            ),
+
+                            Text(
+                            materi[index],
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF28233E),
+                            ),
+                            ),
+
+                            const Align(
+                            alignment: Alignment.bottomRight,
+                            child: Icon(
+                                Icons.arrow_forward_rounded,
+                                color: Color(0xFF6336ED),
+                            ),
+                            ),
+                        ],
                         ),
-                        ),
-                    ],
                     ),
                 );
                 },

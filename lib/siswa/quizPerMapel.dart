@@ -4,9 +4,9 @@ import 'quizLevel.dart';
 import '../models/materi_page.dart';
 import '../models/quiz_per_mapel.dart';
 import 'widgets/quiz_back_header_widget.dart';
-import 'widgets/quiz_evaporating_hand_decoration_widget.dart';
-import 'widgets/quiz_per_mapel_background_widget.dart';
-import 'widgets/quiz_theme_list_section_widget.dart';
+import 'widgets/quizpermapel/quiz_evaporating_hand_decoration_widget.dart';
+import 'widgets/quizpermapel/quiz_per_mapel_background_widget.dart';
+import 'widgets/quizpermapel/quiz_theme_list_section_widget.dart';
 
 class QuizPerMapel extends StatefulWidget {
   final MateriModel? subject;
@@ -33,7 +33,7 @@ class _QuizPerMapelState extends State<QuizPerMapel> {
           //    + efek kabut gelap bergelombang di atas dan bawah layar
           const Positioned.fill(
             child: QuizPerMapelBackgroundWidget(
-              baseColor: Color(0xFF042228),
+              baseColor: Color.fromARGB(255, 5, 58, 67),
             ),
           ),
 

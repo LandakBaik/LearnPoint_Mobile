@@ -9,7 +9,7 @@ class QuizPerMapelBackgroundWidget extends StatefulWidget {
 
   const QuizPerMapelBackgroundWidget({
     super.key,
-    this.baseColor = const Color.fromARGB(255, 5, 58, 68),
+    this.baseColor = const Color.fromARGB(255, 60, 206, 236),
   });
 
   @override
@@ -68,8 +68,8 @@ class _WavyDarkFogPainter extends CustomPainter {
 
   void _paintTopDarkFog(Canvas canvas, Size size) {
     // Lapisan kabut gelap atas (2 layer gelombang agar tampak dalam)
-    final baseBottomY1 = size.height * 0.40;
-    const amp1 = 39.0;
+    final baseBottomY1 = size.height * 0.35;
+    const amp1 = 33.0;
 
     final path1 = Path()..moveTo(-40, -40);
     for (double x = -40; x <= size.width + 40; x += 4) {
@@ -101,8 +101,8 @@ class _WavyDarkFogPainter extends CustomPainter {
     canvas.drawPath(path1, paint1);
 
     // Layer kedua kabut atas yang lebih pekat di ujung atas
-    final baseBottomY2 = size.height * 0.21;
-    const amp2 = 20.0;
+    final baseBottomY2 = size.height * 0.18;
+    const amp2 = 17.0;
     final path2 = Path()..moveTo(-40, -40);
     for (double x = -40; x <= size.width + 40; x += 4) {
       final normX = (x / size.width) * 2 * math.pi * 1.8;

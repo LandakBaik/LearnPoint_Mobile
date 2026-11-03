@@ -1,7 +1,6 @@
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
-import 'wavy_upward_light_painter.dart';
 
 class QuizParallaxBackgroundWidget extends StatefulWidget {
   final double topBgHeight;
@@ -21,67 +20,50 @@ class QuizParallaxBackgroundWidget extends StatefulWidget {
 class _QuizParallaxBackgroundWidgetState
     extends State<QuizParallaxBackgroundWidget>
     with TickerProviderStateMixin {
-  late AnimationController _controller;
-  late AnimationController _opacityController;
-  late Animation<double> _opacityAnimation;
-
-  double _lastScrollOffset = 0.0;
-  double _scrollVelocity = 0.0;
-
-  void _onScrollChanged() {
-    final current = widget.scrollOffset.value;
-    final delta = current - _lastScrollOffset;
-    _lastScrollOffset = current;
-    _scrollVelocity = (_scrollVelocity + delta * 0.0025).clamp(-0.08, 0.08);
-  }
-
-  void _decayTrail() {
-    if (_scrollVelocity.abs() > 0.0002) {
-      _scrollVelocity *= 0.86;
-      if (_scrollVelocity.abs() <= 0.0002) {
-        _scrollVelocity = 0.0;
-      }
-    }
-  }
+  late final AnimationController _moveRightController;
+  late final AnimationController _twinkleWaveController;
+  late final AnimationController _fallenLightWaveController;
+  late final Animation<double> _twinkleSweepAnimation;
 
   @override
   void initState() {
     super.initState();
 
-    _lastScrollOffset = widget.scrollOffset.value;
-    widget.scrollOffset.addListener(_onScrollChanged);
-
-    _controller = AnimationController(
+    // Controller untuk menggeser stars2 pelan ke kanan lalu loop kembali dari kiri
+    _moveRightController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 40),
-    )
-      ..addListener(_decayTrail)
-      ..repeat();
-
-    _opacityController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 8),
+      duration: const Duration(seconds: 80),
     )..repeat();
 
-    _opacityAnimation = Tween<double>(
+    // Controller untuk gelombang kedipan bintang berurutan dari KIRI ke KANAN
+    _twinkleWaveController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 6),
+    )..repeat();
+
+    _twinkleSweepAnimation = Tween<double>(
       begin: -2.0,
       end: 2.0,
-    ).animate(_opacityController);
+    ).animate(_twinkleWaveController);
+
+    // Controller untuk efek bergelombang pada cahaya fallenstar (fallenstar_light)
+    _fallenLightWaveController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat();
   }
 
   @override
   void dispose() {
-    widget.scrollOffset.removeListener(_onScrollChanged);
-    _controller.dispose();
-    _opacityController.dispose();
+    _moveRightController.dispose();
+    _twinkleWaveController.dispose();
+    _fallenLightWaveController.dispose();
     super.dispose();
   }
-
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final screenHeigh = MediaQuery.sizeOf(context).height;
 
     return Positioned(
       top: 0,
@@ -92,171 +74,217 @@ class _QuizParallaxBackgroundWidgetState
         child: Stack(
           fit: StackFit.expand,
           children: [
+            // 1. Background Utama (Langit malam + tanah)
             Image.asset(
-              'assets/images/spacebg1.png',
+              'assets/images/vg_main.png',
               fit: BoxFit.cover,
-              alignment: Alignment.center,
+              alignment: Alignment.bottomCenter,
             ),
-            ValueListenableBuilder<double>(
-              valueListenable: widget.scrollOffset,
-              builder: (context, offset, child) {
-                return ClipRect(
-                  child: OverflowBox(
-                    alignment: Alignment.topCenter,
-                    minWidth: 0,
-                    maxWidth: double.infinity,
-                    minHeight: 0,
-                    maxHeight: double.infinity,
-                    child: Transform.rotate(
-                      angle: offset * 0.001,
-                      alignment: Alignment.center,
-                      child: child,
-                    ),
-                  ),
-                );
-              },
-              child: SizedBox(
- width: 600,
- height:  600,
- child: RotationTransition(
- turns: _controller,
- child: Image.asset(
- 'assets/images/glxy.png',
- fit: BoxFit.cover,
- alignment: Alignment.topCenter,
- ),
- ),
- ),
-            ),
-            ValueListenableBuilder<double>(
-              valueListenable: widget.scrollOffset,
-              builder: (context, offset, child) {
-                return ClipRect(
-                  child: OverflowBox(
-                    alignment: Alignment.topCenter,
-                    minWidth: 0,
-                    maxWidth: double.infinity,
-                    minHeight: 0,
-                    maxHeight: double.infinity,
-                    child: Transform.rotate(
-                      angle: offset * 0.001,
-                      alignment: Alignment.center,
-                      child: child,
-                    ),
-                  ),
-                );
-              },
-              child: SizedBox(
-                width: screenWidth,
-                height: screenWidth,
-                child: RotationTransition(
-                  turns: _controller,
-                  child: AnimatedBuilder(
-                    animation: Listenable.merge([
-                      _opacityAnimation,
-                      _controller,
-                    ]),
-                    child: Image.asset(
-                      'assets/images/stars1.png',
-                      fit: BoxFit.cover,
-                      alignment: Alignment.topCenter,
-                    ),
-                    builder: (context, mainStarChild) {
-                      final isScrolling = _scrollVelocity.abs() > 0.0005;
 
-                      return ShaderMask(
-                        blendMode: BlendMode.dstIn,
-                        shaderCallback: (rect) {
-                          return LinearGradient(
-                            begin: Alignment(_opacityAnimation.value - 1.0, 0),
-                            end: Alignment(_opacityAnimation.value + 1.0, 0),
-                            tileMode: TileMode.mirror,
-                            colors: [
-                              Colors.white.withValues(alpha: 0.20),
-                              Colors.white,
-                              Colors.white.withValues(alpha: 0.20),
-                            ],
-                            stops: const [0.0, 0.5, 1.0],
-                          ).createShader(rect);
-                        },
-                        child: isScrolling
-                            ? Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  // Trail 2 (Ekor paling belakang, hanya aktif saat scroll)
-                                  Transform.rotate(
-                                    angle: -_scrollVelocity * 1.1,
-                                    child: Image.asset(
-                                      'assets/images/stars1.png',
-                                      fit: BoxFit.cover,
-                                      alignment: Alignment.topCenter,
-                                      opacity: const AlwaysStoppedAnimation(
-                                        0.22,
-                                      ),
-                                    ),
-                                  ),
-                                  // Trail 1 (Ekor tengah, hanya aktif saat scroll)
-                                  Transform.rotate(
-                                    angle: -_scrollVelocity * 0.55,
-                                    child: Image.asset(
-                                      'assets/images/stars1.png',
-                                      fit: BoxFit.cover,
-                                      alignment: Alignment.topCenter,
-                                      opacity: const AlwaysStoppedAnimation(
-                                        0.45,
-                                      ),
-                                    ),
-                                  ),
-                                  // Bintang Utama
-                                  mainStarChild!,
-                                ],
-                              )
-                            : mainStarChild,
-                      );
-                    },
-                  ),
-                ),
+            // 2. Layer Spiral Angin (Efek gelombang opacity mengalir seperti kedip bintang)
+            AnimatedBuilder(
+              animation: _twinkleSweepAnimation,
+              builder: (context, spiralChild) {
+                return ShaderMask(
+                  blendMode: BlendMode.dstIn,
+                  shaderCallback: (rect) {
+                    return LinearGradient(
+                      begin: Alignment(_twinkleSweepAnimation.value - 1.0, -0.2),
+                      end: Alignment(_twinkleSweepAnimation.value + 1.0, 0.2),
+                      tileMode: TileMode.repeated,
+                      colors: [
+                        Colors.white.withValues(alpha: 0.28),
+                        Colors.white,
+                        Colors.white.withValues(alpha: 0.40),
+                        Colors.white,
+                        Colors.white.withValues(alpha: 0.28),
+                      ],
+                      stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
+                    ).createShader(rect);
+                  },
+                  child: spiralChild,
+                );
+              },
+              child: Image.asset(
+                'assets/images/vg_spiral.png',
+                fit: BoxFit.cover,
+                alignment: Alignment.bottomCenter,
               ),
             ),
+
+            // 3. Layer 3 Bintang Kuning Besar
+            Image.asset(
+              'assets/images/vg_big_stars.png',
+              fit: BoxFit.cover,
+              alignment: Alignment.bottomCenter,
+            ),
+
+            // 4. Layer stars2 (Bintang kecil geser pelan ke kanan & kedip berurutan dari kiri ke kanan)
             AnimatedBuilder(
-              animation: _controller,
-              builder: (context, _) {
-                // Dikali 8 agar gelombang bergerak lebih hidup karena durasi controller 40 detik
-                final phase = _controller.value * 2 * math.pi * 10;
+              animation: Listenable.merge([
+                _moveRightController,
+                _twinkleSweepAnimation,
+              ]),
+              builder: (context, starChild) {
+                final dx = _moveRightController.value * screenWidth;
 
-                return CustomPaint(
-                  size: Size(screenWidth, widget.topBgHeight),
-                  painter: WavyUpwardLightPainter(phase: phase),
+                return ShaderMask(
+                  blendMode: BlendMode.dstIn,
+                  shaderCallback: (rect) {
+                    // Gelombang opacity bergerak dari kiri ke kanan secara berurutan
+                    return LinearGradient(
+                      begin: Alignment(_twinkleSweepAnimation.value - 1.0, 0),
+                      end: Alignment(_twinkleSweepAnimation.value + 1.0, 0),
+                      tileMode: TileMode.repeated,
+                      colors: [
+                        Colors.white.withValues(alpha: 0.15),
+                        Colors.white,
+                        Colors.white.withValues(alpha: 0.25),
+                        Colors.white,
+                        Colors.white.withValues(alpha: 0.15),
+                      ],
+                      stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
+                    ).createShader(rect);
+                  },
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // Gambar utama bergeser dari 0 ke kanan (screenWidth)
+                      Transform.translate(
+                        offset: Offset(dx, 0),
+                        child: starChild,
+                      ),
+                      // Gambar kedua menyambung masuk dari sebelah kiri (-screenWidth menuju 0)
+                      Transform.translate(
+                        offset: Offset(dx - screenWidth, 0),
+                        child: starChild,
+                      ),
+                    ],
+                  ),
                 );
               },
-            ),
-            ValueListenableBuilder<double>(
-              valueListenable: widget.scrollOffset,
-              builder: (context, offset, child) {
-                final boundedOffset = offset.clamp(0.0, 100.0);
-
-                return Transform.translate(
-                  // Gerak ke kanan (dx positif) dan sedikit ke bawah (dy positif kecil)
-                  offset: Offset(boundedOffset * 0, boundedOffset * -0.4),
-                  child: child,
-                );
-              },
-
-            child: Image.asset(
-            'assets/images/lands.png',
-            fit: BoxFit.cover,
-            alignment: Alignment.center,
+              child: Image.asset(
+                'assets/images/stars2.png',
+                fit: BoxFit.cover,
+                alignment: Alignment.bottomCenter,
+              ),
             ),
 
+            // 5. Layer Fog / Kabut Bawah (Di bawah fallenstar)
+            Image.asset(
+              'assets/images/vg_mist.png',
+              fit: BoxFit.cover,
+              alignment: Alignment.bottomCenter,
             ),
-            // Image.asset(
-            //   'assets/images/lands.png',
-            //   fit: BoxFit.cover,
-            //   alignment: Alignment.center,
-            // ),
+
+            // 6. Layer Cahaya Fallenstar (fallenstar_light) dibuat bergelombang
+            _buildWavyFallenStarLight(screenWidth),
+
+            // 7. Layer Fallenstar (Bintang jatuh di tanah, berada di ATAS fog)
+            Image.asset(
+              'assets/images/vg_ground_stars.png',
+              fit: BoxFit.cover,
+              alignment: Alignment.bottomCenter,
+            ),
+
+            // 8. Layer Character (Paling atas layer)
+            Image.asset(
+              'assets/images/vg_character.png',
+              fit: BoxFit.cover,
+              alignment: Alignment.bottomCenter,
+            ),
           ],
         ),
       ),
     );
+  }
+
+  /// Membuat efek gambar `fallenstar_light.png` bergelombang secara halus (wavy ripple)
+  /// sekaligus berkilau mengalir sepanjang bintang-bintang di tanah.
+  Widget _buildWavyFallenStarLight(double screenWidth) {
+    const int sliceCount = 10;
+    final double bgHeight = widget.topBgHeight;
+
+    return AnimatedBuilder(
+      animation: _fallenLightWaveController,
+      builder: (context, lightImageChild) {
+        final phase = _fallenLightWaveController.value * 2 * math.pi;
+
+        return ShaderMask(
+          blendMode: BlendMode.dstIn,
+          shaderCallback: (rect) {
+            final waveShift = math.sin(phase) * 0.6;
+            return LinearGradient(
+              begin: Alignment(-1.2 + waveShift, 0),
+              end: Alignment(1.2 + waveShift, 0),
+              tileMode: TileMode.mirror,
+              colors: [
+                Colors.white.withValues(alpha: 0.45),
+                Colors.white,
+                Colors.white.withValues(alpha: 0.55),
+                Colors.white,
+              ],
+              stops: const [0.0, 0.35, 0.7, 1.0],
+            ).createShader(rect);
+          },
+          child: Stack(
+            fit: StackFit.expand,
+            children: List.generate(sliceCount, (i) {
+              // Setiap pita horizontal digeser kiri-kanan & atas-bawah membentuk gelombang sinus
+              final topFraction = i / sliceCount;
+              final bottomFraction = (i + 1) / sliceCount;
+              final waveDx = math.sin(phase + (i * 0.75)) * 3.8;
+              final waveDy = math.cos(phase + (i * 0.60)) * 1.6;
+
+              return ClipRect(
+                clipper: _HorizontalBandClipper(
+                  topFactor: topFraction,
+                  bottomFactor: bottomFraction,
+                ),
+                child: Transform.translate(
+                  offset: Offset(waveDx, waveDy),
+                  child: SizedBox(
+                    width: screenWidth,
+                    height: bgHeight,
+                    child: lightImageChild,
+                  ),
+                ),
+              );
+            }),
+          ),
+        );
+      },
+      child: Image.asset(
+        'assets/images/fallenstar_light.png',
+        fit: BoxFit.cover,
+        alignment: Alignment.bottomCenter,
+      ),
+    );
+  }
+}
+
+class _HorizontalBandClipper extends CustomClipper<Rect> {
+  final double topFactor;
+  final double bottomFactor;
+
+  const _HorizontalBandClipper({
+    required this.topFactor,
+    required this.bottomFactor,
+  });
+
+  @override
+  Rect getClip(Size size) {
+    return Rect.fromLTRB(
+      0,
+      size.height * topFactor,
+      size.width,
+      size.height * bottomFactor,
+    );
+  }
+
+  @override
+  bool shouldReclip(covariant _HorizontalBandClipper oldClipper) {
+    return oldClipper.topFactor != topFactor ||
+        oldClipper.bottomFactor != bottomFactor;
   }
 }
