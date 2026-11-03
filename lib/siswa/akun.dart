@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../auth/login.dart';
 import '../models/student_profile_model.dart';
+import '../services/auth_service.dart';
 import 'edit_profil.dart';
 
 class AkunScreen extends StatefulWidget {
@@ -843,8 +844,10 @@ class _AkunScreenState extends State<AkunScreen> {
             ),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(context).pop();
+              await AuthService.logout();
+              if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Berhasil keluar dari akun'),

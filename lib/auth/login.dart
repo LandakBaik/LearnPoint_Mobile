@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../services/api_config.dart';
+import '../services/auth_service.dart';
+import '../services/storage_service.dart';
 import '../siswa/bottomNavSiswa.dart';
 import '../siswa/widgets/inverted_top_curve_clipper.dart';
 
@@ -23,7 +26,6 @@ class _LoginState extends State<Login> {
 
   static const _bluePrimary = Color(0xFF2563EB);
   static const _blueGradientStart = Color(0xFF1D4ED8);
-  static const _blueGradientEnd = Color(0xFF3B82F6);
   static const _mutedGrey = Color(0xFF94A3B8);
 
   @override
@@ -35,11 +37,178 @@ class _LoginState extends State<Login> {
     super.dispose();
   }
 
-  void _submit() {
+  @override
+  void initState() {
+    super.initState();
+    _loadCustomServerUrl();
+  }
+
+  Future<void> _loadCustomServerUrl() async {
+    final customUrl = await StorageService.getCustomBaseUrl();
+    if (customUrl != null && customUrl.isNotEmpty) {
+      ApiConfig.customBaseUrl = customUrl;
+    }
+  }
+
+  Future<void> _submit() async {
     FocusScope.of(context).unfocus();
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const BottomNavSiswa()),
+
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final result = await AuthService.login(
+        login: _usernameController.text,
+        password: _passwordController.text,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (result.success) {
+        final user = result.user;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Selamat datang, ${user?.name ?? 'Pengguna'}! (${user?.role.toUpperCase()})',
+            ),
+            backgroundColor: const Color(0xFF16A34A),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+
+        if (user != null && user.isSiswa) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const BottomNavSiswa()),
+          );
+        } else if (user != null && user.isGuru) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const BottomNavSiswa()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const BottomNavSiswa()),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message),
+            backgroundColor: const Color(0xFFEF4444),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Terjadi kendala: $e'),
+          backgroundColor: const Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  void _showServerSettings() {
+    final urlController = TextEditingController(text: ApiConfig.baseUrl);
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.dns_rounded, color: _bluePrimary),
+            SizedBox(width: 8),
+            Text(
+              'Konfigurasi API URL',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Sesuaikan Base URL backend jika pengujian menggunakan HP Fisik (WiFi):',
+              style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: urlController,
+              decoration: InputDecoration(
+                labelText: 'Base URL',
+                hintText: ApiConfig.defaultBaseUrl,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              '• Emulator: http://10.0.2.2:8000/api\n• HP Fisik: http://<IP_KOMPUTER>:8000/api\n• Web/Desktop: http://127.0.0.1:8000/api',
+              style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8), height: 1.4),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              ApiConfig.customBaseUrl = null;
+              StorageService.saveCustomBaseUrl('');
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Reset default: ${ApiConfig.baseUrl}'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            child: const Text('Reset'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _bluePrimary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () {
+              final newUrl = urlController.text.trim();
+              if (newUrl.isNotEmpty) {
+                ApiConfig.customBaseUrl = newUrl;
+                StorageService.saveCustomBaseUrl(newUrl);
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Base URL diatur ke: $newUrl'),
+                    backgroundColor: const Color(0xFF16A34A),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -136,17 +305,30 @@ class _LoginState extends State<Login> {
                               ),
                               child: Column(
                                 children: [
-                                  Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: IconButton(
-                                      icon: const Icon(
-                                        Icons.arrow_back,
-                                        color: Colors.white,
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.arrow_back,
+                                          color: Colors.white,
+                                        ),
+                                        onPressed: () {},
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
                                       ),
-                                      onPressed: () {},
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(),
-                                    ),
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.settings_outlined,
+                                          color: Colors.white,
+                                          size: 22,
+                                        ),
+                                        tooltip: 'Pengaturan API URL',
+                                        onPressed: _showServerSettings,
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
+                                      ),
+                                    ],
                                   ),
                                   const SizedBox(height: 16),
                                   Container(
@@ -234,12 +416,12 @@ class _LoginState extends State<Login> {
                                           validator: (value) {
                                             if (value == null ||
                                                 value.trim().isEmpty) {
-                                              return 'Email or phone wajib diisi';
+                                              return 'Username atau Email wajib diisi';
                                             }
                                             return null;
                                           },
                                           decoration: _inputDecoration(
-                                            hint: 'Email or Phone',
+                                            hint: 'Username / Email',
                                             icon: Icons.person_outline_rounded,
                                           ),
                                         ),
