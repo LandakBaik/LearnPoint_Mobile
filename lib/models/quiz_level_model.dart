@@ -19,7 +19,7 @@ class QuizLevelNodeModel {
 }
 
 final List<QuizLevelNodeModel> quizLevels = List.generate(
-  30,
+  7,
   (index) => QuizLevelNodeModel(
     levelNumber: index + 1,
     title: 'Level ${index + 1}',

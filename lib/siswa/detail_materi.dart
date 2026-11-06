@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../models/materi_page.dart';
+import '../services/materi_preferences_service.dart';
+
 // nama    : IDEA BRILIANTA
 // nim     : E41251668
 // kelompok: 2
@@ -10,6 +13,7 @@ class DetailMateriPage extends StatefulWidget {
   final String subject;
   final String semester;
   final String duration;
+  final MateriItemModel? materiItem;
 
   const DetailMateriPage({
     super.key,
@@ -17,6 +21,7 @@ class DetailMateriPage extends StatefulWidget {
     this.subject = 'Matematika',
     this.semester = 'Semester 1 • Kelas VIII',
     this.duration = '15 Menit',
+    this.materiItem,
   });
 
   @override
@@ -34,55 +39,184 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
   bool isBookmarked = false;
   int selectedSubBabIndex = 0;
 
-  late final List<Map<String, dynamic>> subChapters = [
-    {
-      'title': '1. Pengertian & Konsep Dasar',
-      'duration': '5 Menit',
-      'content':
-          'Persamaan Linear Satu Variabel (PLSV) adalah kalimat terbuka yang dihubungkan oleh tanda sama dengan (=) dan hanya mempunyai satu variabel berpangkat satu.\n\nBentuk umum dari Persamaan Linear Satu Variabel adalah:\nax + b = c\n\nDengan keterangan:\n• a ≠ 0\n• x disebut variabel (peubah)\n• a disebut koefisien dari variabel x\n• b dan c disebut konstanta',
-      'keyPoints': [
-        'Kalimat terbuka adalah kalimat yang belum dapat ditentukan nilai kebenarannya (benar atau salah).',
-        'Variabel adalah simbol/lambang yang mewakili sembarang anggota suatu himpunan semesta.',
-        'Himpunan penyelesaian adalah himpunan semua pengganti variabel yang membuat persamaan menjadi pernyataan bernilai benar.',
-      ],
-    },
-    {
-      'title': '2. Sifat-Sifat Kesetaraan (Ekuivalen)',
-      'duration': '5 Menit',
-      'content':
-          'Dua persamaan atau lebih dikatakan ekuivalen (setara) jika mempunyai himpunan penyelesaian yang sama. Untuk mencari penyelesaian dari suatu persamaan, kita dapat menggunakan sifat-sifat berikut:\n\n1. Kedua ruas ditambah atau dikurangi dengan bilangan yang sama.\n2. Kedua ruas dikalikan atau dibagi dengan bilangan bukan nol yang sama.',
-      'keyPoints': [
-        'Penjumlahan/pengurangan kedua ruas tidak mengubah nilai kebenaran persamaan.',
-        'Perkalian/pembagian dengan bilangan bulat positif maupun negatif tetap mempertahankan kesetaraan.',
-        'Tujuan utama operasi ini adalah mengisolasi variabel x di satu ruas.',
-      ],
-    },
-    {
-      'title': '3. Contoh Soal & Pembahasan',
-      'duration': '5 Menit',
-      'content':
-          'Contoh Soal:\nTentukan himpunan penyelesaian dari persamaan 3x - 5 = 10 untuk x anggota bilangan bulat!\n\nLangkah Penyelesaian:\n1. Tambahkan kedua ruas dengan 5:\n   3x - 5 + 5 = 10 + 5\n   3x = 15\n\n2. Bagi kedua ruas dengan 3:\n   3x / 3 = 15 / 3\n   x = 5\n\nJadi, himpunan penyelesaiannya adalah {5}.',
-      'keyPoints': [
-        'Selalu periksa kembali jawaban dengan mensubstitusikan nilai x ke persamaan awal.',
-        '3(5) - 5 = 15 - 5 = 10 (Terbukti benar).',
-      ],
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedProgress();
+  }
 
-  final List<Map<String, String>> attachments = [
-    {
-      'title': 'Modul Lengkap Materi (PDF)',
-      'filename': 'Modul_Pembelajaran_Bab_1.pdf',
-      'size': '2.4 MB',
-      'type': 'pdf',
-    },
-    {
-      'title': 'Ringkasan Rumus & Latihan Mandiri',
-      'filename': 'Ringkasan_Rumus_dan_Latihan.pdf',
-      'size': '1.1 MB',
-      'type': 'pdf',
-    },
-  ];
+  Future<void> _loadSavedProgress() async {
+    final savedSubBab = await MateriPreferencesService.getLastSubBab(
+      subject: widget.subject,
+      title: widget.title,
+    );
+    final completed = await MateriPreferencesService.isCompleted(
+      subject: widget.subject,
+      title: widget.title,
+    );
+    final bookmarked = await MateriPreferencesService.isBookmarked(
+      subject: widget.subject,
+      title: widget.title,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      if (savedSubBab >= 0 && savedSubBab < subChapters.length) {
+        selectedSubBabIndex = savedSubBab;
+      }
+      isCompleted = completed;
+      isBookmarked = bookmarked;
+    });
+
+    // Catat materi ini sebagai materi terakhir yang dibuka
+    await MateriPreferencesService.saveLastSubBab(
+      subject: widget.subject,
+      title: widget.title,
+      subBabIndex: selectedSubBabIndex,
+    );
+  }
+
+  Future<void> _updateSubBabIndex(int newIndex) async {
+    setState(() {
+      selectedSubBabIndex = newIndex;
+    });
+    await MateriPreferencesService.saveLastSubBab(
+      subject: widget.subject,
+      title: widget.title,
+      subBabIndex: newIndex,
+    );
+  }
+
+  Future<void> _handleToggleBookmark() async {
+    final newState = await MateriPreferencesService.toggleBookmark(
+      subject: widget.subject,
+      title: widget.title,
+    );
+    if (!mounted) return;
+    setState(() {
+      isBookmarked = newState;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          isBookmarked
+              ? 'Materi disimpan ke daftar bacaan.'
+              : 'Materi dihapus dari daftar bacaan.',
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _handleToggleCompleted() async {
+    final newState = await MateriPreferencesService.toggleCompleted(
+      subject: widget.subject,
+      title: widget.title,
+    );
+    if (!mounted) return;
+    setState(() {
+      isCompleted = newState;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          isCompleted
+              ? 'Selamat! Materi telah ditandai selesai dipelajari.'
+              : 'Status selesai dibatalkan.',
+        ),
+      ),
+    );
+  }
+
+  late final List<Map<String, dynamic>> subChapters = _buildSubChapters();
+
+  List<Map<String, dynamic>> _buildSubChapters() {
+    final apiDesc = widget.materiItem?.deskripsi;
+    if (apiDesc != null && apiDesc.trim().isNotEmpty) {
+      return [
+        {
+          'title': '1. Uraian Materi (${widget.title})',
+          'duration': widget.duration,
+          'content': apiDesc,
+          'keyPoints': [
+            if (widget.materiItem?.guru != null &&
+                widget.materiItem!.guru!.isNotEmpty)
+              'Pengampu: ${widget.materiItem!.guru}',
+            'Pelajari uraian materi dan unduh modul lampiran di bawah untuk penjelasan lengkap.',
+          ],
+        },
+      ];
+    }
+
+    return [
+      {
+        'title': '1. Pengertian & Konsep Dasar',
+        'duration': '5 Menit',
+        'content':
+            'Persamaan Linear Satu Variabel (PLSV) adalah kalimat terbuka yang dihubungkan oleh tanda sama dengan (=) dan hanya mempunyai satu variabel berpangkat satu.\n\nBentuk umum dari Persamaan Linear Satu Variabel adalah:\nax + b = c\n\nDengan keterangan:\n• a ≠ 0\n• x disebut variabel (peubah)\n• a disebut koefisien dari variabel x\n• b dan c disebut konstanta',
+        'keyPoints': [
+          'Kalimat terbuka adalah kalimat yang belum dapat ditentukan nilai kebenarannya (benar atau salah).',
+          'Variabel adalah simbol/lambang yang mewakili sembarang anggota suatu himpunan semesta.',
+          'Himpunan penyelesaian adalah himpunan semua pengganti variabel yang membuat persamaan menjadi pernyataan bernilai benar.',
+        ],
+      },
+      {
+        'title': '2. Sifat-Sifat Kesetaraan (Ekuivalen)',
+        'duration': '5 Menit',
+        'content':
+            'Dua persamaan atau lebih dikatakan ekuivalen (setara) jika mempunyai himpunan penyelesaian yang sama. Untuk mencari penyelesaian dari suatu persamaan, kita dapat menggunakan sifat-sifat berikut:\n\n1. Kedua ruas ditambah atau dikurangi dengan bilangan yang sama.\n2. Kedua ruas dikalikan atau dibagi dengan bilangan bukan nol yang sama.',
+        'keyPoints': [
+          'Penjumlahan/pengurangan kedua ruas tidak mengubah nilai kebenaran persamaan.',
+          'Perkalian/pembagian dengan bilangan bulat positif maupun negatif tetap mempertahankan kesetaraan.',
+          'Tujuan utama operasi ini adalah mengisolasi variabel x di satu ruas.',
+        ],
+      },
+      {
+        'title': '3. Contoh Soal & Pembahasan',
+        'duration': '5 Menit',
+        'content':
+            'Contoh Soal:\nTentukan himpunan penyelesaian dari persamaan 3x - 5 = 10 untuk x anggota bilangan bulat!\n\nLangkah Penyelesaian:\n1. Tambahkan kedua ruas dengan 5:\n   3x - 5 + 5 = 10 + 5\n   3x = 15\n\n2. Bagi kedua ruas dengan 3:\n   3x / 3 = 15 / 3\n   x = 5\n\nJadi, himpunan penyelesaiannya adalah {5}.',
+        'keyPoints': [
+          'Selalu periksa kembali jawaban dengan mensubstitusikan nilai x ke persamaan awal.',
+          '3(5) - 5 = 15 - 5 = 10 (Terbukti benar).',
+        ],
+      },
+    ];
+  }
+
+  late final List<Map<String, String>> attachments = _buildAttachments();
+
+  List<Map<String, String>> _buildAttachments() {
+    final item = widget.materiItem;
+    if (item != null &&
+        item.fileMateri != null &&
+        item.fileMateri!.trim().isNotEmpty) {
+      final fileName = item.fileMateri!.split('/').last;
+      return [
+        {
+          'title': 'Modul Materi (${widget.title})',
+          'filename': fileName,
+          'size': 'Berkas Server',
+          'url': item.fileUrl ?? item.fileMateri!,
+        },
+      ];
+    }
+
+    return [
+      {
+        'title': 'Modul Lengkap Materi (PDF)',
+        'filename': 'Modul_Pembelajaran_Bab_1.pdf',
+        'size': '2.4 MB',
+        'type': 'pdf',
+      },
+      {
+        'title': 'Ringkasan Rumus & Latihan Mandiri',
+        'filename': 'Ringkasan_Rumus_dan_Latihan.pdf',
+        'size': '1.1 MB',
+        'type': 'pdf',
+      },
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -103,21 +237,7 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
         ),
         actions: [
           IconButton(
-            onPressed: () {
-              setState(() {
-                isBookmarked = !isBookmarked;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    isBookmarked
-                        ? 'Materi disimpan ke daftar bacaan.'
-                        : 'Materi dihapus dari daftar bacaan.',
-                  ),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            },
+            onPressed: _handleToggleBookmark,
             icon: Icon(
               isBookmarked
                   ? Icons.bookmark_rounded
@@ -341,9 +461,14 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
                 // Video / Interactive Preview Area
                 InkWell(
                   onTap: () {
+                    final ytUrl = widget.materiItem?.urlYoutube;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Memutar video pembelajaran...'),
+                      SnackBar(
+                        content: Text(
+                          ytUrl != null && ytUrl.isNotEmpty
+                              ? 'Membuka video: $ytUrl'
+                              : 'Memutar video pembelajaran...',
+                        ),
                       ),
                     );
                   },
@@ -449,11 +574,7 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
               return Padding(
                 padding: const EdgeInsets.only(right: 10),
                 child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      selectedSubBabIndex = index;
-                    });
-                  },
+                  onTap: () => _updateSubBabIndex(index),
                   child: Container(
                     alignment: Alignment.center,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -609,11 +730,7 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
             children: [
               TextButton.icon(
                 onPressed: selectedSubBabIndex > 0
-                    ? () {
-                        setState(() {
-                          selectedSubBabIndex--;
-                        });
-                      }
+                    ? () => _updateSubBabIndex(selectedSubBabIndex - 1)
                     : null,
                 icon: const Icon(Icons.arrow_back_rounded, size: 16),
                 label: const Text(
@@ -626,11 +743,7 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
               ),
               TextButton.icon(
                 onPressed: selectedSubBabIndex < subChapters.length - 1
-                    ? () {
-                        setState(() {
-                          selectedSubBabIndex++;
-                        });
-                      }
+                    ? () => _updateSubBabIndex(selectedSubBabIndex + 1)
                     : null,
                 icon: const Icon(Icons.arrow_forward_rounded, size: 16),
                 label: const Text(
@@ -734,20 +847,7 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
-        onPressed: () {
-          setState(() {
-            isCompleted = !isCompleted;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                isCompleted
-                    ? 'Selamat! Materi telah ditandai selesai dipelajari.'
-                    : 'Status selesai dibatalkan.',
-              ),
-            ),
-          );
-        },
+        onPressed: _handleToggleCompleted,
         icon: Icon(
           isCompleted
               ? Icons.check_circle_rounded

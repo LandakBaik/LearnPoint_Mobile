@@ -38,6 +38,18 @@ class ApiConfig {
   static String get meEndpoint => '$baseUrl/me';
   static String get profileEndpoint => '$baseUrl/profile';
 
+  // Endpoints Materi Siswa
+  static String get siswaMateriEndpoint => '$baseUrl/siswa/materi';
+  static String siswaMateriByMapelEndpoint(int mapelId) =>
+      '$baseUrl/siswa/materi/$mapelId';
+
+  // Endpoints Materi Guru
+  static String get guruMateriEndpoint => '$baseUrl/guru/materi';
+  static String get guruMateriOptionsEndpoint =>
+      '$baseUrl/guru/materi/options';
+  static String guruMateriDetailEndpoint(String idGrubMateri) =>
+      '$baseUrl/guru/materi/$idGrubMateri';
+
   // Standar HTTP Headers
   static Map<String, String> defaultHeaders({String? token}) {
     final headers = <String, String>{

@@ -15,73 +15,68 @@ class QuizLevelNodeItemWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color circleColor = node.isUnlocked
-        ? const Color(0xFF4338CA)
-        : const Color(0xFF94A3B8);
+    final bool unlocked = node.isUnlocked;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // 1. Judul Level di bagian atas lingkaran
-        Text(
-          node.title,
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF1E293B),
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: unlocked
+              ? const Color(0xFF062530).withValues(alpha: 0.72)
+              : const Color(0xFF0F172A).withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: unlocked
+                ? const Color(0xFF67E8F9).withValues(alpha: 0.85)
+                : Colors.white.withValues(alpha: 0.25),
+            width: 1.4,
           ),
-        ),
-
-        const SizedBox(height: 6),
-
-        // 2. Lingkaran Node Level
-        GestureDetector(
-          onTap: onTap,
-          child: Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                width: 2,
-              ),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: node.isUnlocked
-                    ? [
-                        const Color(0xFF4338CA),
-                        circleColor,
-                      ]
-                    : [
-                        const Color(0xFFCBD5E1),
-                        circleColor,
-                      ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.18),
-                  blurRadius: 6,
-                  offset: const Offset(0, 3),
-                ),
-              ],
+          boxShadow: [
+            BoxShadow(
+              color: unlocked
+                  ? const Color(0xFF22D3EE).withValues(alpha: 0.30)
+                  : Colors.black.withValues(alpha: 0.25),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
-            child: Center(
-              child: Text(
-                '${node.levelNumber}',
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!unlocked) ...[
+              Icon(
+                Icons.lock_rounded,
+                size: 13,
+                color: Colors.white.withValues(alpha: 0.65),
+              ),
+              const SizedBox(width: 5),
+            ],
+            Text(
+              node.title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+                color: unlocked
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: 0.65),
+                shadows: [
+                  Shadow(
+                    color: unlocked
+                        ? const Color(0xFF06B6D4).withValues(alpha: 0.80)
+                        : Colors.black.withValues(alpha: 0.60),
+                    blurRadius: 8,
+                  ),
+                ],
               ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

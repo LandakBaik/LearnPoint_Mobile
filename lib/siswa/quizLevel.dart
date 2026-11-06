@@ -25,48 +25,37 @@ class _QuizLevelState extends State<QuizLevel> {
     final themeColor = widget.themeItem?.color ?? const Color(0xFF4338CA);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF4338CA),
+      backgroundColor: const Color(0xFF0A4D5E),
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 1. Header Atas
+        bottom: false,
+        child: QuizLevelMapSectionWidget(
+          themeTitle: themeTitle,
+          themeColor: themeColor,
+          levels: quizLevels,
+          onLevelTap: (levelNode) {
+            if (!levelNode.isUnlocked) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${levelNode.title} masih terkunci! Selesaikan level sebelumnya dulu.',
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+              return;
+            }
 
-            // 2. Konten Utama Peta Level
-            Expanded(
-              child: QuizLevelMapSectionWidget(
-                themeTitle: themeTitle,
-                themeColor: themeColor,
-                levels: quizLevels,
-                onLevelTap: (levelNode) {
-                  if (!levelNode.isUnlocked) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          '${levelNode.title} masih terkunci! Selesaikan level sebelumnya dulu.',
-                        ),
-                        behavior: SnackBarBehavior.floating,
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                    return;
-                  }
-
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => QuizPlayScreen(
-                        themeTitle: themeTitle,
-                        levelNumber: levelNode.levelNumber,
-                        themeColor: const Color(0xFF4338CA),
-                      ),
-                    ),
-                  );
-                },
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => QuizPlayScreen(
+                  themeTitle: themeTitle,
+                  levelNumber: levelNode.levelNumber,
+                  themeColor: themeColor,
+                ),
               ),
-            ),
-
-            const SizedBox(height: 8),
-          ],
+            );
+          },
         ),
       ),
     );

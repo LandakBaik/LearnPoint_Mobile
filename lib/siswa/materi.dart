@@ -1,23 +1,20 @@
 import 'package:flutter/material.dart';
 
-// nama    : IDEA BRILIANTA
-// nim     : E41251668
-// kelompok: 2
-// golongan: E
 
 import 'materimapel.dart';
 import 'changepass.dart';
 import '../models/student_profile_model.dart';
-import 'widgets/header_profile_widget.dart';
 import 'widgets/inverted_top_curve_clipper.dart';
 import 'widgets/subject_materi_card_widget.dart';
 import '../models/materi_page.dart';
+import '../services/materi_service.dart';
 import 'notifikasi.dart';
 import 'widgets/dashboard_header_widget.dart';
-import '../models/student_profile_model.dart';
 
-class Materi extends StatelessWidget {
-  const Materi({super.key});
+class Materi extends StatefulWidget {
+  final VoidCallback? onBackTap;
+  const Materi({super.key, this.onBackTap});
+
   // Dummy Profile Data
   static const studentProfile = StudentProfileModel(
     name: 'Abimanyu',
@@ -28,9 +25,55 @@ class Materi extends StatelessWidget {
   );
 
   @override
+  State<Materi> createState() => _MateriState();
+}
+
+class _MateriState extends State<Materi> {
+  final TextEditingController _searchController = TextEditingController();
+  List<MateriModel> _daftarMapel = List<MateriModel>.from(subjek);
+  String _searchQuery = '';
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDaftarMapel();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadDaftarMapel() async {
+    setState(() {
+      _isLoading = true;
+    });
+    final result = await MateriService.fetchDaftarMapelSiswa();
+    if (!mounted) return;
+    setState(() {
+      _daftarMapel = result;
+      _isLoading = false;
+    });
+  }
+
+  List<MateriModel> get _filteredMapel {
+    if (_searchQuery.trim().isEmpty) {
+      return _daftarMapel;
+    }
+    final q = _searchQuery.trim().toLowerCase();
+    return _daftarMapel.where((item) {
+      return item.materi.toLowerCase().contains(q) ||
+          item.description.toLowerCase().contains(q);
+    }).toList();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final textScale = (screenWidth / 400).clamp(0.9, 1.1).toDouble();
+    final filtered = _filteredMapel;
 
     return Scaffold(
       body: SafeArea(
@@ -39,28 +82,47 @@ class Materi extends StatelessWidget {
           child: Column(
             children: [
               Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: DashboardHeaderWidget(
-                    profile: studentProfile,
-                    onNotificationTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const NotificationScreen(),
-                        ),
-                      );
-                    },
-                    onProfileTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const Changepass(),
-                        ),
-                      );
-                    },
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: DashboardHeaderWidget(
+                  profile: Materi.studentProfile,
+                  onNotificationTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const NotificationScreen(),
+                      ),
+                    );
+                  },
+                  onProfileTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const Changepass(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: InkWell(
+                  onTap: widget.onBackTap ?? () => Navigator.maybePop(context),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.arrow_back_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                 ),
+              ),
               // Header
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 30, 20, 16),
@@ -91,7 +153,7 @@ class Materi extends StatelessWidget {
                       ],
                     ),
                     Padding(
-                      padding: EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.only(top: 8),
                       child: Text(
                         'Temukan materi untuk belajarmu',
                         style: TextStyle(
@@ -109,9 +171,26 @@ class Materi extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(15, 10, 15, 20),
                 child: TextField(
+                  controller: _searchController,
+                  onChanged: (val) {
+                    setState(() {
+                      _searchQuery = val;
+                    });
+                  },
                   decoration: InputDecoration(
                     hintText: 'Cari materi...',
                     prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {
+                                _searchQuery = '';
+                              });
+                            },
+                          )
+                        : null,
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -129,46 +208,66 @@ class Materi extends StatelessWidget {
                     curveDepth: 20,
                     centerX: 0.5,
                     curveHalfWidth: 0.52,
-                ),
+                  ),
                   child: Container(
                     margin: const EdgeInsets.only(top: 5),
                     padding: const EdgeInsets.fromLTRB(0, 45, 0, 20),
                     decoration: const BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(25.0), // Atas kiri
+                        topLeft: Radius.circular(25.0),
                         topRight: Radius.circular(25.0),
                       ),
                     ),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final cardHorizontalMargin = constraints.maxWidth < 360
-                            ? 12.0
-                            : 20.0;
+                    child: _isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : RefreshIndicator(
+                            onRefresh: _loadDaftarMapel,
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final cardHorizontalMargin =
+                                    constraints.maxWidth < 360 ? 12.0 : 20.0;
 
-                        return ListView.builder(
-                          itemCount: subjek.length,
-                          itemBuilder: (context, index) {
-                            final sub = subjek[index];
+                                if (filtered.isEmpty) {
+                                  return ListView(
+                                    children: const [
+                                      SizedBox(height: 60),
+                                      Center(
+                                        child: Text(
+                                          'Mata pelajaran tidak ditemukan.',
+                                          style: TextStyle(color: Colors.grey),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }
 
-                            return SubjectMateriCardWidget(
-                              subject: sub,
-                              imageUrl: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=1200&q=80',
-                              elevation: index.isEven ? 2 : 0,
-                              horizontalMargin: cardHorizontalMargin,
-                              ontap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => Materimapel(),
-                                  ),
+                                return ListView.builder(
+                                  itemCount: filtered.length,
+                                  itemBuilder: (context, index) {
+                                    final sub = filtered[index];
+
+                                    return SubjectMateriCardWidget(
+                                      subject: sub,
+                                      imageUrl:
+                                          'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=1200&q=80',
+                                      elevation: index.isEven ? 2 : 0,
+                                      horizontalMargin: cardHorizontalMargin,
+                                      ontap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                Materimapel(subject: sub),
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  },
                                 );
                               },
-                            );
-                          },
-                        );
-                      },
-                    ),
+                            ),
+                          ),
                   ),
                 ),
               ),

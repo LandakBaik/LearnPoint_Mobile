@@ -5,14 +5,24 @@ import 'package:flutter/material.dart';
 // kelompok: 2
 // golongan: E
 
-import 'widgets/materi_header_widget.dart';
-import 'widgets/header_profile_widget.dart';
-import 'changepass.dart';
+import '../models/materi_page.dart';
 import '../models/student_profile_model.dart';
+import 'changepass.dart';
+import 'notifikasi.dart';
+import 'widgets/dashboard_header_widget.dart';
+import 'widgets/materi_header_widget.dart';
 import 'widgets/materi_section.dart';
 
 class Materimapel extends StatelessWidget {
-  const Materimapel({super.key});
+  final VoidCallback? onBackTap;
+  final MateriModel? subject;
+
+  const Materimapel({
+    super.key,
+    this.onBackTap,
+    this.subject,
+  });
+
   static const studentProfile = StudentProfileModel(
     name: 'Abimanyu',
     gradeClass: 'Kelas VIII-A',
@@ -24,10 +34,11 @@ class Materimapel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenwidth = MediaQuery.of(context).size.width;
+    final subjectName = subject?.materi ?? 'Matematika';
+    final description = subject?.description ?? 'Angka, rumus, dan logika';
 
     return Scaffold(
       backgroundColor: const Color(0xFF6336ED),
-
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -37,8 +48,15 @@ class Materimapel extends StatelessWidget {
                   horizontal: 16,
                   vertical: 12,
                 ),
-                child: HeaderProfileWidget(
+                child: DashboardHeaderWidget(
                   profile: studentProfile,
+                  onNotificationTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const NotificationScreen(),
+                      ),
+                    );
+                  },
                   onProfileTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
@@ -48,7 +66,25 @@ class Materimapel extends StatelessWidget {
                   },
                 ),
               ),
-
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: InkWell(
+                  onTap: onBackTap ?? () => Navigator.maybePop(context),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.arrow_back_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
               Padding(
                 padding: EdgeInsetsGeometry.fromLTRB(
                   screenwidth * 0.04,
@@ -56,10 +92,15 @@ class Materimapel extends StatelessWidget {
                   screenwidth * 0.04,
                   0,
                 ),
-                child: const MateriHeaderWidget(),
+                child: MateriHeaderWidget(
+                  subjectName: subjectName,
+                  description: description,
+                ),
               ),
-
-              const MateriSectionWidget(),
+              MateriSectionWidget(
+                mapelId: subject?.id,
+                subjectName: subjectName,
+              ),
             ],
           ),
         ),
