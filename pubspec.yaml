@@ -66,6 +66,8 @@ flutter:
   assets:
     - assets/images/
     - assets/images/chess/
+    - assets/images/chess1/
+    - assets/images/chess2/
     - assets/images/hero-banner/
     - assets/font/
 

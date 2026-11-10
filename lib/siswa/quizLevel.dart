@@ -18,19 +18,32 @@ class QuizLevel extends StatefulWidget {
 }
 
 class _QuizLevelState extends State<QuizLevel> {
+  Color _resolveBgColor(String sceneTheme) {
+    switch (sceneTheme) {
+      case 'chess1':
+        return const Color(0xFF4B5335);
+      case 'chess2':
+        return const Color(0xFF6B6552);
+      case 'chess':
+      default:
+        return const Color(0xFF0A4D5E);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final themeTitle = widget.themeItem?.title ?? 'Geometri';
     final themeColor = widget.themeItem?.color ?? const Color(0xFF4338CA);
+    final sceneTheme = widget.themeItem?.levelSceneTheme ?? 'chess';
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A4D5E),
+      backgroundColor: _resolveBgColor(sceneTheme),
       body: SafeArea(
         bottom: false,
         child: QuizLevelMapSectionWidget(
           themeTitle: themeTitle,
           themeColor: themeColor,
+          sceneTheme: sceneTheme,
           levels: quizLevels,
           onLevelTap: (levelNode) {
             if (!levelNode.isUnlocked) {
