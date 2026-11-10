@@ -5,7 +5,7 @@ import '../models/item.dart';
 import '../models/student_profile_model.dart';
 import '../widget/bottomNavBar.dart';
 import 'bottomNavSiswa.dart';
-import 'changepass.dart';
+import 'akun.dart';
 import 'notifikasi.dart';
 import 'widgets/dashboard_header_widget.dart';
 
@@ -416,7 +416,8 @@ class _GachaState extends State<Gacha> {
                 onProfileTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => const Changepass(),
+                      builder: (_) =>
+                          const AkunScreen(profile: studentProfile),
                     ),
                   );
                 },

@@ -1,5 +1,8 @@
 import 'dart:io' show Platform;
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+
+import 'storage_service.dart';
 
 class ApiConfig {
   /// Default base URL berdasarkan platform:
@@ -8,6 +11,7 @@ class ApiConfig {
   /// Catatan: Jika menggunakan Device Fisik (HP asli), ubah ke IP Laptop/PC Anda
   /// (contoh: http://192.168.1.10:8000/api)
   static String? _customBaseUrl;
+  static bool _isBaseUrlLoadedFromStorage = false;
 
   static String get defaultBaseUrl {
     if (kIsWeb) {
@@ -30,6 +34,8 @@ class ApiConfig {
     } else {
       _customBaseUrl = null;
     }
+    _isBaseUrlLoadedFromStorage = true;
+    _dio?.options.baseUrl = baseUrl;
   }
 
   // Endpoints
@@ -61,5 +67,51 @@ class ApiConfig {
     }
     return headers;
   }
-}
 
+  // Instance Dio terpusat dengan Interceptor otomatis
+  static Dio? _dio;
+
+  static Dio get dio {
+    if (_dio == null) {
+      _dio = Dio(
+        BaseOptions(
+          baseUrl: baseUrl,
+          connectTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 15),
+          sendTimeout: const Duration(seconds: 15),
+          headers: defaultHeaders(),
+          responseType: ResponseType.json,
+        ),
+      );
+
+      _dio!.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) async {
+            // Pastikan customBaseUrl dari storage sudah dimuat pada request pertama
+            if (!_isBaseUrlLoadedFromStorage) {
+              final savedBaseUrl = await StorageService.getCustomBaseUrl();
+              if (savedBaseUrl != null && savedBaseUrl.isNotEmpty) {
+                customBaseUrl = savedBaseUrl;
+              }
+              _isBaseUrlLoadedFromStorage = true;
+            }
+
+            // Sinkronkan baseUrl terbaru
+            options.baseUrl = baseUrl;
+
+            // Sisipkan token Bearer secara otomatis jika belum diset manual
+            if (!options.headers.containsKey('Authorization')) {
+              final token = await StorageService.getToken();
+              if (token != null && token.isNotEmpty) {
+                options.headers['Authorization'] = 'Bearer $token';
+              }
+            }
+
+            handler.next(options);
+          },
+        ),
+      );
+    }
+    return _dio!;
+  }
+}

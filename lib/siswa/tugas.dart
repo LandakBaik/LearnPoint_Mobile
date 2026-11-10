@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'index.dart';
+import 'widgets/dashboard_header_widget.dart';
 
 void main() {
   runApp(const LearnPointApp());
@@ -14,7 +17,7 @@ class LearnPointApp extends StatelessWidget {
       title: 'LearnPoint',
       theme: ThemeData(
         useMaterial3: true,
-        fontFamily: 'Arial',
+        fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
       ),
       home: const TugasPage(),
     );
@@ -277,105 +280,15 @@ class _TugasPageState extends State<TugasPage> {
   // =========================================================
 
   Widget _buildHeader(bool isSmallScreen) {
-    return Row(
-      children: [
-        // Logo
-        Container(
-          width: isSmallScreen ? 43 : 48,
-          height: isSmallScreen ? 43 : 48,
-          decoration: BoxDecoration(
-            color: const Color(0xFF3E70E8),
-            borderRadius: BorderRadius.circular(
-              isSmallScreen ? 13 : 15,
-            ),
-          ),
-          child: Icon(
-            Icons.menu_book_rounded,
-            color: Colors.white,
-            size: isSmallScreen ? 24 : 27,
-          ),
-        ),
-
-        const SizedBox(width: 10),
-
-        // Nama aplikasi
-        const Expanded(
-          child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
-            children: [
-              Text(
-                'LearnPoint',
-                style: TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF17243D),
-                ),
-              ),
-              Text(
-                'E-LEARNING SMP',
-                style: TextStyle(
-                  fontSize: 8,
-                  letterSpacing: 1,
-                  color: Color(0xFF7B889E),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Notification
-        Stack(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius:
-                    BorderRadius.circular(13),
-              ),
-              child: const Icon(
-                Icons.notifications_none_rounded,
-                color: Color(0xFF52617A),
-                size: 23,
-              ),
-            ),
-
-            Positioned(
-              right: 8,
-              top: 8,
-              child: Container(
-                width: 7,
-                height: 7,
-                decoration:
-                    const BoxDecoration(
-                  color: Color(0xFFE5394F),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(width: 7),
-
-        // Profile
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: const Color(0xFFDCE5F5),
-            borderRadius:
-                BorderRadius.circular(13),
-          ),
-          child: const Icon(
-            Icons.person,
-            color: Color(0xFF60718C),
-          ),
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF080C24),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: const DashboardHeaderWidget(
+        profile: SiswaDashboardScreen.studentProfile,
+      ),
     );
   }
 

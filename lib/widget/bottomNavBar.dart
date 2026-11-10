@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class BottomNav extends StatelessWidget {
   final int currentIndex;
@@ -19,7 +20,7 @@ class BottomNav extends StatelessWidget {
         color: Colors.white,
         border: Border(
           top: BorderSide(
-            color: Color(0xFFE5E7EB),
+            color: Color(0xFFE6E8EA),
             width: 1.0,
           ),
         ),
@@ -30,10 +31,16 @@ class BottomNav extends StatelessWidget {
         items: items,
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,
-        selectedItemColor: const Color(0xFF2563EB),
-        unselectedItemColor: const Color(0xFF6B7280),
-        selectedFontSize: 12,
-        unselectedFontSize: 12,
+        selectedItemColor: const Color(0xFF4F46E5),
+        unselectedItemColor: const Color(0xFF5B6275),
+        selectedLabelStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
+        ),
+        unselectedLabelStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w600,
+        ),
         elevation: 0,
       ),
     );

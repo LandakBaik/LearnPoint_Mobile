@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'soal_ujian.dart';
-
 import 'detail_ujian.dart';
-
 import 'hasil_ujian.dart';
+import 'index.dart';
+import 'widgets/dashboard_header_widget.dart';
 
 // ============================================================
 // COLORS
@@ -146,100 +146,12 @@ class _UjianScreenState extends State<UjianScreen> {
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      color: Colors.white,
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-            icon: const Icon(Icons.menu, color: darkText, size: 25),
-          ),
-          const SizedBox(width: 5),
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: primaryBlue,
-              borderRadius: BorderRadius.circular(7),
-            ),
-            child: const Icon(
-              Icons.menu_book_rounded,
-              color: Colors.white,
-              size: 19,
-            ),
-          ),
-          const SizedBox(width: 7),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'LearnPoint',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: primaryBlue,
-                    height: 1,
-                  ),
-                ),
-                SizedBox(height: 3),
-                Text(
-                  'E-LEARNING SMP',
-                  style: TextStyle(
-                    fontSize: 8,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF0872B4),
-                    letterSpacing: 0.7,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Stack(
-            children: [
-              IconButton(
-                onPressed: () {},
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
-                icon: const Icon(
-                  Icons.notifications_none_rounded,
-                  color: darkText,
-                  size: 24,
-                ),
-              ),
-              Positioned(
-                top: 7,
-                right: 7,
-                child: Container(
-                  width: 7,
-                  height: 7,
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 3),
-          Container(
-            width: 32,
-            height: 32,
-            decoration: const BoxDecoration(
-              color: primaryBlue,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.person_outline,
-              color: Colors.white,
-              size: 20,
-            ),
-          ),
-        ],
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+      decoration: const BoxDecoration(
+        color: Color(0xFF080C24),
+      ),
+      child: const DashboardHeaderWidget(
+        profile: SiswaDashboardScreen.studentProfile,
       ),
     );
   }

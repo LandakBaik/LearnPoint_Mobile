@@ -1,7 +1,8 @@
+
 import 'package:flutter/material.dart';
 
 import 'quizPerMapel.dart';
-import 'changepass.dart';
+import 'akun.dart';
 import 'notifikasi.dart';
 import '../models/student_profile_model.dart';
 import '../models/materi_page.dart';
@@ -146,7 +147,8 @@ class _QuizState extends State<Quiz> with SingleTickerProviderStateMixin {
                       onProfileTap: () {
                         Navigator.of(context).push(
                           MaterialPageRoute<void>(
-                            builder: (_) => const Changepass(),
+                            builder: (_) =>
+                                const AkunScreen(profile: studentProfile),
                           ),
                         );
                       },

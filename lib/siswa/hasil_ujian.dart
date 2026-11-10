@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() {
   runApp(const MyApp());
@@ -14,7 +15,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Detail Ujian',
       theme: ThemeData(
-        fontFamily: 'Roboto',
+        fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
         scaffoldBackgroundColor: const Color(0xFFF1F6FC),
       ),
       home: const HasilUjianPage(),

@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 
 import '../models/materi_page.dart';
 import '../models/student_profile_model.dart';
-import 'changepass.dart';
+import 'akun.dart';
 import 'notifikasi.dart';
 import 'widgets/dashboard_header_widget.dart';
 import 'widgets/materi_header_widget.dart';
@@ -60,7 +60,8 @@ class Materimapel extends StatelessWidget {
                   onProfileTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => const Changepass(),
+                        builder: (_) =>
+                            const AkunScreen(profile: studentProfile),
                       ),
                     );
                   },

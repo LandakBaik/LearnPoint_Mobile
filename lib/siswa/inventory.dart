@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/item.dart';
 import '../models/student_profile_model.dart';
-import 'changepass.dart';
+import 'akun.dart';
 import 'notifikasi.dart';
 import 'widgets/dashboard_header_widget.dart';
 
@@ -64,7 +64,8 @@ class _InventoryState extends State<Inventory> {
                 onProfileTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => const Changepass(),
+                      builder: (_) =>
+                          const AkunScreen(profile: studentProfile),
                     ),
                   );
                 },

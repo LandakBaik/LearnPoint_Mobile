@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 
 import '../models/user_model.dart';
 import 'api_config.dart';
@@ -24,34 +23,23 @@ class AuthResult {
 }
 
 class AuthService {
-  /// Melakukan login ke API Laravel (/api/login)
+  /// Melakukan login ke API Laravel (/api/login) menggunakan Dio
   static Future<AuthResult> login({
     required String login,
     required String password,
     String? deviceName,
   }) async {
-    // Muat custom base URL jika pernah disimpan sebelumnya
-    final savedBaseUrl = await StorageService.getCustomBaseUrl();
-    if (savedBaseUrl != null && savedBaseUrl.isNotEmpty) {
-      ApiConfig.customBaseUrl = savedBaseUrl;
-    }
-
-    final url = Uri.parse(ApiConfig.loginEndpoint);
-
     try {
-      final response = await http
-          .post(
-            url,
-            headers: ApiConfig.defaultHeaders(),
-            body: jsonEncode({
-              'login': login.trim(),
-              'password': password,
-              'device_name': deviceName ?? 'LearnPoint Mobile',
-            }),
-          )
-          .timeout(const Duration(seconds: 15));
+      final response = await ApiConfig.dio.post(
+        '/login',
+        data: {
+          'login': login.trim(),
+          'password': password,
+          'device_name': deviceName ?? 'LearnPoint Mobile',
+        },
+      );
 
-      final Map<String, dynamic> responseData = _decodeResponse(response.body);
+      final Map<String, dynamic> responseData = _normalizeData(response.data);
 
       if (response.statusCode == 200) {
         final authResponse = AuthResponse.fromJson(responseData);
@@ -75,48 +63,75 @@ class AuthService {
             message: 'Format data respon login tidak sesuai.',
           );
         }
-      } else if (response.statusCode == 422) {
+      }
+
+      return AuthResult(
+        success: false,
+        message: responseData['message']?.toString() ??
+            'Terjadi kesalahan (Kode: ${response.statusCode}).',
+      );
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        return AuthResult(
+          success: false,
+          message: 'Koneksi ke server timeout (waktu habis). Cek koneksi Anda.',
+        );
+      }
+
+      if (e.type == DioExceptionType.connectionError) {
+        return AuthResult(
+          success: false,
+          message:
+              'Tidak dapat terhubung ke server.\nPastikan backend Laravel berjalan di:\n${ApiConfig.baseUrl}',
+        );
+      }
+
+      final statusCode = e.response?.statusCode;
+      final Map<String, dynamic> responseData =
+          _normalizeData(e.response?.data);
+
+      if (statusCode == 422) {
         // Validasi input gagal dari Laravel
-        String errorMsg = responseData['message'] ?? 'Validasi input gagal.';
+        String errorMsg =
+            responseData['message']?.toString() ?? 'Validasi input gagal.';
         if (responseData['errors'] is Map<String, dynamic>) {
           final errorsMap = responseData['errors'] as Map<String, dynamic>;
-          final firstError = errorsMap.values.first;
-          if (firstError is List && firstError.isNotEmpty) {
-            errorMsg = firstError.first.toString();
+          if (errorsMap.isNotEmpty) {
+            final firstError = errorsMap.values.first;
+            if (firstError is List && firstError.isNotEmpty) {
+              errorMsg = firstError.first.toString();
+            }
           }
         }
         return AuthResult(
           success: false,
           message: errorMsg,
           errors: responseData['errors'] is Map<String, dynamic>
-              ? responseData['errors']
+              ? responseData['errors'] as Map<String, dynamic>
               : null,
         );
-      } else if (response.statusCode == 401 || response.statusCode == 403) {
+      } else if (statusCode == 401 || statusCode == 403) {
         // Kredensial salah atau akun dinonaktifkan
-        final msg = responseData['message'] ??
+        final msg = responseData['message']?.toString() ??
             'Username/password salah atau akun tidak memiliki akses.';
         return AuthResult(
           success: false,
           message: msg,
         );
-      } else {
+      } else if (statusCode != null) {
         return AuthResult(
           success: false,
-          message: responseData['message'] ??
-              'Terjadi kesalahan (Kode: ${response.statusCode}).',
+          message: responseData['message']?.toString() ??
+              'Terjadi kesalahan (Kode: $statusCode).',
         );
       }
-    } on SocketException catch (_) {
+
       return AuthResult(
         success: false,
         message:
             'Tidak dapat terhubung ke server.\nPastikan backend Laravel berjalan di:\n${ApiConfig.baseUrl}',
-      );
-    } on TimeoutException catch (_) {
-      return AuthResult(
-        success: false,
-        message: 'Koneksi ke server timeout (waktu habis). Cek koneksi Anda.',
       );
     } on FormatException catch (_) {
       return AuthResult(
@@ -131,41 +146,46 @@ class AuthService {
     }
   }
 
-  /// Mengambil profil user terbaru dari server (/api/me)
+  /// Mengambil profil user terbaru dari server (/api/me) menggunakan Dio
   static Future<UserModel?> fetchCurrentUser() async {
     final token = await StorageService.getToken();
-    if (token == null) return null;
+    if (token == null || token.isEmpty) return null;
 
     try {
-      final url = Uri.parse(ApiConfig.meEndpoint);
-      final response = await http
-          .get(url, headers: ApiConfig.defaultHeaders(token: token))
-          .timeout(const Duration(seconds: 10));
+      final response = await ApiConfig.dio.get(
+        '/me',
+        options: Options(
+          receiveTimeout: const Duration(seconds: 10),
+        ),
+      );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = _decodeResponse(response.body);
-        if (responseData['data'] != null &&
-            responseData['data']['user'] != null) {
-          final user = UserModel.fromJson(responseData['data']['user']);
+        final Map<String, dynamic> responseData = _normalizeData(response.data);
+        final data = responseData['data'];
+        if (data is Map<String, dynamic> && data['user'] is Map<String, dynamic>) {
+          final user = UserModel.fromJson(data['user'] as Map<String, dynamic>);
           await StorageService.saveUser(user);
           return user;
         }
       }
     } catch (_) {
-      // Jika offline, fallback ke user di storage
+      // Jika offline atau gagal, fallback ke user di storage
     }
     return await StorageService.getUser();
   }
 
-  /// Melakukan logout dan mencabut token di server (/api/logout)
+  /// Melakukan logout dan mencabut token di server (/api/logout) menggunakan Dio
   static Future<void> logout() async {
     final token = await StorageService.getToken();
-    if (token != null) {
+    if (token != null && token.isNotEmpty) {
       try {
-        final url = Uri.parse(ApiConfig.logoutEndpoint);
-        await http
-            .post(url, headers: ApiConfig.defaultHeaders(token: token))
-            .timeout(const Duration(seconds: 5));
+        await ApiConfig.dio.post(
+          '/logout',
+          options: Options(
+            sendTimeout: const Duration(seconds: 5),
+            receiveTimeout: const Duration(seconds: 5),
+          ),
+        );
       } catch (_) {
         // Abaikan error jaringan saat logout, yang penting storage lokal dihapus
       }
@@ -173,12 +193,20 @@ class AuthService {
     await StorageService.clearAuth();
   }
 
-  static Map<String, dynamic> _decodeResponse(String body) {
-    try {
-      return jsonDecode(body) as Map<String, dynamic>;
-    } catch (_) {
-      return {};
+  static Map<String, dynamic> _normalizeData(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      return data;
     }
+    if (data is String && data.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(data);
+        if (decoded is Map<String, dynamic>) {
+          return decoded;
+        }
+      } catch (_) {
+        return {};
+      }
+    }
+    return {};
   }
 }
-

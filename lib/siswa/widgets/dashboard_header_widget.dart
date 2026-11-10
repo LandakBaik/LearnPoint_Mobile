@@ -1,187 +1,175 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../models/student_profile_model.dart';
+import '../akun.dart';
+import '../notifikasi.dart';
 
 class DashboardHeaderWidget extends StatelessWidget {
   final StudentProfileModel profile;
   final VoidCallback? onNotificationTap;
   final VoidCallback? onProfileTap;
+  final bool isLight;
 
   const DashboardHeaderWidget({
     super.key,
     required this.profile,
     this.onNotificationTap,
     this.onProfileTap,
+    this.isLight = false,
   });
 
-  Widget _buildAvatar() {
-    final avatar = profile.avatarUrl;
-    if (avatar != null && avatar.isNotEmpty) {
-      if (avatar.startsWith('assets/')) {
-        return Image.asset(
-          avatar,
-          width: 40,
-          height: 40,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => _buildInitials(),
-        );
-      } else {
-        return Image.network(
-          avatar,
-          width: 40,
-          height: 40,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => _buildInitials(),
-        );
-      }
+  void _handleNotificationTap(BuildContext context) {
+    if (onNotificationTap != null) {
+      onNotificationTap!();
+      return;
     }
-    return _buildInitials();
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const NotificationScreen(),
+      ),
+    );
   }
 
-  Widget _buildInitials() {
-    return Center(
-      child: Text(
-        profile.initials,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w800,
-          color: Color(0xFF4338CA),
-        ),
+  void _handleProfileTap(BuildContext context) {
+    if (onProfileTap != null) {
+      onProfileTap!();
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AkunScreen(profile: profile),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final String initialChar =
+        profile.name.isNotEmpty ? profile.name[0].toUpperCase() : 'R';
+
+    final Color textColor = isLight ? const Color(0xFF1E1B4B) : Colors.white;
+    final Color boxBg = isLight
+        ? const Color(0xFF4F46E5).withValues(alpha: 0.12)
+        : Colors.white.withValues(alpha: 0.16);
+    final Color boxBorder = isLight
+        ? const Color(0xFF4F46E5).withValues(alpha: 0.25)
+        : Colors.white.withValues(alpha: 0.3);
+    final Color iconColor = isLight ? const Color(0xFF4F46E5) : Colors.white;
+    final Color smpBg = isLight
+        ? const Color(0xFFE0E7FF)
+        : Colors.white.withValues(alpha: 0.2);
+    final Color smpText = isLight ? const Color(0xFF3730A3) : Colors.white;
+    final Color notifBg = isLight
+        ? const Color(0xFFF3F4F6)
+        : Colors.white.withValues(alpha: 0.14);
+    final Color notifBorder = isLight
+        ? const Color(0xFFE5E7EB)
+        : Colors.white.withValues(alpha: 0.3);
+
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // School Badge Tag
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        // Left: App Logo & Title + SMP Badge
+        Flexible(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(16),
+                  color: boxBg,
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.25),
-                    width: 0.8,
+                    color: boxBorder,
                   ),
+                ),
+                child: Icon(
+                  Icons.auto_stories_rounded,
+                  color: iconColor,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  'LearnPoint',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: textColor,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 3,
+                ),
+                decoration: BoxDecoration(
+                  color: smpBg,
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  'LEARNPOINT ${profile.schoolName.toUpperCase()}',
-                  style: const TextStyle(
-                    fontSize: 9,
+                  'SMP',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: smpText,
+                    fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: 0.4,
                   ),
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // Student Name
-              Text(
-                'Hi, ${profile.name}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  letterSpacing: -0.2,
-                ),
-              ),
-
-              const SizedBox(height: 3),
-
-              // Class & Academic Year
-              Text(
-                '${profile.gradeClass}/Tahun Ajaran 2025–2026',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.white.withValues(alpha: 0.78),
                 ),
               ),
             ],
           ),
         ),
 
-        const SizedBox(width: 8),
-
-        // Notification & Profile Avatar
+        // Right: Notification Circle & Yellow 'R' Profile Circle
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Notification Button
-            GestureDetector(
-              onTap: onNotificationTap,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.notifications_rounded,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                  ),
-                  if (profile.hasNotification)
-                    Positioned(
-                      top: 4,
-                      right: 5,
-                      child: Container(
-                        width: 9,
-                        height: 9,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEF4444),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: const Color(0xFF4338CA),
-                            width: 1.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-
-            const SizedBox(width: 10),
-
-            // Avatar
-            GestureDetector(
-              onTap: onProfileTap,
+            InkWell(
+              onTap: () => _handleNotificationTap(context),
+              borderRadius: BorderRadius.circular(22),
               child: Container(
-                width: 40,
-                height: 40,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: notifBg,
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    width: 1.5,
+                    color: notifBorder,
                   ),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 6,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
                 ),
-                child: ClipOval(
-                  child: _buildAvatar(),
+                child: Icon(
+                  Icons.notifications_none_rounded,
+                  color: textColor,
+                  size: 22,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            InkWell(
+              onTap: () => _handleProfileTap(context),
+              borderRadius: BorderRadius.circular(22),
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFDE68A),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  initialChar,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: const Color(0xFF78350F),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ),

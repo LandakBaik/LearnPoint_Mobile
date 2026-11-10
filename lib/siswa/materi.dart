@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 
 import 'materimapel.dart';
-import 'changepass.dart';
+import 'akun.dart';
 import '../models/student_profile_model.dart';
 import 'widgets/inverted_top_curve_clipper.dart';
 import 'widgets/subject_materi_card_widget.dart';
@@ -98,7 +98,8 @@ class _MateriState extends State<Materi> {
                   onProfileTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => const Changepass(),
+                        builder: (_) =>
+                            const AkunScreen(profile: Materi.studentProfile),
                       ),
                     );
                   },
