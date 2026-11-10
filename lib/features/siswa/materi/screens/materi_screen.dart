@@ -29,21 +29,13 @@ class Materi extends StatefulWidget {
 }
 
 class _MateriState extends State<Materi> {
-  final TextEditingController _searchController = TextEditingController();
   List<MateriModel> _daftarMapel = List<MateriModel>.from(subjek);
-  String _searchQuery = '';
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _loadDaftarMapel();
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadDaftarMapel() async {
@@ -58,22 +50,11 @@ class _MateriState extends State<Materi> {
     });
   }
 
-  List<MateriModel> get _filteredMapel {
-    if (_searchQuery.trim().isEmpty) {
-      return _daftarMapel;
-    }
-    final q = _searchQuery.trim().toLowerCase();
-    return _daftarMapel.where((item) {
-      return item.materi.toLowerCase().contains(q) ||
-          item.description.toLowerCase().contains(q);
-    }).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final textScale = (screenWidth / 400).clamp(0.9, 1.1).toDouble();
-    final filtered = _filteredMapel;
+    final filtered = _daftarMapel;
 
     return Scaffold(
       body: SafeArea(
@@ -105,26 +86,8 @@ class _MateriState extends State<Materi> {
                   },
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: InkWell(
-                  onTap: widget.onBackTap ?? () => Navigator.maybePop(context),
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.arrow_back_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ),
-              // Header
+
+              
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 30, 20, 16),
                 child: Column(
@@ -133,7 +96,7 @@ class _MateriState extends State<Materi> {
                     Stack(
                       children: [
                         Text(
-                          'Materi Pembelajaran',
+                          'Mata Pelajaran',
                           style: TextStyle(
                             fontSize: 30 * textScale,
                             fontWeight: FontWeight.w900,
@@ -144,7 +107,7 @@ class _MateriState extends State<Materi> {
                           ),
                         ),
                         Text(
-                          'Materi Pembelajaran',
+                          'Mata Pelajaran',
                           style: TextStyle(
                             fontSize: 30 * textScale,
                             fontWeight: FontWeight.w900,
@@ -156,7 +119,7 @@ class _MateriState extends State<Materi> {
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
-                        'Temukan materi untuk belajarmu',
+                        'Pilih mata pelajaran untuk melihat materi, tugas, dan ujian',
                         style: TextStyle(
                           fontSize: 15 * textScale,
                           color: Colors.white70,
@@ -165,39 +128,6 @@ class _MateriState extends State<Materi> {
                       ),
                     ),
                   ],
-                ),
-              ),
-
-              // Search
-              Padding(
-                padding: const EdgeInsets.fromLTRB(15, 10, 15, 20),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (val) {
-                    setState(() {
-                      _searchQuery = val;
-                    });
-                  },
-                  decoration: InputDecoration(
-                    hintText: 'Cari materi...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() {
-                                _searchQuery = '';
-                              });
-                            },
-                          )
-                        : null,
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
                 ),
               ),
 

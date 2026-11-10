@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:learnpoint_mobile/core/widgets/bottom_nav_bar.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/screens/siswa_dashboard_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/screens/materi_screen.dart';
-import 'package:learnpoint_mobile/features/siswa/ujian/screens/ujian_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/screens/quiz_screen.dart';
 
 class BottomNavSiswa extends StatefulWidget {
@@ -20,16 +19,12 @@ class _BottomNavSiswaState extends State<BottomNavSiswa> {
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex;
+    _currentIndex = widget.initialIndex.clamp(0, 2);
   }
 
   final List<Widget> _pages = [
     const SiswaDashboardScreen(),
     const Materi(),
-    // const Center(child: Text('Halaman Tugas')),
-    const UjianScreen(),
-    // const Center(child: Text('Halaman Kuis')),
-    // const Center(child: Text('Halaman Ujian')),
     const Quiz(),
   ];
 
@@ -51,15 +46,11 @@ class _BottomNavSiswaState extends State<BottomNavSiswa> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.menu_book_rounded),
-            label: 'Materi',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.help_outline_rounded),
-            label: 'Ujian',
+            label: 'Mapel',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.quiz),
-            label: 'Kuis',
+            label: 'Quiz',
           ),
         ],
       ),

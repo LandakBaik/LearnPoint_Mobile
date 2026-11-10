@@ -10,7 +10,7 @@ class QuizTopDecorationWidget extends StatelessWidget {
     // Tinggi tetap 298px agar posisi lengkungan container list mapel di bawahnya
     // tetap pas menyentuh batas bawah gambar background (topBgHeight = 427).
     return SizedBox(
-      height: 298,
+      height: 336,
       width: double.infinity,
       child: Align(
         alignment: Alignment.topLeft,

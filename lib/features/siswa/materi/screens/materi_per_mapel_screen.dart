@@ -67,21 +67,24 @@ class Materimapel extends StatelessWidget {
                   },
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: InkWell(
-                  onTap: onBackTap ?? () => Navigator.maybePop(context),
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.arrow_back_rounded,
-                      color: Colors.white,
-                      size: 20,
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: InkWell(
+                    onTap: onBackTap ?? () => Navigator.maybePop(context),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                   ),
                 ),

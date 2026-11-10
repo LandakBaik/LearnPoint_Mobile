@@ -527,9 +527,9 @@ class _GachaState extends State<Gacha> {
 
       // 3. Layout Paling Bawah: Navbar
       bottomNavigationBar: BottomNav(
-        currentIndex: 3,
+        currentIndex: 2,
         onTap: (index) {
-          if (index == 3) {
+          if (index == 2) {
             if (Navigator.of(context).canPop()) {
               Navigator.of(context).pop();
             }
@@ -549,15 +549,11 @@ class _GachaState extends State<Gacha> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.menu_book_rounded),
-            label: 'Materi',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.help_outline_rounded),
-            label: 'Ujian',
+            label: 'Mapel',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.quiz),
-            label: 'Kuis',
+            label: 'Quiz',
           ),
         ],
       ),
