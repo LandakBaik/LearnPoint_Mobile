@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/data/materi_preferences_service.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/data/materi_service.dart';
+import 'package:learnpoint_mobile/features/siswa/materi/widgets/materi_error_state_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/screens/detail_materi_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/models/task_model.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/screens/detail_tugas_screen.dart';
@@ -12,11 +13,13 @@ import 'package:learnpoint_mobile/features/siswa/ujian/screens/hasil_ujian_scree
 class MateriSectionWidget extends StatefulWidget {
   final int? mapelId;
   final String subjectName;
+  final ValueChanged<MapelDetailModel>? onMapelLoaded;
 
   const MateriSectionWidget({
     super.key,
     this.mapelId,
     this.subjectName = 'Matematika',
+    this.onMapelLoaded,
   });
 
   @override
@@ -29,21 +32,9 @@ class _MateriSectionWidgetState extends State<MateriSectionWidget> {
   Set<String> bookmarkedKeys = {};
   List<MateriItemModel> apiMateriList = [];
   bool isLoadingApi = false;
+  String? apiErrorMessage;
 
-  final List<String> tabs = [
-    'Materi',
-    'Tugas',
-    'Ujian',
-  ];
-
-  final List<String> fallbackMateri = [
-    'Persamaan Linear',
-    'Bangun Ruang',
-    'Statistika',
-    'Peluang',
-    'Aljabar',
-    'Bilangan Bulat',
-  ];
+  final List<String> tabs = ['Materi', 'Tugas', 'Ujian'];
 
   @override
   void initState() {
@@ -63,16 +54,32 @@ class _MateriSectionWidgetState extends State<MateriSectionWidget> {
   }
 
   Future<void> _loadMateriFromApi() async {
-    if (widget.mapelId == null) return;
+    if (widget.mapelId == null) {
+      setState(() {
+        apiErrorMessage = 'Mata pelajaran tidak valid.';
+      });
+      return;
+    }
     setState(() {
       isLoadingApi = true;
+      apiErrorMessage = null;
     });
-    final items = await MateriService.fetchMateriPerMapel(widget.mapelId!);
-    if (!mounted) return;
-    setState(() {
-      apiMateriList = items;
-      isLoadingApi = false;
-    });
+    try {
+      final detail = await MateriService.fetchDetailMapelSiswa(widget.mapelId!);
+      if (!mounted) return;
+      setState(() {
+        apiMateriList = detail.materis;
+        isLoadingApi = false;
+      });
+      widget.onMapelLoaded?.call(detail);
+    } on MateriException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        apiMateriList = [];
+        apiErrorMessage = e.message;
+        isLoadingApi = false;
+      });
+    }
   }
 
   String get _headerTitle {
@@ -150,9 +157,7 @@ class _MateriSectionWidgetState extends State<MateriSectionWidget> {
                     },
                     child: Container(
                       alignment: Alignment.center,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
                       decoration: BoxDecoration(
                         color: isSelected
                             ? const Color(0xFF6336ED)
@@ -194,14 +199,28 @@ class _MateriSectionWidgetState extends State<MateriSectionWidget> {
   }
 
   Widget _buildMateriGrid() {
-    final bool useApiData = apiMateriList.isNotEmpty;
-    final int itemCount =
-        useApiData ? apiMateriList.length : fallbackMateri.length;
-
     if (isLoadingApi) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 40),
         child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (apiErrorMessage != null) {
+      return Center(
+        child: MateriErrorStateWidget(
+          message: apiErrorMessage!,
+          onRetry: _loadMateriFromApi,
+        ),
+      );
+    }
+
+    if (apiMateriList.isEmpty) {
+      return Center(
+        child: MateriErrorStateWidget.empty(
+          message: 'Guru belum mengunggah materi untuk mata pelajaran ini.',
+          onRetry: _loadMateriFromApi,
+        ),
       );
     }
 
@@ -214,11 +233,10 @@ class _MateriSectionWidgetState extends State<MateriSectionWidget> {
         mainAxisSpacing: 12,
         childAspectRatio: 1,
       ),
-      itemCount: itemCount,
+      itemCount: apiMateriList.length,
       itemBuilder: (context, index) {
-        final MateriItemModel? apiItem =
-            useApiData ? apiMateriList[index] : null;
-        final String title = apiItem?.judul ?? fallbackMateri[index];
+        final MateriItemModel apiItem = apiMateriList[index];
+        final String title = apiItem.judul;
 
         final itemKey = MateriPreferencesService.getMateriKey(
           widget.subjectName,
@@ -404,9 +422,7 @@ class _MateriSectionWidgetState extends State<MateriSectionWidget> {
         );
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => DetailTugasPage(task: taskModel),
-          ),
+          MaterialPageRoute(builder: (_) => DetailTugasPage(task: taskModel)),
         );
       },
       child: Container(
@@ -414,9 +430,7 @@ class _MateriSectionWidgetState extends State<MateriSectionWidget> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(17),
-          border: Border.all(
-            color: const Color(0xFFE1E6EF),
-          ),
+          border: Border.all(color: const Color(0xFFE1E6EF)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.035),
@@ -543,9 +557,7 @@ class _MateriSectionWidgetState extends State<MateriSectionWidget> {
                           decoration: BoxDecoration(
                             color: const Color(0xFFE9FFF5),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: const Color(0xFFC9F4E2),
-                            ),
+                            border: Border.all(color: const Color(0xFFC9F4E2)),
                           ),
                           child: Text(
                             remaining,
@@ -862,8 +874,9 @@ class _MateriSectionWidgetState extends State<MateriSectionWidget> {
                       backgroundColor: buttonEnabled
                           ? primaryBlue
                           : const Color(0xFFD7E5FF),
-                      foregroundColor:
-                          buttonEnabled ? Colors.white : primaryBlue,
+                      foregroundColor: buttonEnabled
+                          ? Colors.white
+                          : primaryBlue,
                       padding: const EdgeInsets.symmetric(horizontal: 13),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 import 'package:learnpoint_mobile/features/siswa/materi/screens/materi_per_mapel_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/screens/akun_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/models/student_profile_model.dart';
@@ -8,6 +7,7 @@ import 'package:learnpoint_mobile/core/widgets/inverted_top_curve_clipper.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/widgets/subject_materi_card_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/data/materi_service.dart';
+import 'package:learnpoint_mobile/features/siswa/materi/widgets/materi_error_state_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/screens/notifikasi_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/dashboard_header_widget.dart';
 
@@ -29,8 +29,9 @@ class Materi extends StatefulWidget {
 }
 
 class _MateriState extends State<Materi> {
-  List<MateriModel> _daftarMapel = List<MateriModel>.from(subjek);
+  List<MateriModel> _daftarMapel = [];
   bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -41,13 +42,23 @@ class _MateriState extends State<Materi> {
   Future<void> _loadDaftarMapel() async {
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
-    final result = await MateriService.fetchDaftarMapelSiswa();
-    if (!mounted) return;
-    setState(() {
-      _daftarMapel = result;
-      _isLoading = false;
-    });
+    try {
+      final result = await MateriService.fetchDaftarMapelSiswa();
+      if (!mounted) return;
+      setState(() {
+        _daftarMapel = result;
+        _isLoading = false;
+      });
+    } on MateriException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _daftarMapel = [];
+        _errorMessage = e.message;
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -87,7 +98,6 @@ class _MateriState extends State<Materi> {
                 ),
               ),
 
-              
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 30, 20, 16),
                 child: Column(
@@ -159,15 +169,23 @@ class _MateriState extends State<Materi> {
                                 final cardHorizontalMargin =
                                     constraints.maxWidth < 360 ? 12.0 : 20.0;
 
+                                if (_errorMessage != null) {
+                                  return ListView(
+                                    children: [
+                                      MateriErrorStateWidget(
+                                        message: _errorMessage!,
+                                        onRetry: _loadDaftarMapel,
+                                      ),
+                                    ],
+                                  );
+                                }
+
                                 if (filtered.isEmpty) {
                                   return ListView(
-                                    children: const [
-                                      SizedBox(height: 60),
-                                      Center(
-                                        child: Text(
-                                          'Mata pelajaran tidak ditemukan.',
-                                          style: TextStyle(color: Colors.grey),
-                                        ),
+                                    children: [
+                                      MateriErrorStateWidget.empty(
+                                        message: 'Belum ada mata pelajaran untuk kelasmu.',
+                                        onRetry: _loadDaftarMapel,
                                       ),
                                     ],
                                   );
@@ -180,8 +198,7 @@ class _MateriState extends State<Materi> {
 
                                     return SubjectMateriCardWidget(
                                       subject: sub,
-                                      imageUrl:
-                                          'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=1200&q=80',
+                                      imageUrl: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=1200&q=80',
                                       elevation: index.isEven ? 2 : 0,
                                       horizontalMargin: cardHorizontalMargin,
                                       ontap: () {

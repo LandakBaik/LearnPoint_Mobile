@@ -13,7 +13,7 @@ import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/dashboard_hea
 import 'package:learnpoint_mobile/features/siswa/materi/widgets/materi_header_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/widgets/materi_section.dart';
 
-class Materimapel extends StatelessWidget {
+class Materimapel extends StatefulWidget {
   final VoidCallback? onBackTap;
   final MateriModel? subject;
 
@@ -32,10 +32,19 @@ class Materimapel extends StatelessWidget {
   );
 
   @override
+  State<Materimapel> createState() => _MaterimapelState();
+}
+
+class _MaterimapelState extends State<Materimapel> {
+  MapelDetailModel? _mapelDetail;
+
+  @override
   Widget build(BuildContext context) {
     final screenwidth = MediaQuery.of(context).size.width;
-    final subjectName = subject?.materi ?? 'Matematika';
-    final description = subject?.description ?? 'Angka, rumus, dan logika';
+    final subjectName =
+        _mapelDetail?.namaMapel ?? widget.subject?.materi ?? 'Mata Pelajaran';
+    final description =
+        _mapelDetail?.identitasLabel ?? widget.subject?.description ?? '';
 
     return Scaffold(
       backgroundColor: const Color(0xFF6336ED),
@@ -49,7 +58,7 @@ class Materimapel extends StatelessWidget {
                   vertical: 12,
                 ),
                 child: DashboardHeaderWidget(
-                  profile: studentProfile,
+                  profile: Materimapel.studentProfile,
                   onNotificationTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
@@ -60,8 +69,9 @@ class Materimapel extends StatelessWidget {
                   onProfileTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) =>
-                            const AkunScreen(profile: studentProfile),
+                        builder: (_) => const AkunScreen(
+                          profile: Materimapel.studentProfile,
+                        ),
                       ),
                     );
                   },
@@ -72,7 +82,8 @@ class Materimapel extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: InkWell(
-                    onTap: onBackTap ?? () => Navigator.maybePop(context),
+                    onTap:
+                        widget.onBackTap ?? () => Navigator.maybePop(context),
                     borderRadius: BorderRadius.circular(20),
                     child: Container(
                       padding: const EdgeInsets.all(6),
@@ -102,8 +113,13 @@ class Materimapel extends StatelessWidget {
                 ),
               ),
               MateriSectionWidget(
-                mapelId: subject?.id,
+                mapelId: widget.subject?.id,
                 subjectName: subjectName,
+                onMapelLoaded: (detail) {
+                  setState(() {
+                    _mapelDetail = detail;
+                  });
+                },
               ),
             ],
           ),
