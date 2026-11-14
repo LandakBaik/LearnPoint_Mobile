@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/data/materi_preferences_service.dart';
+import 'package:learnpoint_mobile/features/siswa/materi/data/materi_database_helper.dart';
 
 // nama    : IDEA BRILIANTA
 // nim     : E41251668
@@ -38,7 +40,8 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
 
   bool isCompleted = false;
   bool isBookmarked = false;
-  int selectedSubBabIndex = 0;
+  bool isDownloaded = false;
+  bool isDownloading = false;
 
   @override
   void initState() {
@@ -47,49 +50,119 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
   }
 
   Future<void> _loadSavedProgress() async {
-    final savedSubBab = await MateriPreferencesService.getLastSubBab(
-      subject: widget.subject,
-      title: widget.title,
-    );
+    final materiId = widget.materiItem?.id;
     final completed = await MateriPreferencesService.isCompleted(
+      id: materiId,
       subject: widget.subject,
       title: widget.title,
     );
     final bookmarked = await MateriPreferencesService.isBookmarked(
+      id: materiId,
       subject: widget.subject,
       title: widget.title,
     );
+    final downloaded = materiId != null
+        ? await MateriDatabaseHelper.instance.isMateriDownloaded(materiId)
+        : false;
 
     if (!mounted) return;
     setState(() {
-      if (savedSubBab >= 0 && savedSubBab < subChapters.length) {
-        selectedSubBabIndex = savedSubBab;
-      }
       isCompleted = completed;
       isBookmarked = bookmarked;
+      isDownloaded = downloaded;
     });
 
     // Catat materi ini sebagai materi terakhir yang dibuka
     await MateriPreferencesService.saveLastSubBab(
+      id: materiId,
       subject: widget.subject,
       title: widget.title,
-      subBabIndex: selectedSubBabIndex,
+      guru: widget.materiItem?.guru,
+      deskripsi: widget.materiItem?.deskripsi,
+      urlYoutube: widget.materiItem?.urlYoutube,
+      fileMateri: widget.materiItem?.fileMateri,
+      fileUrl: widget.materiItem?.fileUrl,
+      subBabIndex: 0,
     );
   }
 
-  Future<void> _updateSubBabIndex(int newIndex) async {
+  Future<void> _handleToggleOfflineDownload() async {
+    final item = widget.materiItem;
+    if (item == null) return;
+
+    if (isDownloaded) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Hapus Unduhan Offline?', style: TextStyle(fontWeight: FontWeight.bold)),
+          content: const Text('Materi ini tidak akan tersedia secara offline lagi jika file dihapus.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+              child: const Text('Hapus'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm == true) {
+        await MateriDatabaseHelper.instance.deleteDownloadedMateri(item.id);
+        if (!mounted) return;
+        setState(() {
+          isDownloaded = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File unduhan offline berhasil dihapus.')),
+        );
+      }
+      return;
+    }
+
+    if (!item.hasFile) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Materi ini tidak memiliki berkas modul untuk diunduh.')),
+      );
+      return;
+    }
+
     setState(() {
-      selectedSubBabIndex = newIndex;
+      isDownloading = true;
     });
-    await MateriPreferencesService.saveLastSubBab(
-      subject: widget.subject,
-      title: widget.title,
-      subBabIndex: newIndex,
+
+    final savedPath = await MateriDatabaseHelper.instance.downloadMateriFile(
+      materiId: item.id,
+      fileUrl: item.fileUrl!,
+      fileName: item.fileName ?? 'modul_materi.pdf',
+    );
+
+    if (!mounted) return;
+    setState(() {
+      isDownloading = false;
+      isDownloaded = savedPath != null;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          savedPath != null
+              ? 'Materi & modul berhasil disimpan untuk mode offline! ✅'
+              : 'Gagal mengunduh berkas offline. Periksa koneksi internet.',
+        ),
+        backgroundColor: savedPath != null ? const Color(0xFF10B981) : Colors.red,
+      ),
     );
   }
 
   Future<void> _handleToggleBookmark() async {
     final newState = await MateriPreferencesService.toggleBookmark(
+      id: widget.materiItem?.id,
       subject: widget.subject,
       title: widget.title,
     );
@@ -111,6 +184,7 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
 
   Future<void> _handleToggleCompleted() async {
     final newState = await MateriPreferencesService.toggleCompleted(
+      id: widget.materiItem?.id,
       subject: widget.subject,
       title: widget.title,
     );
@@ -127,33 +201,6 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
         ),
       ),
     );
-  }
-
-  late final List<Map<String, dynamic>> subChapters = _buildSubChapters();
-
-  /// Konten materi 100% dari API (`deskripsi`). Tidak ada lagi konten dummy.
-  List<Map<String, dynamic>> _buildSubChapters() {
-    final item = widget.materiItem;
-    final hasDesc = item?.hasDeskripsi ?? false;
-
-    return [
-      {
-        'title': '1. Uraian Materi',
-        'duration': _publishedLabel ?? '-',
-        'content': hasDesc
-            ? item!.deskripsi!
-            : 'Guru belum menambahkan uraian untuk materi ini. '
-                  'Silakan buka video atau modul lampiran (jika tersedia).',
-        'keyPoints': [
-          if (item?.guru != null) 'Pengampu: ${item!.guru}',
-          if (item?.hasFile ?? false)
-            'Unduh modul lampiran di bawah untuk penjelasan lengkap.',
-          if (item?.hasVideo ?? false)
-            'Tonton video penjelasan untuk memperkuat pemahaman.',
-          if (item == null) 'Data materi tidak tersedia. Buka materi melalui menu Mata Pelajaran.',
-        ],
-      },
-    ];
   }
 
   static const List<String> _namaBulan = [
@@ -178,8 +225,113 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
     return '${d.day} ${_namaBulan[d.month - 1]} ${d.year}';
   }
 
-  /// Sementara (sebelum `url_launcher` ditambahkan): tampilkan URL dan
-  /// sediakan tombol salin agar bisa dibuka manual di browser.
+  /// Menampilkan pop-up konfirmasi sebelum membuka aplikasi eksternal
+  /// (YouTube / Browser / PDF Reader), lalu membuka link jika disetujui.
+  Future<void> _openExternalUrl(
+    String label,
+    String rawUrl, {
+    bool isVideo = false,
+  }) async {
+    final trimmed = rawUrl.trim();
+    final uri = Uri.tryParse(trimmed);
+    if (uri == null || !uri.hasScheme) {
+      _showUrlSnackBar('URL $label tidak valid', trimmed);
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: isVideo
+                    ? const Color(0xFFFEE2E2)
+                    : const Color(0xFFF1EEFF),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                isVideo
+                    ? Icons.play_circle_fill_rounded
+                    : Icons.open_in_new_rounded,
+                color: isVideo ? const Color(0xFFDC2626) : primaryPurple,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                isVideo ? 'Buka Video YouTube?' : 'Buka Berkas Materi?',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: textDark,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          isVideo
+              ? 'Kamu akan diarahkan keluar aplikasi menuju YouTube / Browser untuk menonton video penjelasan materi ini.'
+              : 'Kamu akan diarahkan keluar aplikasi menuju Browser / Pembaca Dokumen untuk membuka atau mengunduh $label.',
+          style: const TextStyle(
+            fontSize: 13,
+            height: 1.5,
+            color: textMuted,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            style: TextButton.styleFrom(foregroundColor: textMuted),
+            child: const Text(
+              'Batal',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            icon: const Icon(Icons.open_in_new_rounded, size: 16),
+            label: Text(
+              isVideo ? 'Buka YouTube' : 'Buka Berkas',
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryPurple,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched && mounted) {
+        _showUrlSnackBar('Gagal membuka $label', trimmed);
+      }
+    } catch (_) {
+      if (!mounted) return;
+      _showUrlSnackBar('Gagal membuka $label', trimmed);
+    }
+  }
+
   void _showUrlSnackBar(String label, String url) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -227,6 +379,23 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
           style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
         ),
         actions: [
+          if (widget.materiItem != null && widget.materiItem!.hasFile)
+            IconButton(
+              onPressed: isDownloading ? null : _handleToggleOfflineDownload,
+              icon: isDownloading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: primaryPurple),
+                    )
+                  : Icon(
+                      isDownloaded
+                          ? Icons.download_done_rounded
+                          : Icons.download_for_offline_outlined,
+                      color: isDownloaded ? const Color(0xFF10B981) : textDark,
+                    ),
+              tooltip: isDownloaded ? 'Tersimpan Offline (Klik untuk hapus)' : 'Download untuk Offline',
+            ),
           IconButton(
             onPressed: _handleToggleBookmark,
             icon: Icon(
@@ -253,12 +422,8 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildBreadcrumb(),
-                  const SizedBox(height: 16),
                   _buildHeroBanner(),
                   const SizedBox(height: 18),
-                  _buildChapterSelector(),
-                  const SizedBox(height: 16),
                   _buildMaterialContentCard(),
                   const SizedBox(height: 16),
                   _buildAttachmentsCard(),
@@ -271,64 +436,6 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildBreadcrumb() {
-    return Wrap(
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 7,
-      runSpacing: 8,
-      children: [
-        InkWell(
-          onTap: () => Navigator.maybePop(context),
-          borderRadius: BorderRadius.circular(30),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.arrow_back, size: 15, color: textMuted),
-                SizedBox(width: 6),
-                Text(
-                  'Kembali',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: textDark,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const Icon(Icons.chevron_right, size: 16, color: Color(0xFFCBD5E1)),
-        Text(
-          widget.subject,
-          style: const TextStyle(
-            fontSize: 12,
-            color: textMuted,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const Icon(Icons.chevron_right, size: 16, color: Color(0xFFCBD5E1)),
-        Flexible(
-          child: Text(
-            widget.title,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 12,
-              color: primaryPurple,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -428,6 +535,36 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
                           ],
                         ),
                       ),
+                    if (isDownloaded) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFF10B981), width: 1),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_circle_rounded, size: 13, color: Colors.white),
+                            SizedBox(width: 5),
+                            Text(
+                              'OFFLINE READY',
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 14),
@@ -451,78 +588,7 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                if (widget.materiItem?.hasVideo ?? false) ...[
-                  const SizedBox(height: 18),
-                  // Video / Interactive Preview Area
-                  InkWell(
-                    onTap: () => _showUrlSnackBar(
-                      'Link video YouTube',
-                      widget.materiItem!.urlYoutube!,
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.25),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.play_arrow_rounded,
-                              color: primaryPurple,
-                              size: 26,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Tonton Video Penjelasan',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Visualisasi konsep ${widget.title}',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.white70,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Icon(
-                            Icons.open_in_new_rounded,
-                            color: Colors.white70,
-                            size: 18,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+
               ],
             ),
           ),
@@ -531,72 +597,12 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
     );
   }
 
-  Widget _buildChapterSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _sectionTitle('SUB-BAB MATERI'),
-            Text(
-              '${selectedSubBabIndex + 1} dari ${subChapters.length} Bagian',
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: primaryPurple,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        SizedBox(
-          height: 44,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: subChapters.length,
-            itemBuilder: (context, index) {
-              final isSelected = selectedSubBabIndex == index;
-              final chapter = subChapters[index];
-
-              return Padding(
-                padding: const EdgeInsets.only(right: 10),
-                child: GestureDetector(
-                  onTap: () => _updateSubBabIndex(index),
-                  child: Container(
-                    alignment: Alignment.center,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: isSelected ? primaryPurple : Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected
-                            ? primaryPurple
-                            : const Color(0xFFE2E8F0),
-                      ),
-                    ),
-                    child: Text(
-                      chapter['title'] as String,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: isSelected ? Colors.white : textDark,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildMaterialContentCard() {
-    final activeChapter = subChapters[selectedSubBabIndex];
-    final List<String> keyPoints = (activeChapter['keyPoints'] as List<dynamic>)
-        .cast<String>();
+    final item = widget.materiItem;
+    final deskripsi = item?.hasDeskripsi ?? false
+        ? item!.deskripsi!
+        : 'Guru belum menambahkan uraian deskripsi untuk materi ini. '
+            'Silakan tonton video atau unduh modul lampiran di bawah (jika tersedia).';
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -607,138 +613,49 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Text(
-                  activeChapter['title'] as String,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                    color: textDark,
+              _sectionTitle('DESKRIPSI MATERI'),
+              if (_publishedLabel != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
                   ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: lightPurple,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  activeChapter['duration'] as String,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: primaryPurple,
+                  decoration: BoxDecoration(
+                    color: lightPurple,
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          const Divider(color: Color(0xFFF1F5F9)),
-          const SizedBox(height: 14),
-          _sectionTitle('URAIAN MATERI'),
-          const SizedBox(height: 10),
-          Text(
-            activeChapter['content'] as String,
-            style: const TextStyle(
-              fontSize: 13.5,
-              height: 1.75,
-              color: Color(0xFF334155),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(15),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8F7FF),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFE9E3FF)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(
-                      Icons.lightbulb_outline_rounded,
-                      color: primaryPurple,
-                      size: 18,
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      'Poin Penting untuk Diingat',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w800,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.calendar_today_rounded,
+                        size: 11,
                         color: primaryPurple,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                ...keyPoints.map(
-                  (point) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.only(top: 3),
-                          child: Icon(
-                            Icons.check_circle_rounded,
-                            size: 14,
-                            color: primaryPurple,
-                          ),
+                      const SizedBox(width: 5),
+                      Text(
+                        _publishedLabel!,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: primaryPurple,
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            point,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              height: 1.5,
-                              color: textDark,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              TextButton.icon(
-                onPressed: selectedSubBabIndex > 0
-                    ? () => _updateSubBabIndex(selectedSubBabIndex - 1)
-                    : null,
-                icon: const Icon(Icons.arrow_back_rounded, size: 16),
-                label: const Text(
-                  'Sebelumnya',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                ),
-                style: TextButton.styleFrom(foregroundColor: primaryPurple),
-              ),
-              TextButton.icon(
-                onPressed: selectedSubBabIndex < subChapters.length - 1
-                    ? () => _updateSubBabIndex(selectedSubBabIndex + 1)
-                    : null,
-                icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-                label: const Text(
-                  'Selanjutnya',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                ),
-                style: TextButton.styleFrom(foregroundColor: primaryPurple),
-              ),
             ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(color: Color(0xFFF1F5F9)),
+          const SizedBox(height: 12),
+          Text(
+            deskripsi,
+            style: const TextStyle(
+              fontSize: 14,
+              height: 1.7,
+              color: Color(0xFF334155),
+            ),
           ),
         ],
       ),
@@ -769,7 +686,9 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
                   border: Border.all(color: const Color(0xFFE2E8F0)),
                   borderRadius: BorderRadius.circular(13),
                 ),
-                child: Row(
+                child: Column(
+                    children: [
+                Row(
                   children: [
                     Container(
                       width: 42,
@@ -809,8 +728,8 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
                       ),
                     ),
                     IconButton(
-                      onPressed: () => _showUrlSnackBar(
-                        'Link berkas ${file['filename']}',
+                      onPressed: () => _openExternalUrl(
+                        'berkas ${file['filename']}',
                         file['url']!,
                       ),
                       icon: const Icon(
@@ -821,6 +740,81 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
                     ),
                   ],
                 ),
+                if (widget.materiItem?.hasVideo ?? false) ...[
+                  const SizedBox(height: 18),
+                  // Video / Interactive Preview Area
+                  InkWell(
+                    onTap: () => _openExternalUrl(
+                      'video YouTube',
+                      widget.materiItem!.urlYoutube!,
+                      isVideo: true,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: primaryPurple.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: primaryPurple.withValues(alpha: 0.25),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: const BoxDecoration(
+                              color: primaryPurple,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.play_arrow_rounded,
+                              color: Colors.white,
+                              size: 26,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Tonton Video Penjelasan',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: primaryPurple,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Visualisasi konsep ${widget.title}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: primaryPurple,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.open_in_new_rounded,
+                            color: primaryPurple.withValues(alpha: 0.7),
+                            size: 18,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+                    ],
+              ),
               ),
             ),
           ),

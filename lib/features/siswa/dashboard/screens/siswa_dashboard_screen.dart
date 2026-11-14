@@ -10,6 +10,8 @@ import 'package:learnpoint_mobile/features/siswa/materi/screens/materi_screen.da
 import 'package:learnpoint_mobile/features/siswa/dashboard/screens/notifikasi_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/screens/tugas_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/hero_banner_widget.dart';
+import 'package:learnpoint_mobile/features/siswa/materi/data/materi_preferences_service.dart';
+import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
 
 class SiswaDashboardScreen extends StatefulWidget {
   const SiswaDashboardScreen({super.key});
@@ -37,6 +39,21 @@ class SiswaDashboardScreen extends StatefulWidget {
 
 class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
   int _currentTaskIndex = 0;
+  LastReadMateri? _lastReadMateri;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLastReadMateri();
+  }
+
+  Future<void> _loadLastReadMateri() async {
+    final data = await MateriPreferencesService.getLastRead();
+    if (!mounted) return;
+    setState(() {
+      _lastReadMateri = data;
+    });
+  }
 
   final List<Map<String, dynamic>> _taskList = [
     {
@@ -178,16 +195,42 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
               profile: SiswaDashboardScreen.studentProfile,
               onNotificationTap: _openNotifications,
               onProfileTap: _openProfile,
-              onContinueTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const DetailMateriPage(
-                      title: 'Matematika · Bab 5',
-                      subject: 'Matematika',
-                      duration: '15 Menit',
+              continueSubject: _lastReadMateri?.subject,
+              continueTitle: _lastReadMateri?.title,
+              onContinueTap: () async {
+                if (_lastReadMateri != null) {
+                  MateriItemModel? itemModel;
+                  if (_lastReadMateri!.id != null) {
+                    itemModel = MateriItemModel(
+                      id: _lastReadMateri!.id!,
+                      judul: _lastReadMateri!.title,
+                      deskripsi: _lastReadMateri!.deskripsi,
+                      urlYoutube: _lastReadMateri!.urlYoutube,
+                      fileMateri: _lastReadMateri!.fileMateri,
+                      fileUrl: _lastReadMateri!.fileUrl,
+                      guru: _lastReadMateri!.guru,
+                    );
+                  }
+
+                  await Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => DetailMateriPage(
+                        title: _lastReadMateri!.title,
+                        subject: _lastReadMateri!.subject,
+                        duration: '15 Menit',
+                        materiItem: itemModel,
+                      ),
                     ),
-                  ),
-                );
+                  );
+                } else {
+                  // Jika belum ada materi yang pernah dibaca, arahkan ke daftar mapel
+                  await Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const Materi(),
+                    ),
+                  );
+                }
+                _loadLastReadMateri();
               },
             ),
 

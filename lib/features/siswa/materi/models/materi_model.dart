@@ -190,6 +190,8 @@ class MateriItemModel {
   final String? fileUrl;
   final String? guru;
   final String? createdAt;
+  final bool isDownloaded;
+  final String? localFilePath;
 
   const MateriItemModel({
     required this.id,
@@ -201,11 +203,34 @@ class MateriItemModel {
     this.fileUrl,
     this.guru,
     this.createdAt,
+    this.isDownloaded = false,
+    this.localFilePath,
   });
 
   bool get hasVideo => urlYoutube != null && urlYoutube!.trim().isNotEmpty;
   bool get hasFile => fileUrl != null && fileUrl!.trim().isNotEmpty;
   bool get hasDeskripsi => deskripsi != null && deskripsi!.trim().isNotEmpty;
+  bool get hasLocalFile => localFilePath != null && localFilePath!.trim().isNotEmpty;
+
+  /// Copy with untuk memperbarui status unduhan di UI
+  MateriItemModel copyWith({
+    bool? isDownloaded,
+    String? localFilePath,
+  }) {
+    return MateriItemModel(
+      id: id,
+      idGrubMateri: idGrubMateri,
+      judul: judul,
+      deskripsi: deskripsi,
+      urlYoutube: urlYoutube,
+      fileMateri: fileMateri,
+      fileUrl: fileUrl,
+      guru: guru,
+      createdAt: createdAt,
+      isDownloaded: isDownloaded ?? this.isDownloaded,
+      localFilePath: localFilePath ?? this.localFilePath,
+    );
+  }
 
   /// Nama file lampiran, contoh: "aljabar_dasar.pdf".
   String? get fileName => (fileMateri ?? fileUrl)?.split('/').last;
@@ -228,6 +253,8 @@ class MateriItemModel {
       fileUrl: _resolveFileUrl(_nullIfEmpty(json['file_url']), fileMateri),
       guru: _nullIfEmpty(json['guru']),
       createdAt: json['created_at']?.toString(),
+      isDownloaded: json['is_downloaded'] == 1 || json['is_downloaded'] == true,
+      localFilePath: json['local_file_path']?.toString(),
     );
   }
 

@@ -241,9 +241,16 @@ class _MateriSectionWidgetState extends State<MateriSectionWidget> {
         final itemKey = MateriPreferencesService.getMateriKey(
           widget.subjectName,
           title,
+          id: apiItem.id,
         );
-        final isCompleted = completedKeys.contains(itemKey);
-        final isBookmarked = bookmarkedKeys.contains(itemKey);
+        final oldItemKey = MateriPreferencesService.getMateriKey(
+          widget.subjectName,
+          title,
+        );
+        final isCompleted = completedKeys.contains(itemKey) ||
+            completedKeys.contains(oldItemKey);
+        final isBookmarked = bookmarkedKeys.contains(itemKey) ||
+            bookmarkedKeys.contains(oldItemKey);
 
         return GestureDetector(
           onTap: () async {
@@ -280,6 +287,15 @@ class _MateriSectionWidgetState extends State<MateriSectionWidget> {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        if (apiItem.isDownloaded)
+                          const Padding(
+                            padding: EdgeInsets.only(right: 4),
+                            child: Icon(
+                              Icons.download_done_rounded,
+                              color: Color(0xFF10B981),
+                              size: 18,
+                            ),
+                          ),
                         if (isBookmarked)
                           const Padding(
                             padding: EdgeInsets.only(right: 4),

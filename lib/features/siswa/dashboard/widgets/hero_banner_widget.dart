@@ -8,6 +8,9 @@ class HeroBannerWidget extends StatelessWidget {
   final VoidCallback? onNotificationTap;
   final VoidCallback? onProfileTap;
   final VoidCallback? onContinueTap;
+  final String? continueSubject;
+  final String? continueTitle;
+  final double continueProgress;
 
   const HeroBannerWidget({
     super.key,
@@ -15,6 +18,9 @@ class HeroBannerWidget extends StatelessWidget {
     this.onNotificationTap,
     this.onProfileTap,
     this.onContinueTap,
+    this.continueSubject,
+    this.continueTitle,
+    this.continueProgress = 0.5,
   });
 
   @override
@@ -159,7 +165,13 @@ class HeroBannerWidget extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Matematika · Bab 5',
+                        continueTitle != null && continueTitle!.isNotEmpty
+                            ? (continueSubject != null && continueSubject!.isNotEmpty
+                                ? '$continueSubject · $continueTitle'
+                                : continueTitle!)
+                            : 'Mulai Pembelajaran Baru',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.plusJakartaSans(
                           color: Colors.white,
                           fontSize: 16,
@@ -176,7 +188,7 @@ class HeroBannerWidget extends StatelessWidget {
                           child: Align(
                             alignment: Alignment.centerLeft,
                             child: FractionallySizedBox(
-                              widthFactor: 0.65,
+                              widthFactor: continueProgress.clamp(0.1, 1.0),
                               child: Container(
                                 color: Colors.white,
                               ),

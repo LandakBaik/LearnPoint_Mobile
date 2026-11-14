@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 
 import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
+import 'package:learnpoint_mobile/features/siswa/materi/data/materi_database_helper.dart';
 import 'package:learnpoint_mobile/core/config/api_config.dart';
 import 'package:learnpoint_mobile/core/services/storage_service.dart';
 
@@ -24,37 +25,68 @@ class MateriException implements Exception {
 
 class MateriService {
   /// Mengambil daftar mata pelajaran siswa dari GET /api/siswa/materi.
-  /// Melempar [MateriException] jika gagal (tidak ada lagi fallback data dummy).
+  /// Jika offline / jaringan gagal, secara otomatis mengambil cache dari SQLite.
   static Future<List<MateriModel>> fetchDaftarMapelSiswa() async {
-    final body = await _get('/siswa/materi');
-    final data = body['data'];
+    try {
+      final body = await _get('/siswa/materi');
+      final data = body['data'];
 
-    if (data is! List) {
-      throw const MateriException(
-        'Format data mata pelajaran dari server tidak valid.',
-      );
+      if (data is! List) {
+        throw const MateriException(
+          'Format data mata pelajaran dari server tidak valid.',
+        );
+      }
+
+      final list = data
+          .whereType<Map<String, dynamic>>()
+          .map(MateriModel.fromJson)
+          .toList();
+
+      // Sukses online: simpan / update cache ke SQLite lokal
+      unawaited(MateriDatabaseHelper.instance.cacheMapels(list));
+
+      return list;
+    } on MateriException catch (e) {
+      // Jika error bukan karena 401 (Unauthorized), coba ambil dari SQLite offline cache
+      if (!e.isUnauthorized) {
+        final cached = await MateriDatabaseHelper.instance.getCachedMapels();
+        if (cached.isNotEmpty) {
+          return cached;
+        }
+      }
+      rethrow;
     }
-
-    return data
-        .whereType<Map<String, dynamic>>()
-        .map(MateriModel.fromJson)
-        .toList();
   }
 
   /// Mengambil identitas mapel (nama_mapel, nama_kelas, semester, tahun_ajaran)
   /// beserta daftar materi dari GET /api/siswa/materi/{mapelId}.
-  /// Melempar [MateriException] jika gagal.
+  /// Jika offline, mengambil data materi yang pernah tersimpan di SQLite.
   static Future<MapelDetailModel> fetchDetailMapelSiswa(int mapelId) async {
-    final body = await _get('/siswa/materi/$mapelId');
-    final data = body['data'];
+    try {
+      final body = await _get('/siswa/materi/$mapelId');
+      final data = body['data'];
 
-    if (data is! Map<String, dynamic> || data['materis'] is! List) {
-      throw const MateriException(
-        'Format data materi dari server tidak valid.',
-      );
+      if (data is! Map<String, dynamic> || data['materis'] is! List) {
+        throw const MateriException(
+          'Format data materi dari server tidak valid.',
+        );
+      }
+
+      final detail = MapelDetailModel.fromJson(data);
+
+      // Sukses online: simpan / perbarui cache ke SQLite lokal
+      unawaited(MateriDatabaseHelper.instance.cacheDetailMapel(detail));
+
+      return detail;
+    } on MateriException catch (e) {
+      if (!e.isUnauthorized) {
+        final cached = await MateriDatabaseHelper.instance.getCachedDetailMapel(mapelId);
+        if (cached != null) {
+          return cached;
+        }
+      }
+      rethrow;
     }
-
-    return MapelDetailModel.fromJson(data);
   }
 
   /// Mengambil daftar materi di dalam suatu mata pelajaran dari
