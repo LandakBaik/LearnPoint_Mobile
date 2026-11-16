@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 class QuizBackHeaderWidget extends StatelessWidget {
   final String title;
   final VoidCallback? onBackTap;
+  final Widget? trailing;
 
   const QuizBackHeaderWidget({
     super.key,
     required this.title,
     this.onBackTap,
+    this.trailing,
   });
 
   @override
@@ -49,6 +51,7 @@ class QuizBackHeaderWidget extends StatelessWidget {
               ),
             ),
           ),
+          if (trailing != null) trailing!,
         ],
       ),
     );
