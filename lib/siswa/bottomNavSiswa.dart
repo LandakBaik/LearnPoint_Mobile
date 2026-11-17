@@ -26,10 +26,7 @@ class _BottomNavSiswaState extends State<BottomNavSiswa> {
   final List<Widget> _pages = [
     const SiswaDashboardScreen(),
     const Materi(),
-    const Center(child: Text('Halaman Tugas')),
     const UjianScreen(),
-    const Center(child: Text('Halaman Kuis')),
-    const Center(child: Text('Halaman Ujian')),
     const Quiz(),
   ];
 
