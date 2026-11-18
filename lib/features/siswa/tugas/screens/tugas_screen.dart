@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import 'package:learnpoint_mobile/features/siswa/dashboard/screens/siswa_dashboard_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/tugas/screens/detail_tugas_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/tugas/models/task_model.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/dashboard_header_widget.dart';
+import 'package:learnpoint_mobile/features/siswa/tugas/services/task_api_service.dart';
 
 void main() {
   runApp(const LearnPointApp());
@@ -41,45 +45,159 @@ class _TugasPageState extends State<TugasPage> {
     'Terlambat',
   ];
 
+  List<Map<String, dynamic>> tasks = [];
+
+  bool isLoading = true;
+  String? errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTasks();
+  }
+
+  // MENGAMBIL DATA TUGAS DARI API //
+
+  Future<void> _loadTasks() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      final result = await TaskApiService.getTasks();
+
+      if (!mounted) return;
+
+      setState(() {
+        tasks = result;
+        isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        isLoading = false;
+        errorMessage = e.toString();
+      });
+    }
+  }
+
+  // MEMERIKSA DEADLINE //
+
+  DateTime? _parseDeadline(Map<String, dynamic> task) {
+    final value = task['deadline']?.toString();
+
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+
+    return DateTime.tryParse(value);
+  }
+
+  bool _isLate(Map<String, dynamic> task) {
+    if (task['is_submitted'] == true) {
+      return false;
+    }
+
+    final deadline = _parseDeadline(task);
+
+    if (deadline == null) {
+      return false;
+    }
+
+    return DateTime.now().isAfter(deadline);
+  }
+
+  // FILTER TUGAS BERDASARKAN TAB //
+
+  List<Map<String, dynamic>> get filteredTasks {
+    switch (selectedTab) {
+      case 1:
+        return tasks.where((task) {
+          return task['is_submitted'] != true && !_isLate(task);
+        }).toList();
+
+      case 2:
+        return tasks.where((task) {
+          return task['is_submitted'] == true;
+        }).toList();
+
+      case 3:
+        return tasks.where(_isLate).toList();
+
+      default:
+        return tasks;
+    }
+  }
+
+  // FORMAT TANGGAL // 
+
+  String _formatDeadline(Map<String, dynamic> task) {
+    final deadline = _parseDeadline(task);
+
+    if (deadline == null) {
+      return '-';
+    }
+
+    final date = deadline.day.toString().padLeft(2, '0');
+    final month = deadline.month.toString().padLeft(2, '0');
+
+    return '$date/$month/${deadline.year}';
+  }
+
+  // FORMAT SISA WAKTU // 
+
+  String _getRemainingTime(Map<String, dynamic> task) {
+    if (task['is_submitted'] == true) {
+      return '✓ Dikumpulkan';
+    }
+
+    if (_isLate(task)) {
+      return 'Terlambat';
+    }
+
+    final deadline = _parseDeadline(task);
+
+    if (deadline == null) {
+      return 'Deadline tidak tersedia';
+    }
+
+    final difference = deadline.difference(DateTime.now());
+
+    if (difference.inDays >= 1) {
+      return '${difference.inDays} hari lagi';
+    }
+
+    if (difference.inHours >= 1) {
+      return '${difference.inHours} jam lagi';
+    }
+
+    if (difference.inMinutes >= 1) {
+      return '${difference.inMinutes} menit lagi';
+    }
+
+    return 'Segera dikumpulkan';
+  }
+
+  // BUILD //
+
   @override
   Widget build(BuildContext context) {
-    // =====================================================
-    // MEDIA QUERY
-    // Mengambil ukuran layar perangkat
-    // =====================================================
-
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8FC),
-
-      // ===================================================
-      // SAFE AREA
-      // Supaya konten tidak tertutup status bar / notch
-      // ===================================================
-
       body: SafeArea(
         child: LayoutBuilder(
-          // =================================================
-          // LAYOUT BUILDER
-          // Menyesuaikan layout berdasarkan ukuran layar
-          // =================================================
-
           builder: (context, constraints) {
-            // Jika layar kecil
             final bool isSmallScreen = constraints.maxWidth < 360;
 
-            // Padding berdasarkan MediaQuery
-            final double horizontalPadding =
-                screenWidth < 360 ? 16 : 20;
+            final double horizontalPadding = screenWidth < 360 ? 16 : 20;
 
             return Stack(
               children: [
-                // =================================================
-                // CONTENT UTAMA
-                // =================================================
-
                 SingleChildScrollView(
                   padding: EdgeInsets.fromLTRB(
                     horizontalPadding,
@@ -88,26 +206,17 @@ class _TugasPageState extends State<TugasPage> {
                     screenHeight * 0.08,
                   ),
                   child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildHeader(
-                        isSmallScreen,
-                      ),
+                      _buildHeader(isSmallScreen),
 
-                      SizedBox(
-                        height: isSmallScreen ? 22 : 28,
-                      ),
+                      SizedBox(height: isSmallScreen ? 22 : 28),
 
-                      // =================================================
                       // JUDUL
-                      // =================================================
-
                       Text(
                         'Daftar Tugas',
                         style: TextStyle(
-                          fontSize:
-                              isSmallScreen ? 24 : 27,
+                          fontSize: isSmallScreen ? 24 : 27,
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF202D43),
                         ),
@@ -118,8 +227,7 @@ class _TugasPageState extends State<TugasPage> {
                       Text(
                         'Pantau tenggat waktu dan kumpulkan tugasmu tepat waktu.',
                         style: TextStyle(
-                          fontSize:
-                              isSmallScreen ? 13 : 14,
+                          fontSize: isSmallScreen ? 13 : 14,
                           height: 1.5,
                           color: const Color(0xFF71809A),
                         ),
@@ -127,141 +235,18 @@ class _TugasPageState extends State<TugasPage> {
 
                       const SizedBox(height: 20),
 
-                      // =================================================
                       // TAB
-                      // =================================================
-
                       _buildTabs(),
 
                       const SizedBox(height: 20),
 
-                      // =================================================
-                      // TUGAS 1
-                      // =================================================
-
-                      _buildTaskCard(
-                        subject:
-                            'Pendidikan Pancasila & Kewarganegaraan',
-                        title:
-                            'Analisis Nilai-Nilai Pancasila dalam Kehidupan Sehari-hari',
-                        deadline:
-                            '26 Apr 2025, 23:59 WIB',
-                        remaining:
-                            '2 hari 15 jam 00 menit',
-                        completed: false,
-                        isSmallScreen: isSmallScreen,
-                      ),
-
-                      const SizedBox(height: 14),
-
-                      // =================================================
-                      // TUGAS 2
-                      // =================================================
-
-                      _buildTaskCard(
-                        subject:
-                            'Ilmu Pengetahuan Alam (IPA)',
-                        title:
-                            'Laporan Praktikum Organ Pencernaan',
-                        deadline:
-                            '27 Mar 2025, 12:00 WIB',
-                        remaining:
-                            '3 hari 6 jam 00 menit',
-                        completed: false,
-                        isSmallScreen: isSmallScreen,
-                      ),
-
-                      SizedBox(
-                        height: isSmallScreen ? 25 : 30,
-                      ),
-
-                      // =================================================
-                      // SECTION SUDAH DIKUMPULKAN
-                      // =================================================
-
-                      Row(
-                        children: [
-                          Text(
-                            'SUDAH DIKUMPULKAN',
-                            style: TextStyle(
-                              fontSize:
-                                  isSmallScreen ? 11 : 12,
-                              fontWeight:
-                                  FontWeight.w800,
-                              letterSpacing: 0.5,
-                              color:
-                                  const Color(0xFF8A9BB5),
-                            ),
-                          ),
-
-                          const SizedBox(width: 8),
-
-                          Container(
-                            padding:
-                                const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color:
-                                  const Color(0xFFE4EAF3),
-                              borderRadius:
-                                  BorderRadius.circular(5),
-                            ),
-                            child: const Text(
-                              '2',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color:
-                                    Color(0xFF65748C),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 14),
-
-                      // =================================================
-                      // TUGAS SELESAI
-                      // =================================================
-
-                      _buildTaskCard(
-                        subject: 'Bahasa Inggris',
-                        title:
-                            'Writing Practice: Recount Text about Last Holiday',
-                        deadline:
-                            '20 Mar 2025, 15:00 WIB',
-                        remaining:
-                            '✓  Dikumpulkan tepat waktu',
-                        completed: true,
-                        isSmallScreen: isSmallScreen,
-                      ),
-
-                      const SizedBox(height: 14),
-
-                      _buildTaskCard(
-                        subject:
-                            'Seni Budaya & Prakarya',
-                        title:
-                            'Portofolio Gambar Ragam Hias Tradisional',
-                        deadline:
-                            '18 Mar 2025, 12:00 WIB',
-                        remaining:
-                            '✓  Dikumpulkan tepat waktu',
-                        completed: true,
-                        isSmallScreen: isSmallScreen,
-                      ),
+                      // DAFTAR TUGAS DINAMIS
+                      _buildTaskList(isSmallScreen),
                     ],
                   ),
                 ),
 
-                // =================================================
-                // STACK
-                // Floating Button
-                // =================================================
-
+                // FLOATING BUTTON
                 Positioned(
                   right: horizontalPadding,
                   bottom: 18,
@@ -275,9 +260,7 @@ class _TugasPageState extends State<TugasPage> {
     );
   }
 
-  // =========================================================
-  // HEADER
-  // =========================================================
+  // HEADER //
 
   Widget _buildHeader(bool isSmallScreen) {
     return Container(
@@ -292,9 +275,7 @@ class _TugasPageState extends State<TugasPage> {
     );
   }
 
-  // =========================================================
-  // TABS
-  // =========================================================
+  // TABS //
 
   Widget _buildTabs() {
     return SizedBox(
@@ -313,31 +294,21 @@ class _TugasPageState extends State<TugasPage> {
               });
             },
             child: Container(
-              margin:
-                  const EdgeInsets.only(right: 8),
-              padding:
-                  const EdgeInsets.symmetric(
-                horizontal: 15,
-              ),
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 15),
               decoration: BoxDecoration(
                 color: active
                     ? const Color(0xFF2864E8)
                     : const Color(0xFFE9EDF5),
-                borderRadius:
-                    BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12),
               ),
               alignment: Alignment.center,
               child: Text(
                 tabs[index],
                 style: TextStyle(
                   fontSize: 11.5,
-                  fontWeight:
-                      active
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                  color: active
-                      ? Colors.white
-                      : const Color(0xFF63738E),
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                  color: active ? Colors.white : const Color(0xFF63738E),
                 ),
               ),
             ),
@@ -347,341 +318,326 @@ class _TugasPageState extends State<TugasPage> {
     );
   }
 
-  // =========================================================
-  // TASK CARD
-  // =========================================================
+  // DAFTAR TUGAS //
+
+  Widget _buildTaskList(bool isSmallScreen) {
+    if (isLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 50),
+        child: Center(
+          child: CircularProgressIndicator(color: Color(0xFF2864E8)),
+        ),
+      );
+    }
+
+    if (errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 35),
+          child: Column(
+            children: [
+              const Icon(
+                Icons.wifi_off_rounded,
+                size: 42,
+                color: Color(0xFF98A6B9),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Gagal mengambil data tugas',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF202D43),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                errorMessage!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 11, color: Color(0xFF71809A)),
+              ),
+              const SizedBox(height: 15),
+              ElevatedButton(
+                onPressed: _loadTasks,
+                child: const Text('Coba Lagi'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final displayedTasks = filteredTasks;
+
+    if (displayedTasks.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 45),
+        child: Center(
+          child: Column(
+            children: [
+              const Icon(
+                Icons.assignment_outlined,
+                size: 48,
+                color: Color(0xFF9AA9BD),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                selectedTab == 0
+                    ? 'Belum ada tugas'
+                    : 'Tidak ada tugas pada kategori ini',
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF71809A),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: displayedTasks.map((task) {
+        final bool completed = task['is_submitted'] == true;
+        final bool late = _isLate(task);
+
+        return _buildTaskCard(
+          task: task,
+          subject: task['mapel']?.toString() ?? 'Mata Pelajaran',
+          title: task['judul']?.toString() ?? 'Tanpa Judul',
+          deadline: _formatDeadline(task),
+          remaining: _getRemainingTime(task),
+          completed: completed,
+          isLate: late,
+          isSmallScreen: isSmallScreen,
+        );
+      }).toList(),
+    );
+  }
+
+  // TASK CARD // 
 
   Widget _buildTaskCard({
+    required Map<String, dynamic> task,
     required String subject,
     required String title,
     required String deadline,
     required String remaining,
     required bool completed,
+    required bool isLate,
     required bool isSmallScreen,
   }) {
     final Color statusColor = completed
         ? const Color(0xFF13B87A)
+        : isLate
+        ? const Color(0xFFE45B5B)
         : const Color(0xFFF3A700);
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius:
-            BorderRadius.circular(17),
-        border: Border.all(
-          color: const Color(0xFFE1E6EF),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color:
-                Colors.black.withOpacity(0.035),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
+    return InkWell(
+      borderRadius: BorderRadius.circular(17),
+      onTap: () {
+        final taskModel = TaskModel(
+          id: task['id'].toString(),
+          subject: subject,
+          title: title,
+          description: subject,
+          deadline: task['deadline']?.toString() ?? '',
+          timeRemainingTag: remaining,
+          subjectColor: const Color(0xFF687995),
+          accentBorderColor: statusColor,
+          icon: Icons.description_outlined,
+          iconBgColor: const Color(0xFFF0F4F9),
+          isSubmitted: completed,
+        );
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DetailTugasPage(task: taskModel),
           ),
-        ],
-      ),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment:
-              CrossAxisAlignment.stretch,
-          children: [
-            // Garis kiri
-            Container(
-              width: 5,
-              decoration: BoxDecoration(
-                color: statusColor,
-                borderRadius:
-                    const BorderRadius.only(
-                  topLeft:
-                      Radius.circular(17),
-                  bottomLeft:
-                      Radius.circular(17),
-                ),
-              ),
-            ),
-
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.all(
-                  isSmallScreen ? 14 : 16,
-                ),
-                child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                  children: [
-                    // ==========================================
-                    // ICON + SUBJECT
-                    // ==========================================
-
-                    Row(
-                      children: [
-                        Container(
-                          width:
-                              isSmallScreen
-                                  ? 40
-                                  : 43,
-                          height:
-                              isSmallScreen
-                                  ? 40
-                                  : 43,
-                          decoration:
-                              BoxDecoration(
-                            color: completed
-                                ? const Color(
-                                    0xFFE8FFF6,
-                                  )
-                                : const Color(
-                                    0xFFF0F4F9,
-                                  ),
-                            borderRadius:
-                                BorderRadius
-                                    .circular(12),
-                          ),
-                          child: Icon(
-                            Icons
-                                .description_outlined,
-                            color: completed
-                                ? const Color(
-                                    0xFF10B981,
-                                  )
-                                : const Color(
-                                    0xFF8A9CB6,
-                                  ),
-                            size:
-                                isSmallScreen
-                                    ? 20
-                                    : 22,
-                          ),
-                        ),
-
-                        const SizedBox(width: 10),
-
-                        Expanded(
-                          child: Text(
-                            subject,
-                            maxLines: 2,
-                            overflow:
-                                TextOverflow
-                                    .ellipsis,
-                            style: TextStyle(
-                              fontSize:
-                                  isSmallScreen
-                                      ? 11
-                                      : 12,
-                              color:
-                                  const Color(
-                                0xFF687995,
-                              ),
-                              fontWeight:
-                                  FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // ==========================================
-                    // BADGE
-                    // ==========================================
-
-                    Container(
-                      padding:
-                          const EdgeInsets
-                              .symmetric(
-                        horizontal: 8,
-                        vertical: 5,
-                      ),
-                      decoration:
-                          BoxDecoration(
-                        color: completed
-                            ? const Color(
-                                0xFFD6F8E9,
-                              )
-                            : const Color(
-                                0xFFFFEDC6,
-                              ),
-                        borderRadius:
-                            BorderRadius.circular(
-                          5,
-                        ),
-                      ),
-                      child: Text(
-                        completed
-                            ? 'SELESAI'
-                            : 'TUGAS',
-                        style: TextStyle(
-                          fontSize:
-                              isSmallScreen
-                                  ? 8
-                                  : 9,
-                          fontWeight:
-                              FontWeight.w800,
-                          color: completed
-                              ? const Color(
-                                  0xFF079762,
-                                )
-                              : const Color(
-                                  0xFFD68600,
-                                ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    // ==========================================
-                    // TITLE
-                    // ==========================================
-
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize:
-                            isSmallScreen
-                                ? 14
-                                : 15,
-                        height: 1.35,
-                        fontWeight:
-                            FontWeight.w700,
-                        color:
-                            const Color(
-                          0xFF202D43,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 9),
-
-                    // ==========================================
-                    // DEADLINE
-                    // ==========================================
-
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons
-                              .access_time_rounded,
-                          size: 15,
-                          color:
-                              Color(0xFF98A6B9),
-                        ),
-                        const SizedBox(width: 5),
-                        Expanded(
-                          child: Text(
-                            'Deadline: $deadline',
-                            style: TextStyle(
-                              fontSize:
-                                  isSmallScreen
-                                      ? 10.5
-                                      : 11.5,
-                              color:
-                                  const Color(
-                                0xFF98A6B9,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // ==========================================
-                    // STATUS
-                    // ==========================================
-
-                    Align(
-                      alignment:
-                          Alignment.centerRight,
-                      child: Container(
-                        padding:
-                            const EdgeInsets
-                                .symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        decoration:
-                            BoxDecoration(
-                          color:
-                              const Color(
-                            0xFFE9FFF5,
-                          ),
-                          borderRadius:
-                              BorderRadius
-                                  .circular(20),
-                          border: Border.all(
-                            color:
-                                const Color(
-                              0xFFC9F4E2,
-                            ),
-                          ),
-                        ),
-                        child: Text(
-                          remaining,
-                          style: TextStyle(
-                            fontSize:
-                                isSmallScreen
-                                    ? 9.5
-                                    : 10.5,
-                            fontWeight:
-                                FontWeight.w700,
-                            color:
-                                const Color(
-                              0xFF0AA66B,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(17),
+          border: Border.all(color: const Color(0xFFE1E6EF)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
+        ),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                width: 5,
+                decoration: BoxDecoration(
+                  color: statusColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(17),
+                    bottomLeft: Radius.circular(17),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.all(isSmallScreen ? 14 : 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: isSmallScreen ? 40 : 43,
+                            height: isSmallScreen ? 40 : 43,
+                            decoration: BoxDecoration(
+                              color: completed
+                                  ? const Color(0xFFE8FFF6)
+                                  : const Color(0xFFF0F4F9),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.description_outlined,
+                              color: completed
+                                  ? const Color(0xFF10B981)
+                                  : const Color(0xFF8A9CB6),
+                              size: isSmallScreen ? 20 : 22,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              subject,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: isSmallScreen ? 11 : 12,
+                                color: const Color(0xFF687995),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 14 : 15,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF202D43),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        deadline,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF71809A),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            remaining,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: statusColor,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: statusColor.withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              completed
+                                  ? 'Sudah Dikumpulkan'
+                                  : isLate
+                                  ? 'Terlambat'
+                                  : 'Belum Dikumpulkan',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: statusColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      const Align(
+                        alignment: Alignment.centerRight,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Lihat Detail',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF2864E8),
+                              ),
+                            ),
+                            SizedBox(width: 4),
+                            Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 14,
+                              color: Color(0xFF2864E8),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // =========================================================
-  // FLOATING BUTTON
-  // =========================================================
+  // FLOATING BUTTON //
 
   Widget _buildFloatingButton() {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius:
-            BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(18),
         onTap: () {
-          // Aksi tombol
+          // Aksi pencarian dapat ditambahkan berikutnya.
         },
         child: Container(
           width: 52,
           height: 52,
           decoration: BoxDecoration(
             color: const Color(0xFF2864E8),
-            borderRadius:
-                BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
-                color:
-                    const Color(0xFF2864E8)
-                        .withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 12,
-                offset:
-                    const Offset(0, 5),
+                offset: const Offset(0, 5),
               ),
             ],
           ),
-          child: const Icon(
-            Icons.search,
-            color: Colors.white,
-            size: 23,
-          ),
+          child: const Icon(Icons.search, color: Colors.white, size: 23),
         ),
       ),
     );
