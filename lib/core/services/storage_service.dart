@@ -7,6 +7,7 @@ class StorageService {
 
   static const String _keyToken = 'auth_token';
   static const String _keyUser = 'user_data';
+  static const String _keyProfile = 'profile_data';
   static const String _keyBaseUrl = 'custom_base_url';
 
   // Simpan token autentikasi
@@ -56,6 +57,27 @@ class StorageService {
   static Future<void> clearAuth() async {
     await _storage.delete(key: _keyToken);
     await _storage.delete(key: _keyUser);
+    await _storage.delete(key: _keyProfile);
+  }
+
+  // Simpan raw JSON profil dari /api/profile
+  static Future<void> saveProfileJson(Map<String, dynamic> profileJson) async {
+    await _storage.write(key: _keyProfile, value: jsonEncode(profileJson));
+  }
+
+  // Ambil raw JSON profil dari storage
+  static Future<Map<String, dynamic>?> getProfileJson() async {
+    final raw = await _storage.read(key: _keyProfile);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+    } catch (_) {
+      return null;
+    }
+    return null;
   }
 }
 

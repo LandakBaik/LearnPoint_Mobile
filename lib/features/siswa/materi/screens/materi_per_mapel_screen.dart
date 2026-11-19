@@ -6,8 +6,6 @@ import 'package:flutter/material.dart';
 // golongan: E
 
 import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
-import 'package:learnpoint_mobile/features/siswa/profile/models/student_profile_model.dart';
-import 'package:learnpoint_mobile/features/siswa/profile/screens/akun_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/screens/notifikasi_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/dashboard_header_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/widgets/materi_header_widget.dart';
@@ -22,14 +20,6 @@ class Materimapel extends StatefulWidget {
     this.onBackTap,
     this.subject,
   });
-
-  static const studentProfile = StudentProfileModel(
-    name: 'Abimanyu',
-    gradeClass: 'Kelas VIII-A',
-    schoolName: 'SMP Merdeka',
-    initials: 'AP',
-    hasNotification: true,
-  );
 
   @override
   State<Materimapel> createState() => _MaterimapelState();
@@ -49,7 +39,8 @@ class _MaterimapelState extends State<Materimapel> {
     return Scaffold(
       backgroundColor: const Color(0xFF6336ED),
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: LayoutBuilder(
+          builder:(context, constraints) => SingleChildScrollView(
           child: Column(
             children: [
               Padding(
@@ -58,20 +49,10 @@ class _MaterimapelState extends State<Materimapel> {
                   vertical: 12,
                 ),
                 child: DashboardHeaderWidget(
-                  profile: Materimapel.studentProfile,
                   onNotificationTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => const NotificationScreen(),
-                      ),
-                    );
-                  },
-                  onProfileTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const AkunScreen(
-                          profile: Materimapel.studentProfile,
-                        ),
                       ),
                     );
                   },
@@ -112,6 +93,7 @@ class _MaterimapelState extends State<Materimapel> {
                   description: description,
                 ),
               ),
+              
               MateriSectionWidget(
                 mapelId: widget.subject?.id,
                 subjectName: subjectName,
@@ -123,7 +105,7 @@ class _MaterimapelState extends State<Materimapel> {
               ),
             ],
           ),
-        ),
+        ),),
       ),
     );
   }

@@ -20,4 +20,26 @@ class NotificationModel {
     required this.backgroundColor,
     this.isRead = false,
   });
+
+  NotificationModel copyWith({
+    String? id,
+    String? title,
+    String? message,
+    String? time,
+    IconData? icon,
+    Color? color,
+    Color? backgroundColor,
+    bool? isRead,
+  }) {
+    return NotificationModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      message: message ?? this.message,
+      time: time ?? this.time,
+      icon: icon ?? this.icon,
+      color: color ?? this.color,
+      backgroundColor: backgroundColor ?? this.backgroundColor,
+      isRead: isRead ?? this.isRead,
+    );
+  }
 }

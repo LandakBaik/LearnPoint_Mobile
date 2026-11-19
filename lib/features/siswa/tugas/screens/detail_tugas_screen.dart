@@ -68,9 +68,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     }
   }
 
-  // ============================================================
-  // HELPER
-  // ============================================================
+  // HELPER //
 
   void _showMessage(
     String message, {
@@ -143,9 +141,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     }
   }
 
-  // ============================================================
-  // MEMUAT DATA PENGUMPULAN DARI API
-  // ============================================================
+  // MEMUAT DATA PENGUMPULAN DARI API // 
 
   Future<void> _loadSubmissionDetails() async {
     if (isLoadingSubmission) return;
@@ -228,9 +224,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     }
   }
 
-  // ============================================================
-  // PILIH FILE
-  // ============================================================
+  // PILIH FILE //
 
   Future<void> pickFile() async {
     if (isGraded || isSubmitting) return;
@@ -275,9 +269,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     }
   }
 
-  // ============================================================
-  // HAPUS FILE TERPILIH
-  // ============================================================
+  // HAPUS FILE TERPILIH //
 
   void removeSelectedFile() {
     if (isSubmitting) return;
@@ -288,9 +280,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     });
   }
 
-  // ============================================================
-  // PREVIEW FILE - HALAMAN BARU
-  // ============================================================
+  // PREVIEW FILE // 
 
   Future<void> showFilePreviewModal({
     required String fileName,
@@ -450,9 +440,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     }
   }
 
-  // ============================================================
-  // STYLE HELPER
-  // ============================================================
+  // STYLE HELPER //
 
   BoxDecoration _cardDecoration() {
     return BoxDecoration(
@@ -560,9 +548,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  // ============================================================
-  // INFORMASI GURU
-  // ============================================================
+  // INFORMASI GURU //
 
   Widget _buildTeacherInfo() {
     if (teacherName == null || teacherName!.isEmpty) {
@@ -615,9 +601,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  // ============================================================
-  // KARTU INFORMASI TUGAS
-  // ============================================================
+  // CARD INFORMASI TUGAS//
 
   Widget _buildTaskInfoCard() {
     return Container(
@@ -694,9 +678,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  // ============================================================
-  // KARTU BERKAS LAMPIRAN
-  // ============================================================
+  // KARTU BERKAS LAMPIRAN //
 
   Widget _buildAttachmentCard() {
     if (attachmentUrl == null || attachmentUrl!.isEmpty) {
@@ -769,9 +751,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  // ============================================================
-  // KARTU PENGUMPULAN TUGAS
-  // ============================================================
+  // KARTU PENGUMPULAN TUGAS //
 
   Widget _buildSubmissionSectionCard() {
     return Container(
@@ -873,9 +853,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  // ============================================================
-  // AREA PILIH FILE
-  // ============================================================
+  // AREA PILIH FILE //
 
   Widget _buildUploadArea() {
     return InkWell(
@@ -943,9 +921,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  // ============================================================
-  // KARTU FILE TERPILIH
-  // ============================================================
+  // KARTU FILE TERPILIH //
 
   Widget _buildSelectedFileCard() {
     final file = selectedFile!;
@@ -1058,9 +1034,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  // ============================================================
-  // INFO PENGUMPULAN
-  // ============================================================
+  // INFO PENGUMPULAN //
 
   Widget _buildInfoBox() {
     return Container(
@@ -1094,9 +1068,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  // ============================================================
-  // TOMBOL KIRIM
-  // ============================================================
+  // TOMBOL KIRIM //
 
   Widget _buildSubmitButton() {
     return SizedBox(
@@ -1139,9 +1111,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  // ============================================================
-  // NOTIFIKASI SUDAH TERKUMPUL
-  // ============================================================
+  // NOTIFIKASI SUDAH TERKUMPUL // 
 
   Widget _buildSubmittedNotice() {
     return Container(
@@ -1189,9 +1159,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  // ============================================================
-  // KARTU FILE TERKUMPUL
-  // ============================================================
+  // KARTU FILE TERKUMPUL //
 
   Widget _buildSubmittedFileCard() {
     final fileName = submittedFileName ?? 'jawaban_tugas';
@@ -1253,9 +1221,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  // ============================================================
-  // MENUNGGU PENILAIAN
-  // ============================================================
+  // MENUNGGU PENILAIAN //
 
   Widget _buildWaitingNotice() {
     return Container(
@@ -1303,9 +1269,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  // ============================================================
-  // NILAI TUGAS
-  // ============================================================
+  // NILAI TUGAS //
 
   Widget _buildScoreCard() {
     return Container(
@@ -1381,9 +1345,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  // ============================================================
-  // BUILD HALAMAN
-  // ============================================================
+  // BUILD HALAMAN //
 
   @override
   Widget build(BuildContext context) {
@@ -1480,9 +1442,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
   }
 }
 
-// ============================================================
-// HALAMAN PREVIEW BERKAS
-// ============================================================
+// HALAMAN PREVIEW BERKAS //
 
 class TaskFilePreviewPage extends StatelessWidget {
   final String fileName;

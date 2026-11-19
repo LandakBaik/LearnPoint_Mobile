@@ -21,7 +21,7 @@ class ApiConfig {
       return 'http://192.168.18.59:8000/api';
     }
     return 'http://127.0.0.1:8000/api';
-  }
+  } 
 
   static String get baseUrl => _customBaseUrl ?? defaultBaseUrl;
 
@@ -43,6 +43,7 @@ class ApiConfig {
   static String get logoutEndpoint => '$baseUrl/logout';
   static String get meEndpoint => '$baseUrl/me';
   static String get profileEndpoint => '$baseUrl/profile';
+  static String get profilePasswordEndpoint => '$baseUrl/profile/password';
 
   // Endpoints Materi Siswa
   static String get siswaMateriEndpoint => '$baseUrl/siswa/materi';

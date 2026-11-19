@@ -90,7 +90,9 @@ class HeroBannerWidget extends StatelessWidget {
 
                         // Greeting Title & Subtitle
                         Text(
-                          'Halo, ${profile.name}!',
+                          profile.name.isNotEmpty
+                              ? 'Halo, ${profile.name}!'
+                              : 'Halo!',
                           style: GoogleFonts.plusJakartaSans(
                             color: Colors.white,
                             fontSize: 24,
@@ -115,9 +117,19 @@ class HeroBannerWidget extends StatelessWidget {
                           spacing: 8,
                           runSpacing: 6,
                           children: [
-                            _buildHeroBadge('NIS ${profile.nisn ?? '01234'}'),
+                            _buildHeroBadge(
+                              profile.isGuru
+                                  ? 'NUPTK ${profile.nisn ?? '-'}'
+                                  : 'NIS ${profile.nisn ?? '-'}',
+                            ),
                             _buildHeroBadge(profile.gradeClass),
-                            _buildHeroBadge('Sem. Ganjil'),
+                            _buildHeroBadge(
+                              profile.semester != null &&
+                                      profile.semester!.isNotEmpty
+                                  ? 'Sem. ${profile.semester}'
+                                  : (profile.academicYear ??
+                                      (profile.isActive ? 'Aktif' : 'Nonaktif')),
+                            ),
                           ],
                         ),
                       ],
