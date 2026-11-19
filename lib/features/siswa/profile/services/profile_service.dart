@@ -1,11 +1,9 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 
 import 'package:learnpoint_mobile/core/config/api_config.dart';
 import 'package:learnpoint_mobile/core/services/storage_service.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/models/student_profile_model.dart';
-import 'package:learnpoint_mobile/shared/models/user_model.dart';
 
 class ProfileException implements Exception {
   final String message;
@@ -25,49 +23,21 @@ class ProfileException implements Exception {
 }
 
 class ProfileService {
-  static final ValueNotifier<StudentProfileModel?> profileNotifier =
-      ValueNotifier<StudentProfileModel?>(null);
-
   static Future<StudentProfileModel>? _inFlightFetch;
 
-  /// Mengisi state profil dari [UserModel] hasil login tanpa menunggu /api/profile.
-  static void seedFromUser(UserModel user) {
-    profileNotifier.value = StudentProfileModel.fromUserModel(user);
-  }
-
-  /// Menghapus cache state di memori saat logout.
-  static void clearCache() {
-    _inFlightFetch = null;
-    profileNotifier.value = null;
-  }
-
-  /// Memastikan profil terisi dari cache lokal (jika ada) lalu menyegarkan dari server.
-  /// Aman dipanggil berulang dari berbagai halaman.
-  static Future<StudentProfileModel?> ensureLoaded({
-    bool forceRefresh = false,
-  }) async {
-    if (profileNotifier.value == null) {
-      final cachedJson = await StorageService.getProfileJson();
-      if (cachedJson != null) {
-        profileNotifier.value = StudentProfileModel.fromProfileApi(cachedJson);
-      } else {
-        final cachedUser = await StorageService.getUser();
-        if (cachedUser != null) {
-          profileNotifier.value = StudentProfileModel.fromUserModel(cachedUser);
-        }
-      }
+  /// Membaca cache profil lokal dari storage jika tersedia.
+  static Future<StudentProfileModel?> loadCachedProfile() async {
+    final cachedJson = await StorageService.getProfileJson();
+    if (cachedJson != null) {
+      return StudentProfileModel.fromProfileApi(cachedJson);
     }
 
-    if (profileNotifier.value != null && !forceRefresh) {
-      // Jika sudah pernah dimuat di sesi ini dan tidak dipaksa refresh, tetap bisa refresh jika belum lengkap
-      return profileNotifier.value;
+    final cachedUser = await StorageService.getUser();
+    if (cachedUser != null) {
+      return StudentProfileModel.fromUserModel(cachedUser);
     }
 
-    try {
-      return await fetchProfile();
-    } catch (_) {
-      return profileNotifier.value;
-    }
+    return null;
   }
 
   /// Mengambil data profil lengkap pengguna yang sedang login dari `GET /api/profile`.
@@ -116,9 +86,7 @@ class ProfileService {
       }
 
       await StorageService.saveProfileJson(data);
-      final profile = StudentProfileModel.fromProfileApi(data);
-      profileNotifier.value = profile;
-      return profile;
+      return StudentProfileModel.fromProfileApi(data);
     } on DioException catch (e) {
       throw _mapDioError(e, fallbackMessage: 'Gagal memuat data profil.');
     }
@@ -174,9 +142,7 @@ class ProfileService {
         final data = body['data'];
         if (data is Map<String, dynamic>) {
           await StorageService.saveProfileJson(data);
-          final updated = StudentProfileModel.fromProfileApi(data);
-          profileNotifier.value = updated;
-          return updated;
+          return StudentProfileModel.fromProfileApi(data);
         }
         rethrow;
       }

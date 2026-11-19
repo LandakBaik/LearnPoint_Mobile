@@ -1,79 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:learnpoint_mobile/features/auth/data/auth_service.dart';
 import 'package:learnpoint_mobile/features/auth/presentation/screens/login_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/models/student_profile_model.dart';
+import 'package:learnpoint_mobile/features/siswa/profile/providers/profile_provider.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/screens/change_password_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/screens/edit_profil_screen.dart';
-import 'package:learnpoint_mobile/features/siswa/profile/services/profile_service.dart';
 
 class AkunScreen extends StatefulWidget {
-  final StudentProfileModel? profile;
-
-  const AkunScreen({
-    super.key,
-    this.profile,
-  });
+  const AkunScreen({super.key});
 
   @override
   State<AkunScreen> createState() => _AkunScreenState();
 }
 
 class _AkunScreenState extends State<AkunScreen> {
-  late StudentProfileModel _currentProfile;
-  bool _isLoading = true;
   bool _isLoggingOut = false;
-  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _currentProfile = widget.profile ??
-        ProfileService.profileNotifier.value ??
-        const StudentProfileModel.empty();
-    _loadProfile();
+    Future.microtask(() {
+      if (!mounted) return;
+      context.read<ProfileProvider>().fetchProfile();
+    });
   }
 
   Future<void> _loadProfile() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final fetched = await ProfileService.fetchProfile();
-      if (!mounted) return;
-      setState(() {
-        _currentProfile = fetched;
-        _isLoading = false;
-      });
-    } on ProfileException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _errorMessage = e.message;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Gagal memuat data profil: $e';
-      });
-    }
+    await context.read<ProfileProvider>().fetchProfile();
   }
 
   Future<void> _openEditProfile() async {
-    final updated = await Navigator.of(context).push<StudentProfileModel>(
+    await Navigator.of(context).push<void>(
       MaterialPageRoute(
-        builder: (context) => EditProfilScreen(profile: _currentProfile),
+        builder: (context) => const EditProfilScreen(),
       ),
     );
-
-    if (updated != null && mounted) {
-      setState(() {
-        _currentProfile = updated;
-      });
-    }
   }
 
   Future<void> _openChangePassword() async {
@@ -86,13 +49,18 @@ class _AkunScreenState extends State<AkunScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final profileProvider = context.watch<ProfileProvider>();
+    final currentProfile = profileProvider.currentProfile;
+    final isLoading = profileProvider.isLoading;
+    final errorMessage = profileProvider.errorMessage;
+
     final mediaQuery = MediaQuery.of(context);
     final isTablet = mediaQuery.size.width > 600;
-    final isGuru = _currentProfile.isGuru;
-    final isActive = _currentProfile.isActive;
+    final isGuru = currentProfile.isGuru;
+    final isActive = currentProfile.isActive;
     final statusLabel = isGuru
         ? (isActive ? 'Guru Aktif' : 'Nonaktif')
-        : (_currentProfile.isSiswa
+        : (currentProfile.isSiswa
             ? (isActive ? 'Siswa Aktif' : 'Nonaktif')
             : (isActive ? 'Aktif' : 'Nonaktif'));
 
@@ -139,8 +107,7 @@ class _AkunScreenState extends State<AkunScreen> {
                           Material(
                             color: Colors.transparent,
                             child: InkWell(
-                              onTap: () =>
-                                  Navigator.of(context).pop(_currentProfile),
+                              onTap: () => Navigator.of(context).pop(),
                               borderRadius: BorderRadius.circular(14),
                               child: Container(
                                 padding: const EdgeInsets.all(10),
@@ -223,13 +190,13 @@ class _AkunScreenState extends State<AkunScreen> {
                           ],
                         ),
                         child: ClipOval(
-                          child: _buildAvatarImage(),
+                          child: _buildAvatarImage(currentProfile),
                         ),
                       ),
 
                       const SizedBox(height: 16),
 
-                      if (_isLoading && _currentProfile.isEmpty)
+                      if (isLoading && currentProfile.isEmpty)
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 12),
                           child: SizedBox(
@@ -243,8 +210,8 @@ class _AkunScreenState extends State<AkunScreen> {
                         )
                       else ...[
                         Text(
-                          _currentProfile.name.isNotEmpty
-                              ? _currentProfile.name
+                          currentProfile.name.isNotEmpty
+                              ? currentProfile.name
                               : '-',
                           textAlign: TextAlign.center,
                           style: const TextStyle(
@@ -254,10 +221,10 @@ class _AkunScreenState extends State<AkunScreen> {
                             letterSpacing: -0.3,
                           ),
                         ),
-                        if (_currentProfile.username.isNotEmpty) ...[
+                        if (currentProfile.username.isNotEmpty) ...[
                           const SizedBox(height: 5),
                           Text(
-                            '@${_currentProfile.username}',
+                            '@${currentProfile.username}',
                             style: TextStyle(
                               fontSize: 14.5,
                               fontWeight: FontWeight.w600,
@@ -288,7 +255,7 @@ class _AkunScreenState extends State<AkunScreen> {
                               ),
                             ),
                             child: Text(
-                              '${_currentProfile.gradeClass} • ${_currentProfile.schoolName}',
+                              '${currentProfile.gradeClass} • ${currentProfile.schoolName}',
                               style: const TextStyle(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700,
@@ -361,7 +328,7 @@ class _AkunScreenState extends State<AkunScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (_isLoading && !_currentProfile.isEmpty) ...[
+                        if (isLoading && !currentProfile.isEmpty) ...[
                           const LinearProgressIndicator(
                             color: Color(0xFF4338CA),
                             backgroundColor: Color(0xFFE0E7FF),
@@ -369,7 +336,7 @@ class _AkunScreenState extends State<AkunScreen> {
                           const SizedBox(height: 16),
                         ],
 
-                        if (_errorMessage != null) ...[
+                        if (errorMessage != null) ...[
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(14),
@@ -390,7 +357,7 @@ class _AkunScreenState extends State<AkunScreen> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    _errorMessage!,
+                                    errorMessage,
                                     style: const TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
@@ -424,26 +391,26 @@ class _AkunScreenState extends State<AkunScreen> {
                             _buildInfoRow(
                               icon: Icons.badge_outlined,
                               label: 'Nama Lengkap',
-                              value: _currentProfile.name.isNotEmpty
-                                  ? _currentProfile.name
+                              value: currentProfile.name.isNotEmpty
+                                  ? currentProfile.name
                                   : '-',
                             ),
                             _buildDivider(),
                             _buildInfoRow(
                               icon: Icons.alternate_email_rounded,
                               label: 'Username',
-                              value: _currentProfile.username.isNotEmpty
-                                  ? _currentProfile.username
+                              value: currentProfile.username.isNotEmpty
+                                  ? currentProfile.username
                                   : '-',
                             ),
                             _buildDivider(),
                             _buildInfoRow(
                               icon: Icons.mail_outline_rounded,
                               label: 'Alamat Email',
-                              value: _currentProfile.email.isNotEmpty
-                                  ? _currentProfile.email
+                              value: currentProfile.email.isNotEmpty
+                                  ? currentProfile.email
                                   : '-',
-                              canCopy: _currentProfile.email.isNotEmpty,
+                              canCopy: currentProfile.email.isNotEmpty,
                               context: context,
                             ),
                             if (!isGuru) ...[
@@ -451,21 +418,21 @@ class _AkunScreenState extends State<AkunScreen> {
                               _buildInfoRow(
                                 icon: Icons.cake_outlined,
                                 label: 'Tanggal Lahir',
-                                value: _currentProfile.dateOfBirth,
+                                value: currentProfile.dateOfBirth,
                               ),
                             ],
                             _buildDivider(),
                             _buildInfoRow(
                               icon: Icons.wc_rounded,
                               label: 'Jenis Kelamin',
-                              value: _currentProfile.gender,
+                              value: currentProfile.gender,
                             ),
-                            if (!isGuru && _currentProfile.agama != null) ...[
+                            if (!isGuru && currentProfile.agama != null) ...[
                               _buildDivider(),
                               _buildInfoRow(
                                 icon: Icons.auto_awesome_outlined,
                                 label: 'Agama',
-                                value: _currentProfile.agama!,
+                                value: currentProfile.agama!,
                               ),
                             ],
                             if (isGuru) ...[
@@ -473,8 +440,8 @@ class _AkunScreenState extends State<AkunScreen> {
                               _buildInfoRow(
                                 icon: Icons.phone_outlined,
                                 label: 'Nomor Telepon',
-                                value: _currentProfile.parentPhone,
-                                canCopy: _currentProfile.parentPhone != '-',
+                                value: currentProfile.parentPhone,
+                                canCopy: currentProfile.parentPhone != '-',
                                 context: context,
                               ),
                             ] else ...[
@@ -482,7 +449,7 @@ class _AkunScreenState extends State<AkunScreen> {
                               _buildInfoRow(
                                 icon: Icons.location_on_outlined,
                                 label: 'Alamat Lengkap',
-                                value: _currentProfile.address,
+                                value: currentProfile.address,
                                 isMultiLine: true,
                               ),
                             ],
@@ -509,26 +476,26 @@ class _AkunScreenState extends State<AkunScreen> {
                               _buildInfoRow(
                                 icon: Icons.supervisor_account_outlined,
                                 label: 'Nama Wali Murid',
-                                value: _currentProfile.parentName,
+                                value: currentProfile.parentName,
                               ),
                               _buildDivider(),
                               _buildInfoRow(
                                 icon: Icons.phone_outlined,
                                 label: 'No. HP Wali Murid',
-                                value: _currentProfile.parentPhone,
-                                canCopy: _currentProfile.parentPhone != '-',
+                                value: currentProfile.parentPhone,
+                                canCopy: currentProfile.parentPhone != '-',
                                 context: context,
-                                actionWidget: _currentProfile.parentPhone != '-'
+                                actionWidget: currentProfile.parentPhone != '-'
                                     ? InkWell(
                                         onTap: () {
                                           Clipboard.setData(ClipboardData(
                                               text:
-                                                  _currentProfile.parentPhone));
+                                                  currentProfile.parentPhone));
                                           ScaffoldMessenger.of(context)
                                               .showSnackBar(
                                             SnackBar(
                                               content: Text(
-                                                  'Nomor HP ${_currentProfile.parentPhone} berhasil disalin'),
+                                                  'Nomor HP ${currentProfile.parentPhone} berhasil disalin'),
                                               behavior:
                                                   SnackBarBehavior.floating,
                                             ),
@@ -596,23 +563,23 @@ class _AkunScreenState extends State<AkunScreen> {
                                   _buildInfoRow(
                                     icon: Icons.numbers_rounded,
                                     label: 'NUPTK',
-                                    value: _currentProfile.nisn ?? '-',
+                                    value: currentProfile.nisn ?? '-',
                                   ),
                                   _buildDivider(),
                                   _buildInfoRow(
                                     icon: Icons.meeting_room_outlined,
                                     label: 'Status Wali Kelas',
-                                    value: _currentProfile.waliKelas != null
-                                        ? 'Wali Kelas ${_currentProfile.waliKelas}'
+                                    value: currentProfile.waliKelas != null
+                                        ? 'Wali Kelas ${currentProfile.waliKelas}'
                                         : 'Bukan Wali Kelas',
                                   ),
                                   _buildDivider(),
                                   _buildInfoRow(
                                     icon: Icons.menu_book_outlined,
                                     label: 'Mata Pelajaran Diampu',
-                                    value: _currentProfile
+                                    value: currentProfile
                                             .mapelDiampu.isNotEmpty
-                                        ? _currentProfile.mapelDiampu.join(', ')
+                                        ? currentProfile.mapelDiampu.join(', ')
                                         : '-',
                                     isMultiLine: true,
                                   ),
@@ -621,33 +588,33 @@ class _AkunScreenState extends State<AkunScreen> {
                                   _buildInfoRow(
                                     icon: Icons.account_balance_outlined,
                                     label: 'Asal Sekolah',
-                                    value: _currentProfile.schoolName,
+                                    value: currentProfile.schoolName,
                                   ),
                                   _buildDivider(),
                                   _buildInfoRow(
                                     icon: Icons.meeting_room_outlined,
                                     label: 'Kelas',
-                                    value: _currentProfile.gradeClass,
+                                    value: currentProfile.gradeClass,
                                   ),
-                                  if (_currentProfile.waliKelas != null) ...[
+                                  if (currentProfile.waliKelas != null) ...[
                                     _buildDivider(),
                                     _buildInfoRow(
                                       icon: Icons.person_pin_outlined,
                                       label: 'Wali Kelas',
-                                      value: _currentProfile.waliKelas!,
+                                      value: currentProfile.waliKelas!,
                                     ),
                                   ],
                                   _buildDivider(),
                                   _buildInfoRow(
                                     icon: Icons.numbers_rounded,
                                     label: 'NIS Siswa',
-                                    value: _currentProfile.nisn ?? '-',
+                                    value: currentProfile.nisn ?? '-',
                                   ),
                                   _buildDivider(),
                                   _buildInfoRow(
                                     icon: Icons.calendar_month_outlined,
                                     label: 'Angkatan / Tahun Ajaran',
-                                    value: _currentProfile.academicYear ?? '-',
+                                    value: currentProfile.academicYear ?? '-',
                                   ),
                                 ],
                         ),
@@ -834,27 +801,29 @@ class _AkunScreenState extends State<AkunScreen> {
     );
   }
 
-  Widget _buildAvatarImage() {
-    final avatar = _currentProfile.avatarUrl;
+  Widget _buildAvatarImage(StudentProfileModel profile) {
+    final avatar = profile.avatarUrl;
     if (avatar != null && avatar.isNotEmpty) {
       if (avatar.startsWith('assets/')) {
         return Image.asset(
           avatar,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => _buildInitialsAvatar(),
+          errorBuilder: (context, error, stackTrace) =>
+              _buildInitialsAvatar(profile),
         );
       } else {
         return Image.network(
           avatar,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => _buildInitialsAvatar(),
+          errorBuilder: (context, error, stackTrace) =>
+              _buildInitialsAvatar(profile),
         );
       }
     }
-    return _buildInitialsAvatar();
+    return _buildInitialsAvatar(profile);
   }
 
-  Widget _buildInitialsAvatar() {
+  Widget _buildInitialsAvatar(StudentProfileModel profile) {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -868,7 +837,7 @@ class _AkunScreenState extends State<AkunScreen> {
       ),
       alignment: Alignment.center,
       child: Text(
-        _currentProfile.initials,
+        profile.initials,
         style: const TextStyle(
           fontSize: 38,
           fontWeight: FontWeight.w900,
@@ -1088,6 +1057,7 @@ class _AkunScreenState extends State<AkunScreen> {
               if (_isLoggingOut) return;
               final navigator = Navigator.of(parentContext);
               final messenger = ScaffoldMessenger.of(parentContext);
+              final profileProvider = parentContext.read<ProfileProvider>();
 
               Navigator.of(dialogContext).pop();
               if (!mounted) return;
@@ -1096,6 +1066,7 @@ class _AkunScreenState extends State<AkunScreen> {
               });
 
               await AuthService.logout();
+              profileProvider.clearCache();
               if (!mounted) return;
 
               messenger.showSnackBar(

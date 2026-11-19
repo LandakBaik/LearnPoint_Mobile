@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/models/student_profile_model.dart';
+import 'package:learnpoint_mobile/features/siswa/profile/providers/profile_provider.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/screens/change_password_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/services/profile_service.dart';
 
 class EditProfilScreen extends StatefulWidget {
-  final StudentProfileModel profile;
+  final StudentProfileModel? profile;
 
   const EditProfilScreen({
     super.key,
-    required this.profile,
+    this.profile,
   });
 
   @override
@@ -19,6 +21,7 @@ class EditProfilScreen extends StatefulWidget {
 class _EditProfilScreenState extends State<EditProfilScreen> {
   final _formKey = GlobalKey<FormState>();
 
+  late final StudentProfileModel _initialProfile;
   late TextEditingController _nameController;
   late TextEditingController _usernameController;
   late TextEditingController _emailController;
@@ -33,24 +36,31 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
 
   final List<String> _genderOptions = ['Laki-laki', 'Perempuan'];
 
-  bool get _isGuru => widget.profile.isGuru;
+  bool get _isGuru => _initialProfile.isGuru;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.profile.name);
-    _usernameController = TextEditingController(text: widget.profile.username);
-    _emailController = TextEditingController(text: widget.profile.email);
-    _addressController = TextEditingController(text: widget.profile.address);
-    _dobController = TextEditingController(text: widget.profile.dateOfBirth);
-    _parentNameController = TextEditingController(text: widget.profile.parentName);
+    _initialProfile =
+        widget.profile ?? context.read<ProfileProvider>().currentProfile;
+    _nameController = TextEditingController(text: _initialProfile.name);
+    _usernameController =
+        TextEditingController(text: _initialProfile.username);
+    _emailController = TextEditingController(text: _initialProfile.email);
+    _addressController = TextEditingController(text: _initialProfile.address);
+    _dobController = TextEditingController(text: _initialProfile.dateOfBirth);
+    _parentNameController =
+        TextEditingController(text: _initialProfile.parentName);
     _parentPhoneController = TextEditingController(
-      text: widget.profile.parentPhone == '-' ? '' : widget.profile.parentPhone,
+      text: _initialProfile.parentPhone == '-'
+          ? ''
+          : _initialProfile.parentPhone,
     );
-    _nisnController = TextEditingController(text: widget.profile.nisn ?? '');
+    _nisnController =
+        TextEditingController(text: _initialProfile.nisn ?? '');
 
-    _selectedGender = _genderOptions.contains(widget.profile.gender)
-        ? widget.profile.gender
+    _selectedGender = _genderOptions.contains(_initialProfile.gender)
+        ? _initialProfile.gender
         : _genderOptions.first;
   }
 
@@ -99,7 +109,8 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
     try {
       final cleanPhone =
           _parentPhoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
-      final updatedProfile = await ProfileService.updateGuruProfile(
+      final updatedProfile =
+          await context.read<ProfileProvider>().updateGuruProfile(
         nomorTelepon: cleanPhone.isEmpty ? null : cleanPhone,
         jenisKelamin: _selectedGender,
       );
@@ -623,7 +634,8 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
   }
 
   Widget _buildAvatarImage() {
-    final avatar = widget.profile.avatarUrl;
+    final avatar = widget.profile?.avatarUrl ??
+        context.watch<ProfileProvider>().currentProfile.avatarUrl;
     if (avatar != null && avatar.isNotEmpty) {
       if (avatar.startsWith('assets/')) {
         return Image.asset(

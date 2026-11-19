@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
-import 'package:learnpoint_mobile/features/siswa/profile/models/student_profile_model.dart';
-import 'package:learnpoint_mobile/features/siswa/profile/services/profile_service.dart';
+import 'package:learnpoint_mobile/features/siswa/profile/providers/profile_provider.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/models/task_model.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/screens/akun_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/screens/detail_materi_screen.dart';
@@ -34,7 +34,10 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    ProfileService.ensureLoaded();
+    Future.microtask(() {
+      if (!mounted) return;
+      context.read<ProfileProvider>().ensureLoaded();
+    });
     _loadLastReadMateri();
     _loadDashboardTasks();
   }
@@ -204,9 +207,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
   void _openProfile() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => AkunScreen(
-          profile: ProfileService.profileNotifier.value,
-        ),
+        builder: (_) => const AkunScreen(),
       ),
     );
   }
@@ -279,11 +280,10 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // 1. Header & Hero Area with GIF Background and Floating Banner
-            ValueListenableBuilder<StudentProfileModel?>(
-              valueListenable: ProfileService.profileNotifier,
-              builder: (context, liveProfile, _) {
+            Consumer<ProfileProvider>(
+              builder: (context, profileProvider, _) {
                 return HeroBannerWidget(
-                  profile: liveProfile ?? const StudentProfileModel.empty(),
+                  profile: profileProvider.currentProfile,
                   onNotificationTap: _openNotifications,
                   onProfileTap: _openProfile,
                   continueSubject: _lastReadMateri?.subject,

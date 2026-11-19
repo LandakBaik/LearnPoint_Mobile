@@ -5,7 +5,6 @@ import 'package:dio/dio.dart';
 import 'package:learnpoint_mobile/shared/models/user_model.dart';
 import 'package:learnpoint_mobile/core/config/api_config.dart';
 import 'package:learnpoint_mobile/core/services/storage_service.dart';
-import 'package:learnpoint_mobile/features/siswa/profile/services/profile_service.dart';
 
 class AuthResult {
   final bool success;
@@ -49,7 +48,6 @@ class AuthService {
           // Simpan token & user ke Secure Storage
           await StorageService.saveToken(authResponse.token!);
           await StorageService.saveUser(authResponse.user!);
-          ProfileService.seedFromUser(authResponse.user!);
 
           return AuthResult(
             success: true,
@@ -192,7 +190,6 @@ class AuthService {
         // Abaikan error jaringan saat logout, yang penting storage lokal dihapus
       }
     }
-    ProfileService.clearCache();
     await StorageService.clearAuth();
   }
 
