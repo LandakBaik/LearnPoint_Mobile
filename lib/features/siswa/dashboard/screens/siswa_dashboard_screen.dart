@@ -6,6 +6,7 @@ import 'package:learnpoint_mobile/features/siswa/tugas/models/task_model.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/screens/akun_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/screens/detail_materi_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/screens/detail_tugas_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/tugas/screens/detail_tugas_pilgan_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/screens/materi_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/screens/notifikasi_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/screens/tugas_screen.dart';
@@ -193,8 +194,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
         '${localDate.year}, $hour:$minute WIB';
   }
 
-  // Fungsi _loadDashboardTasks() dan fungsi pembantunya
-  // diletakkan DI SINI.
+  // Fungsi _loadDashboardTasks() // 
 
   void _showNotice(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -226,23 +226,46 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
   }
 
   void _openTaskDetail(Map<String, dynamic> taskMap) {
+    final taskType = (taskMap['tipe'] ?? 'upload')
+        .toString()
+        .toLowerCase()
+        .trim();
+
+    final isPilgan = taskType == 'pilihan_ganda' || taskType == 'pilgan';
+
     final taskModel = TaskModel(
-      id: taskMap['id'] as String,
-      subject: taskMap['subject'] as String,
-      title: taskMap['title'] as String,
+      id: taskMap['id'].toString(),
+      subject: taskMap['subject']?.toString() ?? 'Mata Pelajaran',
+      title: taskMap['title']?.toString() ?? 'Tugas tanpa judul',
       description:
           taskMap['description']?.toString() ??
           taskMap['deskripsi']?.toString() ??
           '',
-      deadline: (taskMap['deadline'] as String).replaceFirst('Batas: ', ''),
-      timeRemainingTag: taskMap['remaining'] as String,
-      subjectColor: taskMap['subjectColor'] as Color,
-      accentBorderColor: taskMap['subjectColor'] as Color,
+      deadline: (taskMap['deadline']?.toString() ?? '').replaceFirst(
+        'Batas: ',
+        '',
+      ),
+      timeRemainingTag: taskMap['remaining']?.toString() ?? '',
+      subjectColor:
+          taskMap['subjectColor'] as Color? ?? const Color(0xFF687995),
+      accentBorderColor:
+          taskMap['subjectColor'] as Color? ?? const Color(0xFF687995),
       icon: Icons.assignment_outlined,
-      iconBgColor: taskMap['subjectBg'] as Color,
+      iconBgColor: taskMap['subjectBg'] as Color? ?? const Color(0xFFF0F4F9),
+      isSubmitted: false,
+      type: isPilgan ? 'pilihan_ganda' : 'upload',
     );
+
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => DetailTugasPage(task: taskModel)),
+      MaterialPageRoute<void>(
+        builder: (_) {
+          if (isPilgan) {
+            return DetailTugasPilganScreen(task: taskModel);
+          }
+
+          return DetailTugasPage(task: taskModel);
+        },
+      ),
     );
   }
 
@@ -334,7 +357,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
               },
             ),
 
-            const SizedBox(height: 65),
+            const SizedBox(height: 50),
 
             // 2. Section: Tugas Terbaru
             Padding(
@@ -538,8 +561,6 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
         : 0;
 
     final currentTask = _taskList[safeIndex];
-
-    // LANJUTKAN KODE LAMA DI SINI
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -770,19 +791,59 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
 
-                  // DEADLINE
-                  Text(
-                    currentTask['deadline'] as String,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFF5B6275),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  // GURU PENGAMPU
+                  Row(
+                    children: [
+                      Container(
+                        width: 27,
+                        height: 27,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEEF2FF),
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: const Icon(
+                          Icons.person_outline_rounded,
+                          size: 16,
+                          color: Color(0xFF6366F1),
+                        ),
+                      ),
+
+                      const SizedBox(width: 8),
+
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Guru Pengampu',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 10,
+                                color: const Color(0xFF94A3B8),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              currentTask['teacher']?.toString().isNotEmpty ==
+                                      true
+                                  ? currentTask['teacher'].toString()
+                                  : 'Belum tersedia',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11,
+                                color: const Color(0xFF475569),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
 
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 10),
 
                   // PAGINATION & TOMBOL KERJAKAN
                   Row(

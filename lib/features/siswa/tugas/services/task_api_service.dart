@@ -13,16 +13,15 @@ class TaskApiService {
       dynamic listData = payload;
 
       if (payload is Map) {
-        listData = payload['tugas'] ??
+        listData =
+            payload['tugas'] ??
             payload['daftar_tugas'] ??
             payload['items'] ??
             payload['data'];
       }
 
       if (listData is! List) {
-        throw Exception(
-          'Format daftar tugas dari server tidak sesuai.',
-        );
+        throw Exception('Format daftar tugas dari server tidak sesuai.');
       }
 
       return listData
@@ -51,9 +50,7 @@ class TaskApiService {
         return Map<String, dynamic>.from(payload);
       }
 
-      throw Exception(
-        'Format detail tugas dari server tidak sesuai.',
-      );
+      throw Exception('Format detail tugas dari server tidak sesuai.');
     } on DioException catch (e) {
       throw Exception(_getErrorMessage(e));
     }
@@ -70,10 +67,7 @@ class TaskApiService {
 
       // Membuat multipart form data.
       final formData = FormData.fromMap({
-        'file_jawaban': MultipartFile.fromBytes(
-          fileBytes,
-          filename: file.name,
-        ),
+        'file_jawaban': MultipartFile.fromBytes(fileBytes, filename: file.name),
       });
 
       // Mengirim file ke Laravel API.
@@ -82,9 +76,7 @@ class TaskApiService {
         data: formData,
         options: Options(
           contentType: Headers.multipartFormDataContentType,
-          headers: {
-            'Accept': 'application/json',
-          },
+          headers: {'Accept': 'application/json'},
         ),
       );
 
@@ -139,7 +131,53 @@ class TaskApiService {
       return 'Akun tidak memiliki akses ke tugas ini.';
     }
 
-    return e.message ??
-        'Terjadi kesalahan saat menghubungi server.';
+    return e.message ?? 'Terjadi kesalahan saat menghubungi server.';
+  }
+
+  /// Mengambil detail tugas beserta soal pilihan ganda.
+  static Future<Map<String, dynamic>> getPilganDetail(String id) async {
+    try {
+      final response = await ApiConfig.dio.get('/siswa/tugas/$id');
+
+      final payload = _getPayload(response.data);
+
+      if (payload is Map) {
+        final tugas = payload['tugas'];
+
+        if (tugas is Map) {
+          return Map<String, dynamic>.from(tugas);
+        }
+
+        return Map<String, dynamic>.from(payload);
+      }
+
+      throw Exception('Format detail tugas tidak sesuai.');
+    } on DioException catch (e) {
+      throw Exception(_getErrorMessage(e));
+    }
+  }
+
+  /// Mengirim jawaban pilihan ganda.
+  static Future<Map<String, dynamic>> submitPilgan({
+    required String id,
+    required Map<String, String> answers,
+  }) async {
+    try {
+      final response = await ApiConfig.dio.post(
+        '/siswa/tugas/$id/kumpulkan',
+        data: {'jawaban': answers},
+        options: Options(headers: {'Accept': 'application/json'}),
+      );
+
+      final payload = _getPayload(response.data);
+
+      if (payload is Map) {
+        return Map<String, dynamic>.from(payload);
+      }
+
+      return {};
+    } on DioException catch (e) {
+      throw Exception(_getErrorMessage(e));
+    }
   }
 }
