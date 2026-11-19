@@ -2,9 +2,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:learnpoint_mobile/features/siswa/quiz/screens/quiz_per_mapel_screen.dart';
-import 'package:learnpoint_mobile/features/siswa/profile/screens/akun_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/screens/notifikasi_screen.dart';
-import 'package:learnpoint_mobile/features/siswa/profile/models/student_profile_model.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/dashboard_header_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/widgets/quiz_parallax_background_widget.dart';
@@ -19,15 +17,6 @@ class Quiz extends StatefulWidget {
 }
 
 class _QuizState extends State<Quiz> with SingleTickerProviderStateMixin {
-  // Dummy Profile Data
-  static const studentProfile = StudentProfileModel(
-    name: 'Abimanyu',
-    gradeClass: 'Kelas VIII-A',
-    schoolName: 'SMP Merdeka',
-    initials: 'AP',
-    hasNotification: true,
-  );
-
   // Menyimpan perubahan posisi scroll
   final ValueNotifier<double> _scrollOffset = ValueNotifier<double>(0.0);
 
@@ -136,19 +125,10 @@ class _QuizState extends State<Quiz> with SingleTickerProviderStateMixin {
                       vertical: 12,
                     ),
                     child: DashboardHeaderWidget(
-                      profile: studentProfile,
                       onNotificationTap: () {
                         Navigator.of(context).push(
                           MaterialPageRoute<void>(
                             builder: (_) => const NotificationScreen(),
-                          ),
-                        );
-                      },
-                      onProfileTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) =>
-                                const AkunScreen(profile: studentProfile),
                           ),
                         );
                       },

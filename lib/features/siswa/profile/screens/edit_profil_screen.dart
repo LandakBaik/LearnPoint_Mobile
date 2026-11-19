@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/models/student_profile_model.dart';
+import 'package:learnpoint_mobile/features/siswa/profile/screens/change_password_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/profile/services/profile_service.dart';
 
 class EditProfilScreen extends StatefulWidget {
   final StudentProfileModel profile;
@@ -31,6 +33,8 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
 
   final List<String> _genderOptions = ['Laki-laki', 'Perempuan'];
 
+  bool get _isGuru => widget.profile.isGuru;
+
   @override
   void initState() {
     super.initState();
@@ -40,9 +44,11 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
     _addressController = TextEditingController(text: widget.profile.address);
     _dobController = TextEditingController(text: widget.profile.dateOfBirth);
     _parentNameController = TextEditingController(text: widget.profile.parentName);
-    _parentPhoneController = TextEditingController(text: widget.profile.parentPhone);
+    _parentPhoneController = TextEditingController(
+      text: widget.profile.parentPhone == '-' ? '' : widget.profile.parentPhone,
+    );
     _nisnController = TextEditingController(text: widget.profile.nisn ?? '');
-    
+
     _selectedGender = _genderOptions.contains(widget.profile.gender)
         ? widget.profile.gender
         : _genderOptions.first;
@@ -61,95 +67,85 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
     super.dispose();
   }
 
-  Future<void> _pickDate() async {
-    DateTime initialDate = DateTime.now().subtract(const Duration(days: 365 * 14));
-    
-    final pickedDate = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
-      firstDate: DateTime(1990),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF4338CA),
-              onPrimary: Colors.white,
-              onSurface: Color(0xFF0F172A),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (pickedDate != null) {
-      final months = [
-        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-      ];
-      final formatted = '${pickedDate.day} ${months[pickedDate.month - 1]} ${pickedDate.year}';
-      setState(() {
-        _dobController.text = formatted;
-      });
-    }
-  }
-
   String _calculateInitials(String name) {
-    if (name.trim().isEmpty) return 'AP';
-    final parts = name.trim().split(' ');
-    if (parts.length == 1) {
-      return parts[0].substring(0, parts[0].length >= 2 ? 2 : 1).toUpperCase();
-    }
-    return (parts[0][0] + parts[1][0]).toUpperCase();
+    return StudentProfileModel.computeInitials(name);
   }
 
-  void _saveProfile() {
+  Future<void> _saveProfile() async {
     FocusScope.of(context).unfocus();
 
-    if (_formKey.currentState?.validate() ?? false) {
-      setState(() {
-        _isLoading = true;
-      });
+    if (!_isGuru) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const Changepass()),
+      );
+      return;
+    }
 
-      Future.delayed(const Duration(milliseconds: 600), () {
-        if (!mounted) return;
-
-        final updatedProfile = widget.profile.copyWith(
-          name: _nameController.text.trim(),
-          username: _usernameController.text.trim(),
-          email: _emailController.text.trim(),
-          address: _addressController.text.trim(),
-          dateOfBirth: _dobController.text.trim(),
-          gender: _selectedGender,
-          parentName: _parentNameController.text.trim(),
-          parentPhone: _parentPhoneController.text.trim(),
-          nisn: _nisnController.text.trim(),
-          initials: _calculateInitials(_nameController.text),
-        );
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle_rounded, color: Colors.white),
-                SizedBox(width: 10),
-                Text('Profil berhasil diperbarui!'),
-              ],
-            ),
-            backgroundColor: Color(0xFF059669),
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 2),
-          ),
-        );
-
-        Navigator.of(context).pop(updatedProfile);
-      });
-    } else {
+    if (!(_formKey.currentState?.validate() ?? false)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Harap periksa kembali isian formulir yang belum valid.'),
           backgroundColor: Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final cleanPhone =
+          _parentPhoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
+      final updatedProfile = await ProfileService.updateGuruProfile(
+        nomorTelepon: cleanPhone.isEmpty ? null : cleanPhone,
+        jenisKelamin: _selectedGender,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle_rounded, color: Colors.white),
+              SizedBox(width: 10),
+              Text('Profil guru berhasil diperbarui!'),
+            ],
+          ),
+          backgroundColor: Color(0xFF059669),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      Navigator.of(context).pop(updatedProfile);
+    } on ProfileException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: const Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memperbarui profil: $e'),
+          backgroundColor: const Color(0xFFEF4444),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -221,9 +217,9 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
                           ),
                         ),
 
-                        const Text(
-                          'Edit Profil Siswa',
-                          style: TextStyle(
+                        Text(
+                          _isGuru ? 'Edit Profil Guru' : 'Informasi Profil',
+                          style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
@@ -238,75 +234,39 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
 
                     const SizedBox(height: 20),
 
-                    // Avatar Edit Icon
-                    Stack(
-                      alignment: Alignment.bottomRight,
-                      children: [
-                        Container(
-                          width: 105,
-                          height: 105,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                            border: Border.all(
-                              color: Colors.white,
-                              width: 4,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.2),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
-                          ),
-                          child: ClipOval(
-                            child: _buildAvatarImage(),
-                          ),
+                    // Avatar
+                    Container(
+                      width: 105,
+                      height: 105,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        border: Border.all(
+                          color: Colors.white,
+                          width: 4,
                         ),
-
-                        GestureDetector(
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Pilih foto dari galeri/kamera'),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF4F46E5),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 2.5,
-                              ),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black26,
-                                  blurRadius: 6,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.camera_alt_rounded,
-                              color: Colors.white,
-                              size: 16,
-                            ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: _buildAvatarImage(),
+                      ),
                     ),
 
                     const SizedBox(height: 12),
 
                     Text(
-                      'Ubah Data & Foto Profil',
+                      _isGuru
+                          ? 'Perbarui Nomor Telepon & Jenis Kelamin'
+                          : 'Nama dan email dikelola oleh operator sekolah',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 13.5,
                         fontWeight: FontWeight.w600,
                         color: Colors.white.withValues(alpha: 0.9),
                       ),
@@ -337,271 +297,191 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // SECTION 1: DATA PRIBADI
+                        if (!_isGuru) ...[
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            margin: const EdgeInsets.only(bottom: 20),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEEF2FF),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: const Color(0xFFC7D2FE),
+                              ),
+                            ),
+                            child: const Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  Icons.info_outline_rounded,
+                                  color: Color(0xFF4338CA),
+                                  size: 20,
+                                ),
+                                SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    'Sesuai aturan sistem, data diri siswa hanya dapat diubah oleh operator sekolah. Anda tetap dapat memperbarui kata sandi akun.',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF312E81),
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+
+                        // SECTION 1: DATA PRIBADI (READ-ONLY FOR NAME/USERNAME/EMAIL)
                         _buildSectionHeader(
                           icon: Icons.person_rounded,
                           iconColor: const Color(0xFF4F46E5),
                           iconBgColor: const Color(0xFFEDE9FE),
-                          title: 'Informasi Pribadi',
+                          title: 'Informasi Akun (Hanya Lihat)',
                         ),
 
                         const SizedBox(height: 14),
 
-                        // Nama Lengkap (TextFormField dengan Validasi)
-                        _buildFieldLabel('Nama Lengkap *'),
+                        _buildFieldLabel('Nama Lengkap'),
                         TextFormField(
                           controller: _nameController,
-                          textCapitalization: TextCapitalization.words,
+                          readOnly: true,
                           decoration: _buildInputDecoration(
-                            hint: 'Masukkan nama lengkap',
+                            hint: 'Nama lengkap',
                             prefixIcon: Icons.badge_outlined,
+                            readOnly: true,
                           ),
-                          validator: (val) {
-                            if (val == null || val.trim().isEmpty) {
-                              return 'Nama lengkap tidak boleh kosong';
-                            }
-                            if (val.trim().length < 3) {
-                              return 'Nama lengkap minimal 3 karakter';
-                            }
-                            return null;
-                          },
-                          onChanged: (_) => setState(() {}),
                         ),
 
                         const SizedBox(height: 18),
 
-                        // Username (TextFormField dengan Validasi)
-                        _buildFieldLabel('Username *'),
+                        _buildFieldLabel('Username'),
                         TextFormField(
                           controller: _usernameController,
+                          readOnly: true,
                           decoration: _buildInputDecoration(
-                            hint: 'Masukkan username',
+                            hint: 'Username',
                             prefixIcon: Icons.alternate_email_rounded,
+                            readOnly: true,
                           ),
-                          validator: (val) {
-                            if (val == null || val.trim().isEmpty) {
-                              return 'Username tidak boleh kosong';
-                            }
-                            if (val.contains(' ')) {
-                              return 'Username tidak boleh mengandung spasi';
-                            }
-                            if (val.length < 4) {
-                              return 'Username minimal 4 karakter';
-                            }
-                            return null;
-                          },
                         ),
 
                         const SizedBox(height: 18),
 
-                        // Email (TextFormField dengan Validasi Email)
-                        _buildFieldLabel('Alamat Email *'),
+                        _buildFieldLabel('Alamat Email'),
                         TextFormField(
                           controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: _buildInputDecoration(
-                            hint: 'contoh: nama@learnpoint.sch.id',
-                            prefixIcon: Icons.mail_outline_rounded,
-                          ),
-                          validator: (val) {
-                            if (val == null || val.trim().isEmpty) {
-                              return 'Email tidak boleh kosong';
-                            }
-                            final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                            if (!emailRegex.hasMatch(val.trim())) {
-                              return 'Format email tidak valid';
-                            }
-                            return null;
-                          },
-                        ),
-
-                        const SizedBox(height: 18),
-
-                        // Jenis Kelamin (Dropdown Form Field)
-                        _buildFieldLabel('Jenis Kelamin *'),
-                        DropdownButtonFormField<String>(
-                          initialValue: _selectedGender,
-                          decoration: _buildInputDecoration(
-                            hint: 'Pilih jenis kelamin',
-                            prefixIcon: Icons.wc_rounded,
-                          ),
-                          dropdownColor: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          items: _genderOptions.map((gender) {
-                            return DropdownMenuItem<String>(
-                              value: gender,
-                              child: Text(
-                                gender,
-                                style: const TextStyle(
-                                  fontSize: 14.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF1E293B),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (val) {
-                            if (val != null) {
-                              setState(() {
-                                _selectedGender = val;
-                              });
-                            }
-                          },
-                          validator: (val) {
-                            if (val == null || val.isEmpty) {
-                              return 'Pilih jenis kelamin';
-                            }
-                            return null;
-                          },
-                        ),
-
-                        const SizedBox(height: 18),
-
-                        // Tanggal Lahir (TextFormField dengan DatePicker)
-                        _buildFieldLabel('Tanggal Lahir *'),
-                        TextFormField(
-                          controller: _dobController,
                           readOnly: true,
-                          onTap: _pickDate,
                           decoration: _buildInputDecoration(
-                            hint: 'Pilih tanggal lahir',
-                            prefixIcon: Icons.cake_outlined,
-                            suffixIcon: IconButton(
-                              icon: const Icon(Icons.calendar_month_rounded, color: Color(0xFF4338CA)),
-                              onPressed: _pickDate,
-                            ),
+                            hint: 'Email',
+                            prefixIcon: Icons.mail_outline_rounded,
+                            readOnly: true,
                           ),
-                          validator: (val) {
-                            if (val == null || val.trim().isEmpty) {
-                              return 'Tanggal lahir wajib diisi';
-                            }
-                            return null;
-                          },
                         ),
 
                         const SizedBox(height: 18),
 
-                        // Alamat Domisili (TextFormField Multi-line)
-                        _buildFieldLabel('Alamat Lengkap *'),
-                        TextFormField(
-                          controller: _addressController,
-                          maxLines: 3,
-                          decoration: _buildInputDecoration(
-                            hint: 'Masukkan alamat domisili lengkap',
-                            prefixIcon: Icons.location_on_outlined,
-                          ),
-                          validator: (val) {
-                            if (val == null || val.trim().isEmpty) {
-                              return 'Alamat tidak boleh kosong';
-                            }
-                            if (val.trim().length < 5) {
-                              return 'Alamat minimal 5 karakter';
-                            }
-                            return null;
-                          },
-                        ),
-
-                        const SizedBox(height: 28),
-
-                        // SECTION 2: DATA WALI MURID
-                        _buildSectionHeader(
-                          icon: Icons.family_restroom_rounded,
-                          iconColor: const Color(0xFF059669),
-                          iconBgColor: const Color(0xFFDCFCE7),
-                          title: 'Informasi Wali Murid',
-                        ),
-
-                        const SizedBox(height: 14),
-
-                        // Nama Wali Murid (TextFormField dengan Validasi)
-                        _buildFieldLabel('Nama Wali Murid *'),
-                        TextFormField(
-                          controller: _parentNameController,
-                          textCapitalization: TextCapitalization.words,
-                          decoration: _buildInputDecoration(
-                            hint: 'Masukkan nama ayah/ibu/wali',
-                            prefixIcon: Icons.supervisor_account_outlined,
-                          ),
-                          validator: (val) {
-                            if (val == null || val.trim().isEmpty) {
-                              return 'Nama wali murid tidak boleh kosong';
-                            }
-                            return null;
-                          },
-                        ),
-
-                        const SizedBox(height: 18),
-
-                        // No HP Wali Murid (TextFormField dengan Phone Validation)
-                        _buildFieldLabel('No. HP / WhatsApp Wali *'),
-                        TextFormField(
-                          controller: _parentPhoneController,
-                          keyboardType: TextInputType.phone,
-                          decoration: _buildInputDecoration(
-                            hint: 'contoh: 0812-3456-7890',
-                            prefixIcon: Icons.phone_outlined,
-                          ),
-                          validator: (val) {
-                            if (val == null || val.trim().isEmpty) {
-                              return 'Nomor HP wali murid tidak boleh kosong';
-                            }
-                            final cleanPhone = val.replaceAll(RegExp(r'[^0-9]'), '');
-                            if (cleanPhone.length < 9 || cleanPhone.length > 15) {
-                              return 'Nomor HP tidak valid (9-15 digit)';
-                            }
-                            return null;
-                          },
-                        ),
-
-                        const SizedBox(height: 28),
-
-                        // SECTION 3: DATA AKADEMIK (READ ONLY / EDITABLE)
-                        _buildSectionHeader(
-                          icon: Icons.school_rounded,
-                          iconColor: const Color(0xFFD97706),
-                          iconBgColor: const Color(0xFFFEF3C7),
-                          title: 'Data Akademik',
-                        ),
-
-                        const SizedBox(height: 14),
-
-                        // NISN
-                        _buildFieldLabel('Nomor Induk Siswa Nasional (NISN)'),
+                        _buildFieldLabel(_isGuru ? 'NUPTK' : 'Nomor Induk Siswa (NIS)'),
                         TextFormField(
                           controller: _nisnController,
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          readOnly: true,
                           decoration: _buildInputDecoration(
-                            hint: 'Masukkan NISN siswa',
+                            hint: '-',
                             prefixIcon: Icons.numbers_rounded,
+                            readOnly: true,
                           ),
-                          validator: (val) {
-                            if (val != null && val.isNotEmpty && val.length < 8) {
-                              return 'NISN minimal 8 digit angka';
-                            }
-                            return null;
-                          },
                         ),
+
+                        if (_isGuru) ...[
+                          const SizedBox(height: 28),
+                          _buildSectionHeader(
+                            icon: Icons.edit_note_rounded,
+                            iconColor: const Color(0xFF059669),
+                            iconBgColor: const Color(0xFFDCFCE7),
+                            title: 'Biodata & Kontak Guru',
+                          ),
+                          const SizedBox(height: 14),
+                          _buildFieldLabel('Jenis Kelamin'),
+                          DropdownButtonFormField<String>(
+                            initialValue: _selectedGender,
+                            decoration: _buildInputDecoration(
+                              hint: 'Pilih jenis kelamin',
+                              prefixIcon: Icons.wc_rounded,
+                            ),
+                            dropdownColor: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            items: _genderOptions.map((gender) {
+                              return DropdownMenuItem<String>(
+                                value: gender,
+                                child: Text(
+                                  gender,
+                                  style: const TextStyle(
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF1E293B),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() {
+                                  _selectedGender = val;
+                                });
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 18),
+                          _buildFieldLabel('Nomor Telepon (10-13 digit)'),
+                          TextFormField(
+                            controller: _parentPhoneController,
+                            keyboardType: TextInputType.phone,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(13),
+                            ],
+                            decoration: _buildInputDecoration(
+                              hint: 'Contoh: 081234567890',
+                              prefixIcon: Icons.phone_outlined,
+                            ),
+                            validator: (val) {
+                              if (val == null || val.trim().isEmpty) {
+                                return null; // nullable di Laravel
+                              }
+                              final cleanPhone =
+                                  val.replaceAll(RegExp(r'[^0-9]'), '');
+                              if (cleanPhone.length < 10 ||
+                                  cleanPhone.length > 13) {
+                                return 'Nomor telepon harus 10 hingga 13 digit angka';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
 
                         const SizedBox(height: 32),
 
                         // TOMBOL SIMPAN & BATAL
                         Row(
                           children: [
-                            // Tombol Batal
                             Expanded(
                               flex: 1,
                               child: OutlinedButton(
-                                onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+                                onPressed: _isLoading
+                                    ? null
+                                    : () => Navigator.of(context).pop(),
                                 style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 16),
+                                  side: const BorderSide(
+                                      color: Color(0xFFCBD5E1), width: 1.5),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
                                   ),
                                 ),
                                 child: const Text(
-                                  'Batal',
+                                  'Kembali',
                                   style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w700,
@@ -613,7 +493,6 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
 
                             const SizedBox(width: 14),
 
-                            // Tombol Simpan Perubahan
                             Expanded(
                               flex: 2,
                               child: ElevatedButton(
@@ -622,7 +501,8 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
                                   backgroundColor: const Color(0xFF4338CA),
                                   foregroundColor: Colors.white,
                                   elevation: 2,
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 16),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
                                   ),
@@ -636,14 +516,22 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
                                           strokeWidth: 2.5,
                                         ),
                                       )
-                                    : const Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                    : Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
-                                          Icon(Icons.save_rounded, size: 20),
-                                          SizedBox(width: 8),
+                                          Icon(
+                                            _isGuru
+                                                ? Icons.save_rounded
+                                                : Icons.lock_reset_rounded,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 8),
                                           Text(
-                                            'Simpan Perubahan',
-                                            style: TextStyle(
+                                            _isGuru
+                                                ? 'Simpan Perubahan'
+                                                : 'Ubah Kata Sandi',
+                                            style: const TextStyle(
                                               fontSize: 15.5,
                                               fontWeight: FontWeight.w800,
                                               letterSpacing: -0.2,
@@ -688,10 +576,11 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
     required String hint,
     required IconData prefixIcon,
     Widget? suffixIcon,
+    bool readOnly = false,
   }) {
     return InputDecoration(
       filled: true,
-      fillColor: Colors.white,
+      fillColor: readOnly ? const Color(0xFFF1F5F9) : Colors.white,
       hintText: hint,
       hintStyle: const TextStyle(
         fontSize: 14,

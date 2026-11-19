@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:learnpoint_mobile/features/siswa/ujian/screens/soal_ujian_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/ujian/screens/detail_ujian_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/ujian/screens/hasil_ujian_screen.dart';
-import 'package:learnpoint_mobile/features/siswa/dashboard/screens/siswa_dashboard_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/dashboard_header_widget.dart';
 
 // ============================================================
@@ -150,9 +149,7 @@ class _UjianScreenState extends State<UjianScreen> {
       decoration: const BoxDecoration(
         color: Color(0xFF080C24),
       ),
-      child: const DashboardHeaderWidget(
-        profile: SiswaDashboardScreen.studentProfile,
-      ),
+      child: const DashboardHeaderWidget(),
     );
   }
 

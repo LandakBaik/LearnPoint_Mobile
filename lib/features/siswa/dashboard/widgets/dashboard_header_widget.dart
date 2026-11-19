@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/models/student_profile_model.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/screens/akun_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/profile/services/profile_service.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/screens/notifikasi_screen.dart';
 
 class DashboardHeaderWidget extends StatelessWidget {
-  final StudentProfileModel profile;
+  final StudentProfileModel? profile;
   final VoidCallback? onNotificationTap;
   final VoidCallback? onProfileTap;
   final bool isLight;
 
   const DashboardHeaderWidget({
     super.key,
-    required this.profile,
+    this.profile,
     this.onNotificationTap,
     this.onProfileTap,
     this.isLight = false,
@@ -30,22 +31,44 @@ class DashboardHeaderWidget extends StatelessWidget {
     );
   }
 
-  void _handleProfileTap(BuildContext context) {
+  void _handleProfileTap(
+    BuildContext context,
+    StudentProfileModel? resolvedProfile,
+  ) {
     if (onProfileTap != null) {
       onProfileTap!();
       return;
     }
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => AkunScreen(profile: profile),
+        builder: (_) => AkunScreen(profile: resolvedProfile),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final String initialChar =
-        profile.name.isNotEmpty ? profile.name[0].toUpperCase() : 'R';
+    if (profile != null) {
+      return _buildRow(context, profile!);
+    }
+
+    return ValueListenableBuilder<StudentProfileModel?>(
+      valueListenable: ProfileService.profileNotifier,
+      builder: (context, liveProfile, _) {
+        return _buildRow(
+          context,
+          liveProfile ?? const StudentProfileModel.empty(),
+        );
+      },
+    );
+  }
+
+  Widget _buildRow(BuildContext context, StudentProfileModel activeProfile) {
+    final String initialChar = activeProfile.name.isNotEmpty
+        ? activeProfile.name[0].toUpperCase()
+        : (activeProfile.initials.isNotEmpty
+            ? activeProfile.initials[0].toUpperCase()
+            : '-');
 
     final Color textColor = isLight ? const Color(0xFF1E1B4B) : Colors.white;
     final Color boxBg = isLight
@@ -153,7 +176,7 @@ class DashboardHeaderWidget extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             InkWell(
-              onTap: () => _handleProfileTap(context),
+              onTap: () => _handleProfileTap(context, activeProfile),
               borderRadius: BorderRadius.circular(22),
               child: Container(
                 width: 44,

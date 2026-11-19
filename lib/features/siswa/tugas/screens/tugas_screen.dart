@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:learnpoint_mobile/features/siswa/dashboard/screens/siswa_dashboard_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/screens/detail_tugas_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/models/task_model.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/dashboard_header_widget.dart';
@@ -269,9 +268,7 @@ class _TugasPageState extends State<TugasPage> {
         color: const Color(0xFF080C24),
         borderRadius: BorderRadius.circular(18),
       ),
-      child: const DashboardHeaderWidget(
-        profile: SiswaDashboardScreen.studentProfile,
-      ),
+      child: const DashboardHeaderWidget(),
     );
   }
 

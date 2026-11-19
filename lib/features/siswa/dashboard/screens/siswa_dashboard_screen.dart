@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:learnpoint_mobile/features/siswa/profile/models/student_profile_model.dart';
+import 'package:learnpoint_mobile/features/siswa/profile/services/profile_service.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/models/task_model.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/screens/akun_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/screens/detail_materi_screen.dart';
@@ -16,23 +17,6 @@ import 'package:learnpoint_mobile/features/siswa/tugas/services/task_api_service
 
 class SiswaDashboardScreen extends StatefulWidget {
   const SiswaDashboardScreen({super.key});
-
-  static const studentProfile = StudentProfileModel(
-    name: 'Rolanda Rafa',
-    gradeClass: 'Kelas VIII-A',
-    schoolName: 'SMPN 14 Jember',
-    initials: 'R',
-    hasNotification: true,
-    username: 'rolanda_rafa',
-    email: 'rolanda.rafa@learnpoint.sch.id',
-    address: 'Jl. Kalimantan No. 37, Sumbersari, Jember, Jawa Timur',
-    dateOfBirth: '14 Mei 2011',
-    gender: 'Laki-laki',
-    parentName: 'Bambang Sudarmono',
-    parentPhone: '0812-3456-7890',
-    nisn: '01234',
-    academicYear: '2026/2027',
-  );
 
   @override
   State<SiswaDashboardScreen> createState() => _SiswaDashboardScreenState();
@@ -50,6 +34,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
   @override
   void initState() {
     super.initState();
+    ProfileService.ensureLoaded();
     _loadLastReadMateri();
     _loadDashboardTasks();
   }
@@ -219,8 +204,9 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
   void _openProfile() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) =>
-            const AkunScreen(profile: SiswaDashboardScreen.studentProfile),
+        builder: (_) => AkunScreen(
+          profile: ProfileService.profileNotifier.value,
+        ),
       ),
     );
   }
@@ -293,44 +279,49 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // 1. Header & Hero Area with GIF Background and Floating Banner
-            HeroBannerWidget(
-              profile: SiswaDashboardScreen.studentProfile,
-              onNotificationTap: _openNotifications,
-              onProfileTap: _openProfile,
-              continueSubject: _lastReadMateri?.subject,
-              continueTitle: _lastReadMateri?.title,
-              onContinueTap: () async {
-                if (_lastReadMateri != null) {
-                  MateriItemModel? itemModel;
-                  if (_lastReadMateri!.id != null) {
-                    itemModel = MateriItemModel(
-                      id: _lastReadMateri!.id!,
-                      judul: _lastReadMateri!.title,
-                      deskripsi: _lastReadMateri!.deskripsi,
-                      urlYoutube: _lastReadMateri!.urlYoutube,
-                      fileMateri: _lastReadMateri!.fileMateri,
-                      fileUrl: _lastReadMateri!.fileUrl,
-                      guru: _lastReadMateri!.guru,
-                    );
-                  }
+            ValueListenableBuilder<StudentProfileModel?>(
+              valueListenable: ProfileService.profileNotifier,
+              builder: (context, liveProfile, _) {
+                return HeroBannerWidget(
+                  profile: liveProfile ?? const StudentProfileModel.empty(),
+                  onNotificationTap: _openNotifications,
+                  onProfileTap: _openProfile,
+                  continueSubject: _lastReadMateri?.subject,
+                  continueTitle: _lastReadMateri?.title,
+                  onContinueTap: () async {
+                    if (_lastReadMateri != null) {
+                      MateriItemModel? itemModel;
+                      if (_lastReadMateri!.id != null) {
+                        itemModel = MateriItemModel(
+                          id: _lastReadMateri!.id!,
+                          judul: _lastReadMateri!.title,
+                          deskripsi: _lastReadMateri!.deskripsi,
+                          urlYoutube: _lastReadMateri!.urlYoutube,
+                          fileMateri: _lastReadMateri!.fileMateri,
+                          fileUrl: _lastReadMateri!.fileUrl,
+                          guru: _lastReadMateri!.guru,
+                        );
+                      }
 
-                  await Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => DetailMateriPage(
-                        title: _lastReadMateri!.title,
-                        subject: _lastReadMateri!.subject,
-                        duration: '15 Menit',
-                        materiItem: itemModel,
-                      ),
-                    ),
-                  );
-                } else {
-                  // Jika belum ada materi yang pernah dibaca, arahkan ke daftar mapel
-                  await Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => const Materi()),
-                  );
-                }
-                _loadLastReadMateri();
+                      await Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => DetailMateriPage(
+                            title: _lastReadMateri!.title,
+                            subject: _lastReadMateri!.subject,
+                            duration: '15 Menit',
+                            materiItem: itemModel,
+                          ),
+                        ),
+                      );
+                    } else {
+                      // Jika belum ada materi yang pernah dibaca, arahkan ke daftar mapel
+                      await Navigator.of(context).push(
+                        MaterialPageRoute<void>(builder: (_) => const Materi()),
+                      );
+                    }
+                    _loadLastReadMateri();
+                  },
+                );
               },
             ),
 

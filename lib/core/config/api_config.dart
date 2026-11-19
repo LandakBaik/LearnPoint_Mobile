@@ -43,6 +43,7 @@ class ApiConfig {
   static String get logoutEndpoint => '$baseUrl/logout';
   static String get meEndpoint => '$baseUrl/me';
   static String get profileEndpoint => '$baseUrl/profile';
+  static String get profilePasswordEndpoint => '$baseUrl/profile/password';
 
   // Endpoints Materi Siswa
   static String get siswaMateriEndpoint => '$baseUrl/siswa/materi';
