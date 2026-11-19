@@ -17,11 +17,7 @@ class Materimapel extends StatefulWidget {
   final VoidCallback? onBackTap;
   final MateriModel? subject;
 
-  const Materimapel({
-    super.key,
-    this.onBackTap,
-    this.subject,
-  });
+  const Materimapel({super.key, this.onBackTap, this.subject});
 
   static const studentProfile = StudentProfileModel(
     name: 'Abimanyu',
@@ -49,80 +45,90 @@ class _MaterimapelState extends State<Materimapel> {
     return Scaffold(
       backgroundColor: const Color(0xFF6336ED),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                child: DashboardHeaderWidget(
-                  profile: Materimapel.studentProfile,
-                  onNotificationTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const NotificationScreen(),
-                      ),
-                    );
-                  },
-                  onProfileTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const AkunScreen(
-                          profile: Materimapel.studentProfile,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: InkWell(
-                    onTap:
-                        widget.onBackTap ?? () => Navigator.maybePop(context),
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: DashboardHeaderWidget(
+                profile: Materimapel.studentProfile,
+                onNotificationTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const NotificationScreen(),
                     ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: EdgeInsetsGeometry.fromLTRB(
-                  screenwidth * 0.04,
-                  24,
-                  screenwidth * 0.04,
-                  0,
-                ),
-                child: MateriHeaderWidget(
-                  subjectName: subjectName,
-                  description: description,
-                ),
-              ),
-              MateriSectionWidget(
-                mapelId: widget.subject?.id,
-                subjectName: subjectName,
-                onMapelLoaded: (detail) {
-                  setState(() {
-                    _mapelDetail = detail;
-                  });
+                  );
+                },
+                onProfileTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) =>
+                          const AkunScreen(profile: Materimapel.studentProfile),
+                    ),
+                  );
                 },
               ),
-            ],
-          ),
+            ),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: InkWell(
+                              onTap:
+                                  widget.onBackTap ??
+                                  () => Navigator.maybePop(context),
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.18),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.arrow_back_rounded,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsetsGeometry.fromLTRB(
+                            screenwidth * 0.04,
+                            24,
+                            screenwidth * 0.04,
+                            0,
+                          ),
+                          child: MateriHeaderWidget(
+                            subjectName: subjectName,
+                            description: description,
+                          ),
+                        ),
+                        SizedBox(
+                          height: constraints.maxHeight,
+                          child: MateriSectionWidget(
+                            mapelId: widget.subject?.id,
+                            subjectName: subjectName,
+                            onMapelLoaded: (detail) {
+                              setState(() {
+                                _mapelDetail = detail;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

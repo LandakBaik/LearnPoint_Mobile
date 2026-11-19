@@ -180,9 +180,13 @@ class _MateriSectionWidgetState extends State<MateriSectionWidget> {
             ),
           ),
 
-          Padding(
-            padding: const EdgeInsets.only(top: 24),
-            child: _buildSelectedTabContent(isSmallScreen),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 24),
+              child: SingleChildScrollView(
+                child: _buildSelectedTabContent(isSmallScreen),
+              ),
+            ),
           ),
         ],
       ),
@@ -247,9 +251,11 @@ class _MateriSectionWidgetState extends State<MateriSectionWidget> {
           widget.subjectName,
           title,
         );
-        final isCompleted = completedKeys.contains(itemKey) ||
+        final isCompleted =
+            completedKeys.contains(itemKey) ||
             completedKeys.contains(oldItemKey);
-        final isBookmarked = bookmarkedKeys.contains(itemKey) ||
+        final isBookmarked =
+            bookmarkedKeys.contains(itemKey) ||
             bookmarkedKeys.contains(oldItemKey);
 
         return GestureDetector(
