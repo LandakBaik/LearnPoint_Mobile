@@ -21,7 +21,7 @@ class ApiConfig {
       return 'http://192.168.110.117:8000/api';
     }
     return 'http://127.0.0.1:8000/api';
-  }
+  } 
 
   static String get baseUrl => _customBaseUrl ?? defaultBaseUrl;
 

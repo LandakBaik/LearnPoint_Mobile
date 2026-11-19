@@ -49,7 +49,8 @@ class _MaterimapelState extends State<Materimapel> {
     return Scaffold(
       backgroundColor: const Color(0xFF6336ED),
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: LayoutBuilder(
+          builder:(context, constraints) => SingleChildScrollView(
           child: Column(
             children: [
               Padding(
@@ -112,6 +113,7 @@ class _MaterimapelState extends State<Materimapel> {
                   description: description,
                 ),
               ),
+              
               MateriSectionWidget(
                 mapelId: widget.subject?.id,
                 subjectName: subjectName,
@@ -123,7 +125,7 @@ class _MaterimapelState extends State<Materimapel> {
               ),
             ],
           ),
-        ),
+        ),),
       ),
     );
   }
