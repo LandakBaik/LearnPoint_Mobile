@@ -4,6 +4,7 @@ class TaskModel {
   final String id;
   final String subject;
   final String title;
+  final String description;
   final String deadline;
   final String timeRemainingTag;
   final Color subjectColor;
@@ -18,6 +19,7 @@ class TaskModel {
     required this.id,
     required this.subject,
     required this.title,
+    required this.description,
     required this.deadline,
     required this.timeRemainingTag,
     required this.subjectColor,

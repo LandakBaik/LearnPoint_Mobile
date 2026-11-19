@@ -434,6 +434,7 @@ class _MateriSectionWidgetState extends State<MateriSectionWidget> {
           id: id,
           subject: subject,
           title: title,
+          description: '',
           deadline: deadline,
           timeRemainingTag: remaining,
           subjectColor: const Color(0xFF6336ED),
