@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:learnpoint_mobile/features/siswa/gamification/models/item_model.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/models/student_profile_model.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/dashboard_header_widget.dart';
 
 class HeroBannerWidget extends StatelessWidget {
   final StudentProfileModel profile;
+  final BannerItemModel? activeBanner;
   final VoidCallback? onNotificationTap;
   final VoidCallback? onProfileTap;
   final VoidCallback? onContinueTap;
@@ -15,6 +17,7 @@ class HeroBannerWidget extends StatelessWidget {
   const HeroBannerWidget({
     super.key,
     required this.profile,
+    this.activeBanner,
     this.onNotificationTap,
     this.onProfileTap,
     this.onContinueTap,
@@ -22,6 +25,57 @@ class HeroBannerWidget extends StatelessWidget {
     this.continueTitle,
     this.continueProgress = 0.5,
   });
+
+  Widget _buildBannerBackground() {
+    // Jika activeBanner sudah dimuat dari API:
+    if (activeBanner != null) {
+      // Banner 'default' memiliki gif_url: null -> tampilkan tema warna/gradient biru bawaan
+      if (activeBanner!.isDefault || activeBanner!.fullGifUrl.isEmpty) {
+        return Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFF1E3A8A),
+                Color(0xFF2563EB),
+                Color(0xFF4F46E5),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        );
+      }
+
+      // Banner selain default -> render GIF dari '{BASE_URL}/{gif_url}'
+      return Image.network(
+        activeBanner!.fullGifUrl,
+        fit: BoxFit.cover,
+        gaplessPlayback: true,
+        errorBuilder: (context, error, stackTrace) {
+          return Image.asset(
+            'assets/images/hero-banner/space-hero.gif',
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+            errorBuilder: (_, _, _) => CustomPaint(
+              painter: SpaceFallbackPainter(),
+            ),
+          );
+        },
+      );
+    }
+
+    // Fallback awal sebelum status gacha selesai dimuat
+    return Image.asset(
+      'assets/images/hero-banner/space-hero.gif',
+      fit: BoxFit.cover,
+      gaplessPlayback: true,
+      errorBuilder: (context, error, stackTrace) {
+        return CustomPaint(
+          painter: SpaceFallbackPainter(),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,17 +100,8 @@ class HeroBannerWidget extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // Pixel-art Space Animated GIF Background
-                Image.asset(
-                  'assets/images/hero-banner/space-hero.gif',
-                  fit: BoxFit.cover,
-                  gaplessPlayback: true,
-                  errorBuilder: (context, error, stackTrace) {
-                    return CustomPaint(
-                      painter: SpaceFallbackPainter(),
-                    );
-                  },
-                ),
+                // Background sesuai active_banner dari API (GIF atau Gradient Default)
+                _buildBannerBackground(),
                 // Gradient overlay to enhance text readability
                 Container(
                   decoration: BoxDecoration(
@@ -90,7 +135,9 @@ class HeroBannerWidget extends StatelessWidget {
 
                         // Greeting Title & Subtitle
                         Text(
-                          'Halo, ${profile.name}!',
+                          profile.name.isNotEmpty
+                              ? 'Halo, ${profile.name}!'
+                              : 'Halo!',
                           style: GoogleFonts.plusJakartaSans(
                             color: Colors.white,
                             fontSize: 24,
@@ -115,9 +162,19 @@ class HeroBannerWidget extends StatelessWidget {
                           spacing: 8,
                           runSpacing: 6,
                           children: [
-                            _buildHeroBadge('NIS ${profile.nisn ?? '01234'}'),
+                            _buildHeroBadge(
+                              profile.isGuru
+                                  ? 'NUPTK ${profile.nisn ?? '-'}'
+                                  : 'NIS ${profile.nisn ?? '-'}',
+                            ),
                             _buildHeroBadge(profile.gradeClass),
-                            _buildHeroBadge('Sem. Ganjil'),
+                            _buildHeroBadge(
+                              profile.semester != null &&
+                                      profile.semester!.isNotEmpty
+                                  ? 'Sem. ${profile.semester}'
+                                  : (profile.academicYear ??
+                                      (profile.isActive ? 'Aktif' : 'Nonaktif')),
+                            ),
                           ],
                         ),
                       ],

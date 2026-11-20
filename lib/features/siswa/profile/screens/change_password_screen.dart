@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:learnpoint_mobile/features/siswa/profile/services/profile_service.dart';
 
 class Changepass extends StatefulWidget {
   const Changepass({super.key});
@@ -27,6 +28,7 @@ class _ChangepassState extends State<Changepass> {
   bool passwordTerlihat = false;
   bool passwordBaruTerlihat = false;
   bool konfirmasiPasswordTerlihat = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -34,6 +36,61 @@ class _ChangepassState extends State<Changepass> {
     passwordBaruController.dispose();
     konfirmasiPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _submitChangePassword() async {
+    FocusScope.of(context).unfocus();
+    if (!(_formkey.currentState?.validate() ?? false)) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final message = await ProfileService.updatePassword(
+        currentPassword: passwordLamaController.text,
+        newPassword: passwordBaruController.text,
+        passwordConfirmation: konfirmasiPasswordController.text,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: const Color(0xFF059669),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      Navigator.of(context).pop(true);
+    } on ProfileException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: const Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memperbarui password: $e'),
+          backgroundColor: const Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
@@ -165,8 +222,8 @@ class _ChangepassState extends State<Changepass> {
                         if (value == null || value.isEmpty) {
                           return 'Password baru wajib diisi';
                         }
-                        if (value.length < 8) {
-                          return 'Minimal 8 karakter';
+                        if (value.length < 6) {
+                          return 'Minimal 6 karakter';
                         }
                         return null;
                       },
@@ -192,8 +249,8 @@ class _ChangepassState extends State<Changepass> {
                         if (value == null || value.isEmpty) {
                           return 'Konfirmasi password wajib diisi';
                         }
-                        if (value.length < 8) {
-                          return 'Minimal 8 karakter';
+                        if (value.length < 6) {
+                          return 'Minimal 6 karakter';
                         }
                         if (value != passwordBaruController.text) {
                           return 'Konfirmasi password harus sama';
@@ -208,16 +265,7 @@ class _ChangepassState extends State<Changepass> {
                       width: double.infinity,
                       height: 50 * textScale,
                       child: ElevatedButton(
-                        onPressed: () {
-                          if (_formkey.currentState!.validate()) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Password berhasil diperbarui!'),
-                                backgroundColor: Color(0xFF4F46E5),
-                              ),
-                            );
-                          }
-                        },
+                        onPressed: _isLoading ? null : _submitChangePassword,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF4F46E5),
                           foregroundColor: Colors.white,
@@ -226,13 +274,22 @@ class _ChangepassState extends State<Changepass> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: Text(
-                          'Ganti Password',
-                          style: TextStyle(
-                            fontSize: 15 * textScale,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2.5,
+                                ),
+                              )
+                            : Text(
+                                'Ganti Password',
+                                style: TextStyle(
+                                  fontSize: 15 * textScale,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 16),

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:learnpoint_mobile/features/siswa/dashboard/screens/siswa_dashboard_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/screens/detail_tugas_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/tugas/screens/detail_tugas_pilgan_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/models/task_model.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/dashboard_header_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/services/task_api_service.dart';
@@ -131,7 +131,7 @@ class _TugasPageState extends State<TugasPage> {
     }
   }
 
-  // FORMAT TANGGAL // 
+  // FORMAT TANGGAL //
 
   String _formatDeadline(Map<String, dynamic> task) {
     final deadline = _parseDeadline(task);
@@ -146,7 +146,7 @@ class _TugasPageState extends State<TugasPage> {
     return '$date/$month/${deadline.year}';
   }
 
-  // FORMAT SISA WAKTU // 
+  // FORMAT SISA WAKTU //
 
   String _getRemainingTime(Map<String, dynamic> task) {
     if (task['is_submitted'] == true) {
@@ -269,9 +269,7 @@ class _TugasPageState extends State<TugasPage> {
         color: const Color(0xFF080C24),
         borderRadius: BorderRadius.circular(18),
       ),
-      child: const DashboardHeaderWidget(
-        profile: SiswaDashboardScreen.studentProfile,
-      ),
+      child: const DashboardHeaderWidget(),
     );
   }
 
@@ -415,7 +413,7 @@ class _TugasPageState extends State<TugasPage> {
     );
   }
 
-  // TASK CARD // 
+  // TASK CARD //
 
   Widget _buildTaskCard({
     required Map<String, dynamic> task,
@@ -436,11 +434,13 @@ class _TugasPageState extends State<TugasPage> {
     return InkWell(
       borderRadius: BorderRadius.circular(17),
       onTap: () {
+        final taskType = task['tipe']?.toString() ?? 'upload';
+
         final taskModel = TaskModel(
           id: task['id'].toString(),
           subject: subject,
           title: title,
-          description: subject,
+          description: task['deskripsi']?.toString() ?? '',
           deadline: task['deadline']?.toString() ?? '',
           timeRemainingTag: remaining,
           subjectColor: const Color(0xFF687995),
@@ -448,12 +448,19 @@ class _TugasPageState extends State<TugasPage> {
           icon: Icons.description_outlined,
           iconBgColor: const Color(0xFFF0F4F9),
           isSubmitted: completed,
+          type: taskType,
         );
 
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => DetailTugasPage(task: taskModel),
+            builder: (context) {
+              if (taskType == 'pilihan_ganda') {
+                return DetailTugasPilganScreen(task: taskModel);
+              }
+
+              return DetailTugasPage(task: taskModel);
+            },
           ),
         );
       },
