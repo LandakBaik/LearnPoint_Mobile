@@ -10,6 +10,8 @@ import 'package:learnpoint_mobile/features/siswa/materi/screens/materi_screen.da
 import 'package:learnpoint_mobile/features/siswa/dashboard/screens/notifikasi_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/screens/tugas_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/hero_banner_widget.dart';
+import 'package:learnpoint_mobile/features/siswa/gamification/data/gacha_service.dart';
+import 'package:learnpoint_mobile/features/siswa/gamification/models/item_model.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/data/materi_preferences_service.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/services/task_api_service.dart';
@@ -52,6 +54,15 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
     super.initState();
     _loadLastReadMateri();
     _loadDashboardTasks();
+    _loadActiveBanner();
+  }
+
+  Future<void> _loadActiveBanner() async {
+    try {
+      await GachaService.fetchGachaStatus();
+    } catch (_) {
+      // Fallback ke banner default/lokal jika offline
+    }
   }
 
   Future<void> _loadLastReadMateri() async {
@@ -293,44 +304,50 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // 1. Header & Hero Area with GIF Background and Floating Banner
-            HeroBannerWidget(
-              profile: SiswaDashboardScreen.studentProfile,
-              onNotificationTap: _openNotifications,
-              onProfileTap: _openProfile,
-              continueSubject: _lastReadMateri?.subject,
-              continueTitle: _lastReadMateri?.title,
-              onContinueTap: () async {
-                if (_lastReadMateri != null) {
-                  MateriItemModel? itemModel;
-                  if (_lastReadMateri!.id != null) {
-                    itemModel = MateriItemModel(
-                      id: _lastReadMateri!.id!,
-                      judul: _lastReadMateri!.title,
-                      deskripsi: _lastReadMateri!.deskripsi,
-                      urlYoutube: _lastReadMateri!.urlYoutube,
-                      fileMateri: _lastReadMateri!.fileMateri,
-                      fileUrl: _lastReadMateri!.fileUrl,
-                      guru: _lastReadMateri!.guru,
-                    );
-                  }
+            ValueListenableBuilder<BannerItemModel?>(
+              valueListenable: GachaService.activeBannerNotifier,
+              builder: (context, activeBanner, _) {
+                return HeroBannerWidget(
+                  profile: SiswaDashboardScreen.studentProfile,
+                  activeBanner: activeBanner,
+                  onNotificationTap: _openNotifications,
+                  onProfileTap: _openProfile,
+                  continueSubject: _lastReadMateri?.subject,
+                  continueTitle: _lastReadMateri?.title,
+                  onContinueTap: () async {
+                    if (_lastReadMateri != null) {
+                      MateriItemModel? itemModel;
+                      if (_lastReadMateri!.id != null) {
+                        itemModel = MateriItemModel(
+                          id: _lastReadMateri!.id!,
+                          judul: _lastReadMateri!.title,
+                          deskripsi: _lastReadMateri!.deskripsi,
+                          urlYoutube: _lastReadMateri!.urlYoutube,
+                          fileMateri: _lastReadMateri!.fileMateri,
+                          fileUrl: _lastReadMateri!.fileUrl,
+                          guru: _lastReadMateri!.guru,
+                        );
+                      }
 
-                  await Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => DetailMateriPage(
-                        title: _lastReadMateri!.title,
-                        subject: _lastReadMateri!.subject,
-                        duration: '15 Menit',
-                        materiItem: itemModel,
-                      ),
-                    ),
-                  );
-                } else {
-                  // Jika belum ada materi yang pernah dibaca, arahkan ke daftar mapel
-                  await Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => const Materi()),
-                  );
-                }
-                _loadLastReadMateri();
+                      await Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => DetailMateriPage(
+                            title: _lastReadMateri!.title,
+                            subject: _lastReadMateri!.subject,
+                            duration: '15 Menit',
+                            materiItem: itemModel,
+                          ),
+                        ),
+                      );
+                    } else {
+                      // Jika belum ada materi yang pernah dibaca, arahkan ke daftar mapel
+                      await Navigator.of(context).push(
+                        MaterialPageRoute<void>(builder: (_) => const Materi()),
+                      );
+                    }
+                    _loadLastReadMateri();
+                  },
+                );
               },
             ),
 

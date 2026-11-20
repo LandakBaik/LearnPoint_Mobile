@@ -56,6 +56,41 @@ class ApiConfig {
   static String guruMateriDetailEndpoint(String idGrubMateri) =>
       '$baseUrl/guru/materi/$idGrubMateri';
 
+  // Endpoints Gacha & Inventory Banner Siswa
+  static String get siswaGachaStatusEndpoint => '$baseUrl/siswa/gacha';
+  static String get siswaGachaPanduanEndpoint => '$baseUrl/siswa/gacha/panduan';
+  static String get siswaGachaPullEndpoint => '$baseUrl/siswa/gacha/pull';
+  static String get siswaBannerEquipEndpoint => '$baseUrl/siswa/banner/equip';
+
+  /// Mengubah path aset publik relatif (misal: 'images/Banner/space-hero.gif')
+  /// menjadi URL penuh '{BASE_URL}/{asset_path}' (tanpa '/api').
+  static String publicAssetUrl(String? path) {
+    if (path == null || path.trim().isEmpty) return '';
+    final clean = path.trim();
+    final apiUri = Uri.tryParse(baseUrl);
+
+    if (clean.startsWith('http://') || clean.startsWith('https://')) {
+      final assetUri = Uri.tryParse(clean);
+      if (apiUri != null && assetUri != null && apiUri.host.isNotEmpty) {
+        return assetUri
+            .replace(
+              scheme: apiUri.scheme,
+              host: apiUri.host,
+              port: apiUri.hasPort ? apiUri.port : null,
+            )
+            .toString();
+      }
+      return clean;
+    }
+
+    final rootUrl = baseUrl.replaceFirst(RegExp(r'/api/?$'), '');
+    final normalizedPath = clean.startsWith('/') ? clean.substring(1) : clean;
+    return '$rootUrl/$normalizedPath';
+  }
+
+  static String get gachaSummonGifUrl =>
+      publicAssetUrl('images/Banner/pov-astronot-mendarat.gif');
+
   // Standar HTTP Headers
   static Map<String, String> defaultHeaders({String? token}) {
     final headers = <String, String>{
