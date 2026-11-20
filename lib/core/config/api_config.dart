@@ -18,7 +18,7 @@ class ApiConfig {
       return 'http://127.0.0.1:8000/api';
     }
     if (Platform.isAndroid) {
-      return 'http://192.168.110.117:8000/api';
+      return 'http://192.168.18.59:8000/api';
     }
     return 'http://127.0.0.1:8000/api';
   } 
@@ -43,6 +43,7 @@ class ApiConfig {
   static String get logoutEndpoint => '$baseUrl/logout';
   static String get meEndpoint => '$baseUrl/me';
   static String get profileEndpoint => '$baseUrl/profile';
+  static String get profilePasswordEndpoint => '$baseUrl/profile/password';
 
   // Endpoints Materi Siswa
   static String get siswaMateriEndpoint => '$baseUrl/siswa/materi';
@@ -111,9 +112,9 @@ class ApiConfig {
       _dio = Dio(
         BaseOptions(
           baseUrl: baseUrl,
-          connectTimeout: const Duration(seconds: 15),
-          receiveTimeout: const Duration(seconds: 15),
-          sendTimeout: const Duration(seconds: 15),
+          connectTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 30),
+          sendTimeout: const Duration(seconds: 30),
           headers: defaultHeaders(),
           responseType: ResponseType.json,
         ),

@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/models/student_profile_model.dart';
+import 'package:learnpoint_mobile/features/siswa/profile/providers/profile_provider.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/screens/akun_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/dashboard/providers/notification_provider.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/screens/notifikasi_screen.dart';
 
 class DashboardHeaderWidget extends StatelessWidget {
-  final StudentProfileModel profile;
+  final StudentProfileModel? profile;
   final VoidCallback? onNotificationTap;
   final VoidCallback? onProfileTap;
   final bool isLight;
 
   const DashboardHeaderWidget({
     super.key,
-    required this.profile,
+    this.profile,
     this.onNotificationTap,
     this.onProfileTap,
     this.isLight = false,
@@ -37,15 +40,40 @@ class DashboardHeaderWidget extends StatelessWidget {
     }
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => AkunScreen(profile: profile),
+        builder: (_) => const AkunScreen(),
       ),
     );
   }
 
+  StudentProfileModel _readProfile(BuildContext context) {
+    try {
+      return context.watch<ProfileProvider>().currentProfile;
+    } on ProviderNotFoundException {
+      return const StudentProfileModel.empty();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final String initialChar =
-        profile.name.isNotEmpty ? profile.name[0].toUpperCase() : 'R';
+    final activeProfile = profile ?? _readProfile(context);
+    return _buildRow(context, activeProfile);
+  }
+
+  int _readUnreadCount(BuildContext context) {
+    try {
+      return context.select<NotificationProvider, int>((p) => p.unreadCount);
+    } on ProviderNotFoundException {
+      return 0;
+    }
+  }
+
+  Widget _buildRow(BuildContext context, StudentProfileModel activeProfile) {
+    final unreadCount = _readUnreadCount(context);
+    final String initialChar = activeProfile.name.isNotEmpty
+        ? activeProfile.name[0].toUpperCase()
+        : (activeProfile.initials.isNotEmpty
+            ? activeProfile.initials[0].toUpperCase()
+            : '-');
 
     final Color textColor = isLight ? const Color(0xFF1E1B4B) : Colors.white;
     final Color boxBg = isLight
@@ -134,21 +162,64 @@ class DashboardHeaderWidget extends StatelessWidget {
             InkWell(
               onTap: () => _handleNotificationTap(context),
               borderRadius: BorderRadius.circular(22),
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: notifBg,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: notifBorder,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: notifBg,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: notifBorder,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.notifications_none_rounded,
+                      color: textColor,
+                      size: 22,
+                    ),
                   ),
-                ),
-                child: Icon(
-                  Icons.notifications_none_rounded,
-                  color: textColor,
-                  size: 22,
-                ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      top: -2,
+                      right: -2,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1.5,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444),
+                          shape: unreadCount > 9
+                              ? BoxShape.rectangle
+                              : BoxShape.circle,
+                          borderRadius: unreadCount > 9
+                              ? BorderRadius.circular(10)
+                              : null,
+                          border: Border.all(
+                            color: Colors.white,
+                            width: 1.5,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          unreadCount > 9 ? '9+' : '$unreadCount',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
             const SizedBox(width: 8),

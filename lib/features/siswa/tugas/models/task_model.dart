@@ -14,6 +14,7 @@ class TaskModel {
   final bool isSubmitted;
   final String? score;
   final String? footerNote;
+  final String type;
 
   const TaskModel({
     required this.id,
@@ -29,5 +30,6 @@ class TaskModel {
     this.isSubmitted = false,
     this.score,
     this.footerNote,
+    this.type = 'upload',
   });
 }

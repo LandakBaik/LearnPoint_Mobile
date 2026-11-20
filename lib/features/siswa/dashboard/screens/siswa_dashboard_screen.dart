@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
-import 'package:learnpoint_mobile/features/siswa/profile/models/student_profile_model.dart';
+import 'package:learnpoint_mobile/features/siswa/profile/providers/profile_provider.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/models/task_model.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/screens/akun_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/screens/detail_materi_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/screens/detail_tugas_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/tugas/screens/detail_tugas_pilgan_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/screens/materi_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/screens/notifikasi_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/screens/tugas_screen.dart';
@@ -18,23 +20,6 @@ import 'package:learnpoint_mobile/features/siswa/tugas/services/task_api_service
 
 class SiswaDashboardScreen extends StatefulWidget {
   const SiswaDashboardScreen({super.key});
-
-  static const studentProfile = StudentProfileModel(
-    name: 'Rolanda Rafa',
-    gradeClass: 'Kelas VIII-A',
-    schoolName: 'SMPN 14 Jember',
-    initials: 'R',
-    hasNotification: true,
-    username: 'rolanda_rafa',
-    email: 'rolanda.rafa@learnpoint.sch.id',
-    address: 'Jl. Kalimantan No. 37, Sumbersari, Jember, Jawa Timur',
-    dateOfBirth: '14 Mei 2011',
-    gender: 'Laki-laki',
-    parentName: 'Bambang Sudarmono',
-    parentPhone: '0812-3456-7890',
-    nisn: '01234',
-    academicYear: '2026/2027',
-  );
 
   @override
   State<SiswaDashboardScreen> createState() => _SiswaDashboardScreenState();
@@ -52,6 +37,10 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
   @override
   void initState() {
     super.initState();
+    Future.microtask(() {
+      if (!mounted) return;
+      context.read<ProfileProvider>().ensureLoaded();
+    });
     _loadLastReadMateri();
     _loadDashboardTasks();
     _loadActiveBanner();
@@ -204,8 +193,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
         '${localDate.year}, $hour:$minute WIB';
   }
 
-  // Fungsi _loadDashboardTasks() dan fungsi pembantunya
-  // diletakkan DI SINI.
+  // Fungsi _loadDashboardTasks() // 
 
   void _showNotice(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -230,30 +218,52 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
   void _openProfile() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) =>
-            const AkunScreen(profile: SiswaDashboardScreen.studentProfile),
+        builder: (_) => const AkunScreen(),
       ),
     );
   }
 
   void _openTaskDetail(Map<String, dynamic> taskMap) {
+    final taskType = (taskMap['tipe'] ?? 'upload')
+        .toString()
+        .toLowerCase()
+        .trim();
+
+    final isPilgan = taskType == 'pilihan_ganda' || taskType == 'pilgan';
+
     final taskModel = TaskModel(
-      id: taskMap['id'] as String,
-      subject: taskMap['subject'] as String,
-      title: taskMap['title'] as String,
+      id: taskMap['id'].toString(),
+      subject: taskMap['subject']?.toString() ?? 'Mata Pelajaran',
+      title: taskMap['title']?.toString() ?? 'Tugas tanpa judul',
       description:
           taskMap['description']?.toString() ??
           taskMap['deskripsi']?.toString() ??
           '',
-      deadline: (taskMap['deadline'] as String).replaceFirst('Batas: ', ''),
-      timeRemainingTag: taskMap['remaining'] as String,
-      subjectColor: taskMap['subjectColor'] as Color,
-      accentBorderColor: taskMap['subjectColor'] as Color,
+      deadline: (taskMap['deadline']?.toString() ?? '').replaceFirst(
+        'Batas: ',
+        '',
+      ),
+      timeRemainingTag: taskMap['remaining']?.toString() ?? '',
+      subjectColor:
+          taskMap['subjectColor'] as Color? ?? const Color(0xFF687995),
+      accentBorderColor:
+          taskMap['subjectColor'] as Color? ?? const Color(0xFF687995),
       icon: Icons.assignment_outlined,
-      iconBgColor: taskMap['subjectBg'] as Color,
+      iconBgColor: taskMap['subjectBg'] as Color? ?? const Color(0xFFF0F4F9),
+      isSubmitted: false,
+      type: isPilgan ? 'pilihan_ganda' : 'upload',
     );
+
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => DetailTugasPage(task: taskModel)),
+      MaterialPageRoute<void>(
+        builder: (_) {
+          if (isPilgan) {
+            return DetailTugasPilganScreen(task: taskModel);
+          }
+
+          return DetailTugasPage(task: taskModel);
+        },
+      ),
     );
   }
 
@@ -351,7 +361,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
               },
             ),
 
-            const SizedBox(height: 65),
+            const SizedBox(height: 50),
 
             // 2. Section: Tugas Terbaru
             Padding(
@@ -556,12 +566,10 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
 
     final currentTask = _taskList[safeIndex];
 
-    // LANJUTKAN KODE LAMA DI SINI
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 24),
+        const SizedBox(height: 36),
 
         // HEADER
         Row(
@@ -570,28 +578,29 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
             Text(
               'Tugas Terbaru',
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 18,
+                fontSize: 20,
                 fontWeight: FontWeight.w800,
                 color: const Color(0xFF1E1B4B),
+                letterSpacing: -0.3,
               ),
             ),
             Row(
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
+                    horizontal: 10,
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFE5E7EB),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
-                    '${_currentTaskIndex + 1} / ${_taskList.length}',
+                    '${safeIndex + 1} / ${_taskList.length}',
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
                       color: const Color(0xFF374151),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -604,12 +613,15 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
                       ),
                     );
                   },
-                  child: Text(
-                    'Lihat Semua ›',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFF4F46E5),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Text(
+                      'Lihat Semua ›',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: const Color(0xFF4F46E5),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
@@ -622,149 +634,171 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
 
         // CARD TUGAS
         Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFFE5E7EB).withOpacity(0.7)),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF6366F1).withOpacity(0.06),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
           ),
-
-          child: Stack(
-            clipBehavior: Clip.none,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // DEKORASI LINGKARAN LAVENDER
-              Positioned(
-                bottom: -18,
-                left: -18,
-                child: Container(
-                  width: 95,
-                  height: 95,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFECECFE).withOpacity(0.55),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-
-              // TITIK LAVENDER
-              Positioned(
-                bottom: 45,
-                left: 55,
-                child: Container(
-                  width: 9,
-                  height: 9,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFB8B4F8),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-
-              // TITIK PINK
-              Positioned(
-                bottom: 20,
-                left: 80,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFFCA5B9),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-
-              // TITIK KUNING
-              Positioned(
-                bottom: 12,
-                left: 105,
-                child: Container(
-                  width: 7,
-                  height: 7,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFFBD38D),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-
-              // ISI CARD
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              // Subject & Remaining Badges
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // BADGE MATA PELAJARAN & DEADLINE
+                  Flexible(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: currentTask['subjectBg'] as Color,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.menu_book_rounded,
+                            size: 14,
+                            color: currentTask['subjectColor'] as Color,
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              currentTask['subject'] as String,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                color: currentTask['subjectColor'] as Color,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: currentTask['remainingBg'] as Color,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          size: 14,
+                          color: currentTask['remainingColor'] as Color,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          currentTask['remaining'] as String,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: currentTask['remainingColor'] as Color,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              // Title
+              Text(
+                currentTask['title'] as String,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF1E1B4B),
+                  height: 1.35,
+                ),
+              ),
+
+              const SizedBox(height: 6),
+
+              // Deadline
+              Row(
+                children: [
+                  const Icon(
+                    Icons.calendar_today_outlined,
+                    size: 14,
+                    color: Color(0xFF5B6275),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      currentTask['deadline'] as String,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: const Color(0xFF5B6275),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 14),
+              const Divider(color: Color(0xFFE5E7EB), height: 1),
+              const SizedBox(height: 14),
+
+                  const SizedBox(height: 10),
+
+                  // GURU PENGAMPU
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Flexible(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 7,
-                          ),
-                          decoration: BoxDecoration(
-                            color: currentTask['subjectBg'] as Color,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.menu_book_rounded,
-                                size: 14,
-                                color: Color(0xFF4F46E5),
-                              ),
-                              const SizedBox(width: 5),
-                              Flexible(
-                                child: Text(
-                                  currentTask['subject'] as String,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: currentTask['subjectColor'] as Color,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                      Container(
+                        width: 27,
+                        height: 27,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEEF2FF),
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: const Icon(
+                          Icons.person_outline_rounded,
+                          size: 16,
+                          color: Color(0xFF6366F1),
                         ),
                       ),
 
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 8),
 
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 7,
-                        ),
-                        decoration: BoxDecoration(
-                          color: currentTask['remainingBg'] as Color,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(
-                              Icons.access_time_rounded,
-                              size: 14,
-                              color: Color(0xFFC92A4E),
-                            ),
-                            const SizedBox(width: 5),
                             Text(
-                              currentTask['remaining'] as String,
+                              'Guru Pengampu',
                               style: GoogleFonts.plusJakartaSans(
-                                color: currentTask['remainingColor'] as Color,
+                                fontSize: 10,
+                                color: const Color(0xFF94A3B8),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              currentTask['teacher']?.toString().isNotEmpty ==
+                                      true
+                                  ? currentTask['teacher'].toString()
+                                  : 'Belum tersedia',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
                                 fontSize: 11,
-                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF475569),
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ],
@@ -773,193 +807,130 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
                     ],
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 10),
 
-                  // JUDUL TUGAS
-                  Text(
-                    currentTask['title'] as String,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFF111538),
-                      height: 1.35,
-                      letterSpacing: -0.3,
+              // Progress & Kerjakan Button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.list_alt_rounded,
+                          size: 16,
+                          color: Color(0xFF5B6275),
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            currentTask['progressText'] as String,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: const Color(0xFF5B6275),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-
-                  const SizedBox(height: 8),
-
-                  // DEADLINE
-                  Text(
-                    currentTask['deadline'] as String,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFF5B6275),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: () => _openTaskDetail(currentTask),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4F46E5),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                      textStyle: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
+                    label: const Icon(Icons.arrow_forward_rounded, size: 18),
+                    icon: const Text('Kerjakan'),
                   ),
+                ],
+              ),
 
-                  const SizedBox(height: 18),
+              const SizedBox(height: 14),
 
-                  // PAGINATION & TOMBOL KERJAKAN
+              // Pagination Indicators and Prev/Next buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Dot indicators
+                  Row(
+                    children: List.generate(_taskList.length, (index) {
+                      final isActive = index == safeIndex;
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        margin: const EdgeInsets.only(right: 6),
+                        width: isActive ? 20 : 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: isActive
+                              ? const Color(0xFF4F46E5)
+                              : const Color(0xFFD1D5DB),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      );
+                    }),
+                  ),
+                  // Arrows
                   Row(
                     children: [
-                      Expanded(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF3F4FD),
-                                borderRadius: BorderRadius.circular(24),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // PANAH SEBELUMNYA
-                                  InkWell(
-                                    onTap: () {
-                                      if (_currentTaskIndex > 0) {
-                                        setState(() {
-                                          _currentTaskIndex--;
-                                        });
-                                      }
-                                    },
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: const Padding(
-                                      padding: EdgeInsets.all(2),
-                                      child: Icon(
-                                        Icons.chevron_left_rounded,
-                                        color: Color(0xFF4F46E5),
-                                        size: 18,
-                                      ),
-                                    ),
-                                  ),
-
-                                  const SizedBox(width: 8),
-
-                                  // INDIKATOR DOT
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: List.generate(_taskList.length, (
-                                      index,
-                                    ) {
-                                      final isActive =
-                                          index == _currentTaskIndex;
-
-                                      return AnimatedContainer(
-                                        duration: const Duration(
-                                          milliseconds: 250,
-                                        ),
-                                        margin: const EdgeInsets.symmetric(
-                                          horizontal: 3,
-                                        ),
-                                        width: isActive ? 8 : 6,
-                                        height: 6,
-                                        decoration: BoxDecoration(
-                                          color: isActive
-                                              ? const Color(0xFF4F46E5)
-                                              : const Color(0xFFC7D2FE),
-                                          shape: BoxShape.circle,
-                                        ),
-                                      );
-                                    }),
-                                  ),
-
-                                  const SizedBox(width: 8),
-
-                                  // PANAH BERIKUTNYA
-                                  InkWell(
-                                    onTap: () {
-                                      if (_currentTaskIndex <
-                                          _taskList.length - 1) {
-                                        setState(() {
-                                          _currentTaskIndex++;
-                                        });
-                                      }
-                                    },
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: const Padding(
-                                      padding: EdgeInsets.all(2),
-                                      child: Icon(
-                                        Icons.chevron_right_rounded,
-                                        color: Color(0xFF4F46E5),
-                                        size: 18,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            const SizedBox(height: 5),
-
-                            Text(
-                              'Geser ke kiri atau kanan',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 10,
-                                color: const Color(0xFF94A3B8),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                      InkWell(
+                        onTap: () {
+                          if (_currentTaskIndex > 0) {
+                            setState(() => _currentTaskIndex--);
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(22),
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFE5E7EB),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.chevron_left_rounded,
+                            color: Color(0xFF1E1B4B),
+                            size: 22,
+                          ),
                         ),
                       ),
-
-                      const SizedBox(width: 10),
-
-                      // SPARKLE LAVENDER & KUNING
-                      Stack(
-                        clipBehavior: Clip.none,
-                        alignment: Alignment.center,
-                        children: [
-                          const Positioned(
-                            top: -8,
-                            left: -6,
-                            child: Icon(
-                              Icons.auto_awesome_rounded,
-                              color: Color(0xFFA5B4FC),
-                              size: 15,
-                            ),
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: () {
+                          if (_currentTaskIndex < _taskList.length - 1) {
+                            setState(() => _currentTaskIndex++);
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(22),
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF4F46E5),
+                            shape: BoxShape.circle,
                           ),
-
-                          const Positioned(
-                            top: 8,
-                            left: -8,
-                            child: Icon(
-                              Icons.auto_awesome_rounded,
-                              color: Color(0xFFFBBF24),
-                              size: 11,
-                            ),
+                          child: const Icon(
+                            Icons.chevron_right_rounded,
+                            color: Colors.white,
+                            size: 22,
                           ),
-
-                          // TOMBOL KERJAKAN
-                          Material(
-                            color: const Color(0xFF4F46E5),
-                            shape: const CircleBorder(),
-                            elevation: 5,
-                            shadowColor: const Color(0xFF4F46E5)
-                                .withOpacity(0.3),
-                            child: InkWell(
-                              onTap: () => _openTaskDetail(currentTask),
-                              customBorder: const CircleBorder(),
-                              child: const SizedBox(
-                                width: 46,
-                                height: 46,
-                                child: Icon(
-                                  Icons.arrow_forward_rounded,
-                                  color: Colors.white,
-                                  size: 21,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ],
                   ),

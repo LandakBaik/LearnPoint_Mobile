@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'package:learnpoint_mobile/features/siswa/gamification/data/gacha_service.dart';
 import 'package:learnpoint_mobile/features/siswa/gamification/models/item_model.dart';
-import 'package:learnpoint_mobile/features/siswa/profile/models/student_profile_model.dart';
-import 'package:learnpoint_mobile/features/siswa/profile/screens/akun_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/screens/notifikasi_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/dashboard_header_widget.dart';
 
@@ -27,14 +25,6 @@ class _InventoryState extends State<Inventory> {
   List<BannerItemModel> _banners = const [];
 
   final TextEditingController _searchController = TextEditingController();
-
-  static const studentProfile = StudentProfileModel(
-    name: 'Abimanyu',
-    gradeClass: 'Kelas VIII-A',
-    schoolName: 'SMP Merdeka',
-    initials: 'AP',
-    hasNotification: true,
-  );
 
   @override
   void initState() {
@@ -159,19 +149,10 @@ class _InventoryState extends State<Inventory> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: DashboardHeaderWidget(
-                profile: studentProfile,
                 onNotificationTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
                       builder: (_) => const NotificationScreen(),
-                    ),
-                  );
-                },
-                onProfileTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) =>
-                          const AkunScreen(profile: studentProfile),
                     ),
                   );
                 },

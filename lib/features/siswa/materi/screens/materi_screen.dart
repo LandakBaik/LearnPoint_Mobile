@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:learnpoint_mobile/features/siswa/materi/screens/materi_per_mapel_screen.dart';
-import 'package:learnpoint_mobile/features/siswa/profile/screens/akun_screen.dart';
-import 'package:learnpoint_mobile/features/siswa/profile/models/student_profile_model.dart';
 import 'package:learnpoint_mobile/core/widgets/inverted_top_curve_clipper.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/widgets/subject_materi_card_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
@@ -14,15 +12,6 @@ import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/dashboard_hea
 class Materi extends StatefulWidget {
   final VoidCallback? onBackTap;
   const Materi({super.key, this.onBackTap});
-
-  // Dummy Profile Data
-  static const studentProfile = StudentProfileModel(
-    name: 'Abimanyu',
-    gradeClass: 'Kelas VIII-A',
-    schoolName: 'SMP Merdeka',
-    initials: 'AP',
-    hasNotification: true,
-  );
 
   @override
   State<Materi> createState() => _MateriState();
@@ -79,19 +68,10 @@ class _MateriState extends State<Materi> {
                   vertical: 12,
                 ),
                 child: DashboardHeaderWidget(
-                  profile: Materi.studentProfile,
                   onNotificationTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => const NotificationScreen(),
-                      ),
-                    );
-                  },
-                  onProfileTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) =>
-                            const AkunScreen(profile: Materi.studentProfile),
                       ),
                     );
                   },
