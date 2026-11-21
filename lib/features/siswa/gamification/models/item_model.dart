@@ -266,10 +266,59 @@ class BannerItemModel {
     this.isPity = false,
   });
 
+  static const Map<String, String> _localBannerAssets = {
+    'default': 'assets/images/hero-banner/banner-edukasi.jpg',
+    'banner-edukasi': 'assets/images/hero-banner/banner-edukasi.jpg',
+    'cyber-city': 'assets/images/hero-banner/cyber-city.gif',
+    'cyber-matrix': 'assets/images/hero-banner/cyber-matrix.gif',
+    'deep-ocean': 'assets/images/hero-banner/deep-ocean.gif',
+    'enchanted-forest': 'assets/images/hero-banner/enchanted-forest.gif',
+    'pixel-aurora': 'assets/images/hero-banner/pixel-aurora.gif',
+    'sakura-dusk': 'assets/images/hero-banner/sakura-dusk.gif',
+    'sakura-twilight': 'assets/images/hero-banner/sakura-twilight.gif',
+    'snowy-village': 'assets/images/hero-banner/snowy-village.gif',
+    'solar-flare': 'assets/images/hero-banner/solar-flare.gif',
+    'space-hero': 'assets/images/hero-banner/space-hero.gif',
+    'space-nebula': 'assets/images/hero-banner/space-nebula.gif',
+  };
+
+  /// Mencari path aset lokal di `assets/images/hero-banner/` berdasarkan
+  /// nama file `gifUrl`, `kode`, atau `nama` banner.
+  String? get localAssetPath {
+    final candidates = <String>[
+      if (gifUrl != null && gifUrl!.trim().isNotEmpty)
+        gifUrl!.trim().split('/').last.split('?').first,
+      kode,
+      nama,
+    ];
+
+    for (final raw in candidates) {
+      final normalized = _normalizeBannerKey(raw);
+      if (normalized.isEmpty) continue;
+      if (_localBannerAssets.containsKey(normalized)) {
+        return _localBannerAssets[normalized];
+      }
+      final compact = normalized.replaceAll('-', '');
+      for (final entry in _localBannerAssets.entries) {
+        if (entry.key.replaceAll('-', '') == compact) {
+          return entry.value;
+        }
+      }
+    }
+    return null;
+  }
+
+  static String _normalizeBannerKey(String raw) {
+    return raw
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'\.(gif|png|jpg|jpeg|webp)$'), '')
+        .replaceAll(RegExp(r'[_\s]+'), '-')
+        .replaceAll(RegExp(r'[^a-z0-9-]'), '');
+  }
+
   bool get isDefault =>
-      kode.toLowerCase() == 'default' ||
-      gifUrl == null ||
-      gifUrl!.trim().isEmpty;
+      kode.toLowerCase() == 'default' && localAssetPath == null;
 
   /// URL publik lengkap ke file GIF di server: '{BASE_URL}/{gif_url}'
   String get fullGifUrl => isDefault ? '' : ApiConfig.publicAssetUrl(gifUrl);
@@ -332,6 +381,65 @@ class BannerItemModel {
       isEquipped: _parseBool(json['is_equipped'], defaultValue: false),
       isPity: _parseBool(json['is_pity'], defaultValue: false),
     );
+  }
+}
+
+/// Widget bersama untuk menampilkan gambar/GIF banner dari aset lokal
+/// `assets/images/hero-banner/` terlebih dahulu, lalu fallback ke URL server
+/// atau widget default/fallback jika belum tersedia.
+class BannerMediaView extends StatelessWidget {
+  final BannerItemModel banner;
+  final BoxFit fit;
+  final Widget? defaultWidget;
+  final Widget? fallbackWidget;
+
+  const BannerMediaView({
+    super.key,
+    required this.banner,
+    this.fit = BoxFit.cover,
+    this.defaultWidget,
+    this.fallbackWidget,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final assetPath = banner.localAssetPath;
+    if (assetPath != null) {
+      return Image.asset(
+        assetPath,
+        fit: fit,
+        gaplessPlayback: true,
+        errorBuilder: (_, _, _) => _buildFallback(),
+      );
+    }
+
+    if (banner.isDefault || banner.fullGifUrl.isEmpty) {
+      return defaultWidget ?? _buildFallback();
+    }
+
+    return Image.network(
+      banner.fullGifUrl,
+      fit: fit,
+      gaplessPlayback: true,
+      errorBuilder: (_, _, _) => _buildFallback(),
+    );
+  }
+
+  Widget _buildFallback() {
+    return fallbackWidget ??
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFF1E3A8A),
+                Color(0xFF2563EB),
+                Color(0xFF4F46E5),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        );
   }
 }
 
