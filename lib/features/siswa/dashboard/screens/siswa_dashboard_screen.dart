@@ -14,6 +14,7 @@ import 'package:learnpoint_mobile/features/siswa/tugas/screens/tugas_screen.dart
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/hero_banner_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/gamification/data/gacha_service.dart';
 import 'package:learnpoint_mobile/features/siswa/gamification/models/item_model.dart';
+import 'package:learnpoint_mobile/features/siswa/gamification/screens/inventory_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/data/materi_preferences_service.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/services/task_api_service.dart';
@@ -321,7 +322,14 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
                   profile: context.watch<ProfileProvider>().currentProfile,
                   activeBanner: activeBanner,
                   onNotificationTap: _openNotifications,
-                  onProfileTap: _openProfile,
+                  onProfileTap: _openProfile, 
+                  onBannerTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const Inventory(initialTab: 1),
+                      ),
+                    );
+                  },
                   continueSubject: _lastReadMateri?.subject,
                   continueTitle: _lastReadMateri?.title,
                   onContinueTap: () async {

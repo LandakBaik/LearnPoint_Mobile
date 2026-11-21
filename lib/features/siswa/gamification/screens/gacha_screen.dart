@@ -395,16 +395,15 @@ class _GachaState extends State<Gacha> {
             ],
           ),
           const SizedBox(height: 8),
-          if (banner.fullGifUrl.isNotEmpty)
+          if (banner.localAssetPath != null || banner.fullGifUrl.isNotEmpty)
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: SizedBox(
                 height: 84,
                 width: double.infinity,
-                child: Image.network(
-                  banner.fullGifUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Container(
+                child: BannerMediaView(
+                  banner: banner,
+                  fallbackWidget: Container(
                     color: Colors.black26,
                     alignment: Alignment.center,
                     child: const Icon(

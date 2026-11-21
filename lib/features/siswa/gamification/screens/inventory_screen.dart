@@ -7,7 +7,8 @@ import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/dashboard_hea
 
 class Inventory extends StatefulWidget {
   final VoidCallback? onBackTap;
-  const Inventory({super.key, this.onBackTap});
+  final int initialTab;
+  const Inventory({super.key, this.onBackTap, this.initialTab = 0});
 
   @override
   State<Inventory> createState() => _InventoryState();
@@ -15,7 +16,7 @@ class Inventory extends StatefulWidget {
 
 class _InventoryState extends State<Inventory> {
   int _coins = 0;
-  int _selectedTab = 0; // 0 = Item Power, 1 = Banner Dashboard
+  late int _selectedTab; // 0 = Item Power, 1 = Banner Dashboard
   int selectedIndex = 0;
   String searchQuery = '';
   bool _isLoading = true;
@@ -29,6 +30,7 @@ class _InventoryState extends State<Inventory> {
   @override
   void initState() {
     super.initState();
+    _selectedTab = widget.initialTab.clamp(0, 1);
     _coins = GachaService.coinsNotifier.value;
     _powers = GachaService.powersNotifier.value;
     _banners = GachaService.bannersNotifier.value;
@@ -584,8 +586,9 @@ class _InventoryState extends State<Inventory> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                if (banner.isDefault || banner.fullGifUrl.isEmpty)
-                  Container(
+                BannerMediaView(
+                  banner: banner,
+                  defaultWidget: Container(
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
                         colors: [Color(0xFF2563EB), Color(0xFF4F46E5)],
@@ -600,19 +603,15 @@ class _InventoryState extends State<Inventory> {
                         size: 42,
                       ),
                     ),
-                  )
-                else
-                  Image.network(
-                    banner.fullGifUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const Center(
-                      child: Icon(
-                        Icons.panorama_rounded,
-                        color: Colors.white70,
-                        size: 42,
-                      ),
+                  ),
+                  fallbackWidget: const Center(
+                    child: Icon(
+                      Icons.panorama_rounded,
+                      color: Colors.white70,
+                      size: 42,
                     ),
                   ),
+                ),
                 if (!banner.isUnlocked)
                   Container(
                     color: Colors.black.withValues(alpha: 0.55),
@@ -880,8 +879,9 @@ class _InventoryState extends State<Inventory> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                if (banner.isDefault || banner.fullGifUrl.isEmpty)
-                  Container(
+                BannerMediaView(
+                  banner: banner,
+                  defaultWidget: Container(
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
                         colors: [Color(0xFF2563EB), Color(0xFF4F46E5)],
@@ -889,15 +889,11 @@ class _InventoryState extends State<Inventory> {
                         end: Alignment.bottomRight,
                       ),
                     ),
-                  )
-                else
-                  Image.network(
-                    banner.fullGifUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => Container(
-                      color: const Color(0xFF1E1B4B),
-                    ),
                   ),
+                  fallbackWidget: Container(
+                    color: const Color(0xFF1E1B4B),
+                  ),
+                ),
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(

@@ -9,6 +9,7 @@ class HeroBannerWidget extends StatelessWidget {
   final BannerItemModel? activeBanner;
   final VoidCallback? onNotificationTap;
   final VoidCallback? onProfileTap;
+  final VoidCallback? onBannerTap;
   final VoidCallback? onContinueTap;
   final String? continueSubject;
   final String? continueTitle;
@@ -20,6 +21,7 @@ class HeroBannerWidget extends StatelessWidget {
     this.activeBanner,
     this.onNotificationTap,
     this.onProfileTap,
+    this.onBannerTap,
     this.onContinueTap,
     this.continueSubject,
     this.continueTitle,
@@ -27,11 +29,19 @@ class HeroBannerWidget extends StatelessWidget {
   });
 
   Widget _buildBannerBackground() {
-    // Jika activeBanner sudah dimuat dari API:
+    final defaultAssetFallback = Image.asset(
+      'assets/images/hero-banner/space-hero.gif',
+      fit: BoxFit.cover,
+      gaplessPlayback: true,
+      errorBuilder: (_, _, _) => CustomPaint(
+        painter: SpaceFallbackPainter(),
+      ),
+    );
+
     if (activeBanner != null) {
-      // Banner 'default' memiliki gif_url: null -> tampilkan tema warna/gradient biru bawaan
-      if (activeBanner!.isDefault || activeBanner!.fullGifUrl.isEmpty) {
-        return Container(
+      return BannerMediaView(
+        banner: activeBanner!,
+        defaultWidget: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -43,38 +53,13 @@ class HeroBannerWidget extends StatelessWidget {
               end: Alignment.bottomRight,
             ),
           ),
-        );
-      }
-
-      // Banner selain default -> render GIF dari '{BASE_URL}/{gif_url}'
-      return Image.network(
-        activeBanner!.fullGifUrl,
-        fit: BoxFit.cover,
-        gaplessPlayback: true,
-        errorBuilder: (context, error, stackTrace) {
-          return Image.asset(
-            'assets/images/hero-banner/space-hero.gif',
-            fit: BoxFit.cover,
-            gaplessPlayback: true,
-            errorBuilder: (_, _, _) => CustomPaint(
-              painter: SpaceFallbackPainter(),
-            ),
-          );
-        },
+        ),
+        fallbackWidget: defaultAssetFallback,
       );
     }
 
     // Fallback awal sebelum status gacha selesai dimuat
-    return Image.asset(
-      'assets/images/hero-banner/space-hero.gif',
-      fit: BoxFit.cover,
-      gaplessPlayback: true,
-      errorBuilder: (context, error, stackTrace) {
-        return CustomPaint(
-          painter: SpaceFallbackPainter(),
-        );
-      },
-    );
+    return defaultAssetFallback;
   }
 
   @override
@@ -175,6 +160,42 @@ class HeroBannerWidget extends StatelessWidget {
                                   : (profile.academicYear ??
                                       (profile.isActive ? 'Aktif' : 'Nonaktif')),
                             ),
+                            if (onBannerTap != null)
+                              GestureDetector(
+                                onTap: onBannerTap,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.22),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(alpha: 0.45),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.wallpaper_rounded,
+                                        color: Colors.white,
+                                        size: 13,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Ganti Banner',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          color: Colors.white,
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
                       ],
