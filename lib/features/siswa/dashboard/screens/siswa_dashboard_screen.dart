@@ -318,7 +318,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
               valueListenable: GachaService.activeBannerNotifier,
               builder: (context, activeBanner, _) {
                 return HeroBannerWidget(
-                  profile: SiswaDashboardScreen.studentProfile,
+                  profile: context.watch<ProfileProvider>().currentProfile,
                   activeBanner: activeBanner,
                   onNotificationTap: _openNotifications,
                   onProfileTap: _openProfile,
@@ -392,6 +392,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
     );
   }
 
+// --- WIDGET: TUGAS TERBARU SECTION ---
   Widget _buildTugasTerbaruSection() {
     // 1. Kondisi loading
     if (_isLoadingTasks) {
@@ -754,58 +755,6 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
               const SizedBox(height: 14),
               const Divider(color: Color(0xFFE5E7EB), height: 1),
               const SizedBox(height: 14),
-
-                  const SizedBox(height: 10),
-
-                  // GURU PENGAMPU
-                  Row(
-                    children: [
-                      Container(
-                        width: 27,
-                        height: 27,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEEF2FF),
-                          borderRadius: BorderRadius.circular(9),
-                        ),
-                        child: const Icon(
-                          Icons.person_outline_rounded,
-                          size: 16,
-                          color: Color(0xFF6366F1),
-                        ),
-                      ),
-
-                      const SizedBox(width: 8),
-
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Guru Pengampu',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 10,
-                                color: const Color(0xFF94A3B8),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            Text(
-                              currentTask['teacher']?.toString().isNotEmpty ==
-                                      true
-                                  ? currentTask['teacher'].toString()
-                                  : 'Belum tersedia',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11,
-                                color: const Color(0xFF475569),
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
 
                   const SizedBox(height: 10),
 
