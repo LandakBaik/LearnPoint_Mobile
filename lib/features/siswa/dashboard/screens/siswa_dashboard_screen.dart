@@ -318,7 +318,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
               valueListenable: GachaService.activeBannerNotifier,
               builder: (context, activeBanner, _) {
                 return HeroBannerWidget(
-                  profile: SiswaDashboardScreen.studentProfile,
+                  profile: context.watch<ProfileProvider>().currentProfile,
                   activeBanner: activeBanner,
                   onNotificationTap: _openNotifications,
                   onProfileTap: _openProfile,
