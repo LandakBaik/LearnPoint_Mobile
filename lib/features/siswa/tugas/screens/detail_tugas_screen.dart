@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:docx_viewer/docx_viewer.dart';
@@ -19,11 +20,11 @@ class DetailTugasPage extends StatefulWidget {
 }
 
 class _DetailTugasPageState extends State<DetailTugasPage> {
-  static const Color primary = Color(0xFF0284C7);
+  static const Color primary = Color(0xFF4F46E5);
   static const Color background = Color(0xFFF8FAFC);
   static const Color textDark = Color(0xFF0F172A);
   static const Color textMuted = Color(0xFF64748B);
-  static const Color border = Color(0xFFE2E8F0);
+  static const Color borderColor = Color(0xFFE2E8F0);
 
   static const int maxFileSize = 10 * 1024 * 1024;
 
@@ -35,70 +36,204 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     'png',
   ];
 
-  PlatformFile? selectedFile;
-
+  bool isLoading = true;
   bool isSubmitting = false;
-  bool isLoadingSubmission = false;
-
-  late bool isSubmitted;
-
+  bool isSubmitted = false;
   bool isGraded = false;
+
+  String? errorMessage;
+
   double? score;
+
+  Map<String, dynamic> taskData = {};
+
+  PlatformFile? selectedFile;
+  int? selectedFileSize;
 
   String? submittedFileName;
   String? submittedFileUrl;
+  String? submittedAt;
 
-  String? teacherName;
   String? attachmentName;
   String? attachmentUrl;
-
-  int? selectedFileSize;
 
   @override
   void initState() {
     super.initState();
 
     isSubmitted = widget.task.isSubmitted;
-
-    if (isSubmitted) {
-      _loadSubmissionDetails();
-    } else {
-      // Ambil informasi guru dan lampiran dari endpoint detail yang sama.
-      _loadSubmissionDetails();
-    }
+    loadDetail();
   }
 
-  // HELPER //
+  // ============================================================
+  // DETAIL TUGAS
+  // ============================================================
 
-  void _showMessage(
-    String message, {
-    Color backgroundColor = textDark,
-  }) {
+  Future<void> loadDetail() async {
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: backgroundColor,
-      ),
-    );
-  }
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
 
-  String _getExtension(String fileName) {
-    final parts = fileName.split('.');
-    if (parts.length < 2) return '';
-    return parts.last.toLowerCase();
-  }
-
-  String _getFileNameFromUrl(String url) {
     try {
-      final uri = Uri.parse(url);
-      final path = Uri.decodeComponent(uri.path);
-      return path.split('/').last;
-    } catch (_) {
-      return 'jawaban_tugas';
+      final response = await ApiConfig.dio.get(
+        '/siswa/tugas/${widget.task.id}',
+      );
+
+      final responseBody = response.data;
+
+      if (responseBody is! Map) {
+        throw Exception('Format respons server tidak valid.');
+      }
+
+      final rawData = responseBody['data'];
+
+      if (rawData is! Map) {
+        throw Exception('Data tugas tidak ditemukan.');
+      }
+
+      final result = Map<String, dynamic>.from(rawData);
+
+      final submission = result['submission'];
+
+      final lampiran = result['file_lampiran'];
+      final lampiranUrl = result['file_url'] ?? result['file_lampiran_url'];
+
+      String? newSubmittedFileName;
+      String? newSubmittedFileUrl;
+      String? newSubmittedAt;
+
+      double? newScore;
+
+      bool newIsSubmitted = false;
+      bool newIsGraded = false;
+
+      if (submission is Map) {
+        final fileUrl = submission['file_jawaban_url']?.toString();
+        final filePath = submission['file_jawaban']?.toString();
+        final fileName = submission['nama_file']?.toString();
+
+        if (fileUrl != null && fileUrl.isNotEmpty) {
+          newSubmittedFileUrl = fileUrl;
+          newSubmittedFileName = getFileNameFromUrl(fileUrl);
+          newIsSubmitted = true;
+        } else if (filePath != null && filePath.isNotEmpty) {
+          newSubmittedFileName = getFileNameFromUrl(filePath);
+          newIsSubmitted = true;
+        } else if (fileName != null && fileName.isNotEmpty) {
+          newSubmittedFileName = fileName;
+          newIsSubmitted = true;
+        }
+
+        newSubmittedAt = submission['submitted_at']?.toString();
+        final nilai = submission['nilai'];
+
+        if (nilai != null) {
+          newScore = double.tryParse(nilai.toString());
+          newIsGraded = newScore != null;
+        }
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        taskData = result;
+
+        submittedFileName = newSubmittedFileName;
+        submittedFileUrl = newSubmittedFileUrl;
+        submittedAt = newSubmittedAt;
+
+        score = newScore;
+        isGraded = newIsGraded;
+
+        isSubmitted = newIsSubmitted || widget.task.isSubmitted;
+
+        attachmentUrl = lampiranUrl?.toString();
+
+        if (lampiran != null && lampiran.toString().isNotEmpty) {
+          attachmentName = getFileNameFromUrl(lampiran.toString());
+        } else if (attachmentUrl != null && attachmentUrl!.isNotEmpty) {
+          attachmentName = getFileNameFromUrl(attachmentUrl!);
+        }
+
+        isLoading = false;
+      });
+    } on DioException catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        errorMessage = e.response?.data is Map
+            ? e.response?.data['message']?.toString()
+            : 'Gagal memuat detail tugas.';
+
+        isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        errorMessage = e.toString().replaceFirst('Exception: ', '');
+        isLoading = false;
+      });
     }
   }
+  // ============================================================
+  // GETTER DATA TUGAS
+  // ============================================================
+
+  Map<String, dynamic> get taskInfo {
+    final tugas = taskData['tugas'];
+
+    if (tugas is Map) {
+      return Map<String, dynamic>.from(tugas);
+    }
+
+    return taskData;
+  }
+
+  dynamic getTaskValue(String key, [dynamic fallback]) {
+    return taskInfo[key] ?? fallback;
+  }
+
+  String get teacherName {
+    final directGuru = taskData['guru'] ?? taskInfo['guru'];
+
+    if (directGuru is String && directGuru.trim().isNotEmpty) {
+      return directGuru;
+    }
+    if (directGuru is Map) {
+      final name =
+          directGuru['nama'] ?? directGuru['nama_guru'] ?? directGuru['name'];
+
+      if (name != null && name.toString().trim().isNotEmpty) {
+        return name.toString();
+      }
+    }
+    final pengampu = taskInfo['pengampu_kelas'];
+
+    if (pengampu is Map) {
+      final guruMapel = pengampu['guru_mapel'];
+
+      if (guruMapel is Map) {
+        final guru = guruMapel['guru'];
+
+        if (guru is Map) {
+          final name = guru['nama'] ?? guru['nama_guru'] ?? guru['name'];
+
+          if (name != null && name.toString().trim().isNotEmpty) {
+            return name.toString();
+          }
+        }
+      }
+    }
+
+    return 'Nama guru belum tersedia';
+  }
+  // ============================================================
+  // FORMAT TANGGAL DAN FILE
+  // ============================================================
 
   String formatDeadline(String value) {
     if (value.isEmpty) return 'Tidak ditentukan';
@@ -107,8 +242,18 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
       final date = DateTime.parse(value).toLocal();
 
       const months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-        'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'Mei',
+        'Jun',
+        'Jul',
+        'Agu',
+        'Sep',
+        'Okt',
+        'Nov',
+        'Des',
       ];
 
       final day = date.day.toString().padLeft(2, '0');
@@ -131,100 +276,28 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
   }
 
-  String _formatSubmittedDate(String? value) {
-    if (value == null || value.isEmpty) return '';
+  String getExtension(String fileName) {
+    final parts = fileName.split('.');
 
+    if (parts.length < 2) return '';
+
+    return parts.last.toLowerCase();
+  }
+
+  String getFileNameFromUrl(String url) {
     try {
-      return formatDeadline(value);
+      final uri = Uri.parse(url);
+      final path = Uri.decodeComponent(uri.path);
+
+      return path.split('/').last;
     } catch (_) {
-      return value;
+      return 'jawaban_tugas';
     }
   }
 
-  // MEMUAT DATA PENGUMPULAN DARI API // 
-
-  Future<void> _loadSubmissionDetails() async {
-    if (isLoadingSubmission) return;
-
-    setState(() {
-      isLoadingSubmission = true;
-    });
-
-    try {
-      final response = await ApiConfig.dio.get(
-        '/siswa/tugas/${widget.task.id}',
-      );
-
-      final responseBody = response.data;
-
-      if (responseBody is! Map) return;
-
-      final data = responseBody['data'];
-
-      if (data is! Map) return;
-
-      // Informasi guru dan lampiran dari detail tugas.
-      final guru = data['guru'];
-      final lampiran = data['file_lampiran'];
-      final lampiranUrl = data['file_url'] ?? data['file_lampiran_url'];
-
-      final namaGuru = guru is Map
-          ? guru['nama_guru']?.toString() ?? guru['name']?.toString()
-          : null;
-
-      final namaLampiran = lampiran?.toString();
-      final urlLampiran = lampiranUrl?.toString();
-
-      final submission = data['submission'];
-
-      if (!mounted) return;
-
-      setState(() {
-        if (namaGuru != null && namaGuru.isNotEmpty) {
-          teacherName = namaGuru;
-        }
-
-        if (urlLampiran != null && urlLampiran.isNotEmpty) {
-          attachmentUrl = urlLampiran;
-        }
-
-        if (namaLampiran != null && namaLampiran.isNotEmpty) {
-          attachmentName = _getFileNameFromUrl(namaLampiran);
-        } else if (urlLampiran != null && urlLampiran.isNotEmpty) {
-          attachmentName = _getFileNameFromUrl(urlLampiran);
-        }
-
-        if (submission is Map) {
-          final fileUrl = submission['file_jawaban_url']?.toString();
-
-          if (fileUrl != null && fileUrl.isNotEmpty) {
-            submittedFileUrl = fileUrl;
-            submittedFileName = _getFileNameFromUrl(fileUrl);
-            isSubmitted = true;
-          }
-
-          final nilai = submission['nilai'];
-
-          if (nilai != null) {
-            score = double.tryParse(nilai.toString());
-            isGraded = true;
-          }
-        }
-      });
-    } on DioException catch (e) {
-      debugPrint('Gagal mengambil detail pengumpulan: ${e.message}');
-    } catch (e) {
-      debugPrint('Kesalahan detail pengumpulan: $e');
-    } finally {
-      if (mounted) {
-        setState(() {
-          isLoadingSubmission = false;
-        });
-      }
-    }
-  }
-
-  // PILIH FILE //
+  // ============================================================
+  // PILIH FILE
+  // ============================================================
 
   Future<void> pickFile() async {
     if (isGraded || isSubmitting) return;
@@ -235,28 +308,25 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
         allowedExtensions: allowedExtensions,
       );
 
-      if (!mounted || result.isEmpty) return;
-
-      final file = result.first;
-      final fileSize = await file.length();
-
-      if (!mounted) return;
-
-      if (fileSize == null) {
-        _showMessage('Ukuran file tidak dapat dibaca.');
+      if (!mounted || result.isEmpty) {
         return;
       }
 
-      if (fileSize > maxFileSize) {
-        _showMessage(
-          'Ukuran file maksimal 10 MB.',
-          backgroundColor: Colors.red,
+      final file = result.first;
+
+      // Ambil ukuran file (kompatibel dengan versi 12 dan 13)
+      final fileSize = (await file.length()) ?? 0;
+
+      if (fileSize == 0) {
+        showMessage(
+          'File tidak dapat dibaca. Silakan pilih ulang.',
+          color: Colors.red,
         );
         return;
       }
 
-      if (fileSize == 0) {
-        _showMessage('File yang dipilih kosong.');
+      if (fileSize > maxFileSize) {
+        showMessage('Ukuran file maksimal 10 MB.', color: Colors.red);
         return;
       }
 
@@ -265,11 +335,12 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
         selectedFileSize = fileSize;
       });
     } catch (e) {
-      _showMessage('Gagal memilih file: $e');
+      showMessage('Gagal memilih file: $e');
     }
   }
-
-  // HAPUS FILE TERPILIH //
+  // ============================================================
+  // HAPUS FILE TERPILIH
+  // ============================================================
 
   void removeSelectedFile() {
     if (isSubmitting) return;
@@ -280,17 +351,19 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     });
   }
 
-  // PREVIEW FILE // 
+  // ============================================================
+  // PREVIEW FILE
+  // ============================================================
 
   Future<void> showFilePreviewModal({
     required String fileName,
     String? fileUrl,
     PlatformFile? localFile,
   }) async {
-    final extension = _getExtension(fileName);
+    final extension = getExtension(fileName);
 
     if (!allowedExtensions.contains(extension)) {
-      _showMessage('Format file tidak didukung.');
+      showMessage('Format file tidak didukung.');
       return;
     }
 
@@ -301,17 +374,17 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
         fileBytes = await localFile.readAsBytes();
 
         if (fileBytes.isEmpty) {
-          _showMessage('File tidak memiliki isi.');
+          showMessage('File tidak memiliki isi.');
           return;
         }
       } catch (e) {
-        _showMessage('Gagal membaca file: $e');
+        showMessage('Gagal membaca file: $e');
         return;
       }
     }
 
     if (localFile == null && (fileUrl == null || fileUrl.isEmpty)) {
-      _showMessage('Lokasi file tidak ditemukan.');
+      showMessage('Lokasi file tidak ditemukan.');
       return;
     }
 
@@ -331,7 +404,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
   }
 
   // ============================================================
-  // KIRIM TUGAS KE API - ALUR ASLI
+  // KUMPULKAN TUGAS / SIMPAN REVISI
   // ============================================================
 
   Future<void> submitTask() async {
@@ -344,6 +417,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     });
 
     try {
+      // MEMBACA FILE MENJADI BYTES
       final bytes = await file.readAsBytes();
 
       if (bytes.isEmpty) {
@@ -354,14 +428,11 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
         throw Exception('Ukuran file maksimal 10 MB.');
       }
 
-      final multipartFile = MultipartFile.fromBytes(
-        bytes,
-        filename: file.name,
-      );
+      // MEMBUAT MULTIPART FILE DARI BYTES
+      final multipartFile = MultipartFile.fromBytes(bytes, filename: file.name);
 
-      final formData = FormData.fromMap({
-        'file_jawaban': multipartFile,
-      });
+      // MEMBUAT FORM DATA
+      final formData = FormData.fromMap({'file_jawaban': multipartFile});
 
       final response = await ApiConfig.dio.post(
         '/siswa/tugas/${widget.task.id}/kumpulkan',
@@ -375,37 +446,25 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
 
       if (!mounted) return;
 
-      final responseBody = response.data;
-
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = responseBody is Map ? responseBody['data'] : null;
-
-        final fileUrl = data is Map
-            ? data['file_jawaban_url']?.toString()
-            : null;
-
         setState(() {
           isSubmitted = true;
           submittedFileName = file.name;
-          submittedFileUrl = fileUrl;
           selectedFile = null;
           selectedFileSize = null;
         });
 
-        _showMessage(
-          'Tugas berhasil dikumpulkan!',
-          backgroundColor: Colors.green,
-        );
+        showMessage('Tugas berhasil dikumpulkan!', color: Colors.green);
 
-        // Segarkan informasi pengumpulan dari API.
-        _loadSubmissionDetails();
+        await loadDetail();
       } else {
-        _showMessage('Tugas gagal dikumpulkan.');
+        showMessage('Tugas gagal dikumpulkan.');
       }
     } on DioException catch (e) {
       if (!mounted) return;
 
       String message = 'Gagal mengirim tugas.';
+
       final responseData = e.response?.data;
 
       if (responseData is Map) {
@@ -426,11 +485,11 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
         message = 'Koneksi timeout. Silakan coba lagi.';
       }
 
-      _showMessage(message);
+      showMessage(message);
     } catch (e) {
       if (!mounted) return;
 
-      _showMessage(e.toString().replaceFirst('Exception: ', ''));
+      showMessage(e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) {
         setState(() {
@@ -440,13 +499,31 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     }
   }
 
-  // STYLE HELPER //
+  // ============================================================
+  // NOTIFIKASI
+  // ============================================================
 
-  BoxDecoration _cardDecoration() {
+  void showMessage(String message, {Color color = textDark}) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  // ============================================================
+  // DECORATION CARD
+  // ============================================================
+
+  BoxDecoration cardDecoration() {
     return BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: border),
+      border: Border.all(color: borderColor),
       boxShadow: [
         BoxShadow(
           color: Colors.black.withOpacity(0.025),
@@ -457,21 +534,27 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  Color _fileColor(String fileName) {
-    final ext = _getExtension(fileName);
+  Color fileColor(String fileName) {
+    final ext = getExtension(fileName);
 
-    if (ext == 'pdf') return const Color(0xFFE11D48);
+    if (ext == 'pdf') {
+      return const Color(0xFFE11D48);
+    }
+
     if (['jpg', 'jpeg', 'png'].contains(ext)) {
       return const Color(0xFF0284C7);
     }
 
-    return const Color(0xFF4F46E5);
+    return primary;
   }
 
-  IconData _fileIcon(String fileName) {
-    final ext = _getExtension(fileName);
+  IconData fileIcon(String fileName) {
+    final ext = getExtension(fileName);
 
-    if (ext == 'pdf') return Icons.picture_as_pdf_rounded;
+    if (ext == 'pdf') {
+      return Icons.picture_as_pdf_rounded;
+    }
+
     if (['jpg', 'jpeg', 'png'].contains(ext)) {
       return Icons.image_rounded;
     }
@@ -479,8 +562,8 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     return Icons.description_rounded;
   }
 
-  Widget _fileIconBox(String fileName, {double size = 46}) {
-    final color = _fileColor(fileName);
+  Widget fileIconBox(String fileName, {double size = 46}) {
+    final color = fileColor(fileName);
 
     return Container(
       width: size,
@@ -489,15 +572,11 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
         color: color.withOpacity(0.09),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Icon(
-        _fileIcon(fileName),
-        color: color,
-        size: size * 0.52,
-      ),
+      child: Icon(fileIcon(fileName), color: color, size: size * 0.52),
     );
   }
 
-  Widget _sectionLabel(String text) {
+  Widget sectionLabel(String text) {
     return Text(
       text,
       style: const TextStyle(
@@ -509,7 +588,11 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  Widget _statusBadge() {
+  // ============================================================
+  // STATUS BADGE
+  // ============================================================
+
+  Widget statusBadge() {
     final Color color;
     final Color fill;
     final String label;
@@ -529,10 +612,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 6,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: fill,
         borderRadius: BorderRadius.circular(30),
@@ -548,23 +628,21 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  // INFORMASI GURU //
+  // ============================================================
+  // INFORMASI GURU
+  // ============================================================
 
   Widget _buildTeacherInfo() {
-    if (teacherName == null || teacherName!.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
     return Padding(
       padding: const EdgeInsets.only(top: 15),
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
-              borderRadius: BorderRadius.circular(11),
+              color: const Color(0xFFEEF2FF),
+              borderRadius: BorderRadius.circular(50),
             ),
             child: const Icon(
               Icons.person_outline_rounded,
@@ -572,25 +650,24 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
               size: 20,
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 11),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
                   'Guru Pengampu',
-                  style: TextStyle(
-                    color: textMuted,
-                    fontSize: 10,
-                  ),
+                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  teacherName!,
+                  teacherName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: textDark,
+                    color: Color(0xFF334155),
                     fontSize: 12,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ],
@@ -601,72 +678,97 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  // CARD INFORMASI TUGAS//
+  // ============================================================
+  // INFORMASI TUGAS
+  // ============================================================
 
-  Widget _buildTaskInfoCard() {
+  Widget _buildTaskInfo() {
+    final deadline =
+        getTaskValue('deadline', widget.task.deadline)?.toString() ?? '';
+
+    final title = getTaskValue('judul', widget.task.title)?.toString() ?? '';
+
+    final description =
+        getTaskValue('deskripsi', widget.task.description)?.toString() ?? '';
+
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: _cardDecoration(),
+      padding: const EdgeInsets.all(21),
+      decoration: cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 11,
-              vertical: 7,
-            ),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0F9FF),
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.calendar_month_rounded,
-                  size: 14,
-                  color: primary,
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 7,
                 ),
-                const SizedBox(width: 7),
-                Text(
-                  'Deadline: ${formatDeadline(widget.task.deadline)}',
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0F9FF),
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Text(
+                  'Deadline: ${formatDeadline(deadline)}',
                   style: const TextStyle(
+                    color: Color(0xFF0369A1),
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF0369A1),
                   ),
                 ),
-              ],
-            ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEEF2FF),
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.file_upload_outlined,
+                      size: 13,
+                      color: Color(0xFF4338CA),
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      'Upload',
+                      style: TextStyle(
+                        color: Color(0xFF4338CA),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-
-          const SizedBox(height: 15),
-
+          const SizedBox(height: 16),
           Text(
-            widget.task.title,
+            title,
             style: const TextStyle(
-              fontSize: 20,
+              fontSize: 21,
               height: 1.3,
               fontWeight: FontWeight.w800,
               color: textDark,
             ),
           ),
-
           _buildTeacherInfo(),
-
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 17),
-            child: Divider(height: 1, color: border),
+            padding: EdgeInsets.symmetric(vertical: 18),
+            child: Divider(height: 1, color: Color(0xFFF1F5F9)),
           ),
-
-          _sectionLabel('DESKRIPSI TUGAS'),
-
+          sectionLabel('DESKRIPSI TUGAS'),
           const SizedBox(height: 9),
-
           Text(
-            widget.task.description.isNotEmpty
-                ? widget.task.description
-                : 'Tidak ada deskripsi tugas.',
+            description.isNotEmpty ? description : 'Tidak ada deskripsi tugas.',
             style: const TextStyle(
               fontSize: 12,
               height: 1.7,
@@ -678,9 +780,11 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  // KARTU BERKAS LAMPIRAN //
+  // ============================================================
+  // LAMPIRAN GURU
+  // ============================================================
 
-  Widget _buildAttachmentCard() {
+  Widget _buildAttachment() {
     if (attachmentUrl == null || attachmentUrl!.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -689,59 +793,32 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
 
     return Container(
       padding: const EdgeInsets.all(17),
-      decoration: _cardDecoration(),
+      decoration: cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionLabel('BERKAS LAMPIRAN'),
+          sectionLabel('BERKAS LAMPIRAN'),
           const SizedBox(height: 13),
           Row(
             children: [
-              _fileIconBox(name),
+              fileIconBox(name, size: 40),
               const SizedBox(width: 11),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: textDark,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Berkas dari guru pengampu',
-                      style: TextStyle(
-                        color: textMuted,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11, color: textDark),
                 ),
               ),
-              const SizedBox(width: 5),
-              TextButton.icon(
+              OutlinedButton.icon(
                 onPressed: () {
-                  showFilePreviewModal(
-                    fileName: name,
-                    fileUrl: attachmentUrl,
-                  );
+                  showFilePreviewModal(fileName: name, fileUrl: attachmentUrl);
                 },
-                icon: const Icon(
-                  Icons.visibility_outlined,
-                  size: 15,
-                ),
+                icon: const Icon(Icons.visibility_outlined, size: 14),
                 label: const Text(
-                  'Lihat',
-                  style: TextStyle(fontSize: 11),
-                ),
-                style: TextButton.styleFrom(
-                  foregroundColor: primary,
+                  'Lihat Berkas',
+                  style: TextStyle(fontSize: 10),
                 ),
               ),
             ],
@@ -751,12 +828,14 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  // KARTU PENGUMPULAN TUGAS //
+  // ============================================================
+  // PENGUMPULAN TUGAS
+  // ============================================================
 
-  Widget _buildSubmissionSectionCard() {
+  Widget _buildSubmissionInfo() {
     return Container(
       padding: const EdgeInsets.all(19),
-      decoration: _cardDecoration(),
+      decoration: cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -791,53 +870,33 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
                     SizedBox(height: 3),
                     Text(
                       'Kirimkan hasil pekerjaan kamu',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: textMuted,
-                      ),
+                      style: TextStyle(fontSize: 10, color: textMuted),
                     ),
                   ],
                 ),
               ),
+              statusBadge(),
             ],
           ),
-
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
-            child: Divider(height: 1, color: border),
+            child: Divider(height: 1, color: borderColor),
           ),
-
-          _statusBadge(),
-
-          const SizedBox(height: 17),
-
           if (!isSubmitted) ...[
-            _sectionLabel('UNGGAH BERKAS JAWABAN'),
-            const SizedBox(height: 11),
-
+            sectionLabel('UNGGAH BERKAS JAWABAN'),
+            const SizedBox(height: 12),
             if (selectedFile == null)
               _buildUploadArea()
             else
               _buildSelectedFileCard(),
-
             const SizedBox(height: 14),
-
             _buildInfoBox(),
-
             const SizedBox(height: 17),
-
             _buildSubmitButton(),
           ] else ...[
             _buildSubmittedNotice(),
-
             const SizedBox(height: 15),
-
-            _sectionLabel('BERKAS YANG DIKUMPULKAN'),
-
-            const SizedBox(height: 10),
-
             _buildSubmittedFileCard(),
-
             if (isGraded) ...[
               const SizedBox(height: 16),
               _buildScoreCard(),
@@ -845,7 +904,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
               _buildLockedNotice(),
             ] else ...[
               const SizedBox(height: 15),
-              _buildWaitingNotice(),
+              _buildRevisionSection(),
             ],
           ],
         ],
@@ -853,91 +912,74 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  // AREA PILIH FILE //
+  // ============================================================
+  // AREA UPLOAD
+  // ============================================================
 
   Widget _buildUploadArea() {
     return InkWell(
       onTap: isSubmitting ? null : pickFile,
-      borderRadius: BorderRadius.circular(15),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(
-          vertical: 25,
-          horizontal: 16,
+      borderRadius: BorderRadius.circular(12),
+      child: CustomPaint(
+        painter: DashedRoundedRectPainter(
+          color: const Color(0xFFCBD5E1),
+          radius: 12,
         ),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(
-            color: const Color(0xFFCBD5E1),
-            width: 1.2,
-          ),
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 27, horizontal: 16),
+          child: const Column(
+            children: [
+              Icon(
                 Icons.cloud_upload_outlined,
-                color: primary,
-                size: 26,
+                color: Color(0xFF0284C7),
+                size: 35,
               ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Pilih Berkas Jawaban',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                color: textDark,
+              SizedBox(height: 12),
+              Text(
+                'Klik untuk memilih file',
+                style: TextStyle(
+                  color: Color(0xFF0369A1),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
               ),
-            ),
-            const SizedBox(height: 5),
-            const Text(
-              'Ketuk untuk memilih file dari perangkat',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 11,
-                color: textMuted,
+              SizedBox(height: 6),
+              Text(
+                'Format PDF, DOCX, JPG, JPEG, PNG',
+                style: TextStyle(fontSize: 10, color: textMuted),
               ),
-            ),
-            const SizedBox(height: 11),
-            const Text(
-              'PDF, DOCX, JPG, PNG • Maks. 10 MB',
-              style: TextStyle(
-                fontSize: 10,
-                color: Color(0xFF94A3B8),
-                fontWeight: FontWeight.w600,
+              SizedBox(height: 4),
+              Text(
+                'Ukuran maksimal 10 MB',
+                style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // KARTU FILE TERPILIH //
+  // ============================================================
+  // FILE TERPILIH
+  // ============================================================
 
   Widget _buildSelectedFileCard() {
     final file = selectedFile!;
 
     return Container(
-      padding: const EdgeInsets.all(13),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: border),
+        color: const Color(0xFFF0F9FF),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFBAE6FD)),
       ),
       child: Column(
         children: [
           Row(
             children: [
-              _fileIconBox(file.name),
+              fileIconBox(file.name, size: 44),
               const SizedBox(width: 11),
               Expanded(
                 child: Column(
@@ -949,83 +991,49 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
                         color: textDark,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      selectedFileSize != null
-                          ? formatFileSize(selectedFileSize!)
-                          : '',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: textMuted,
-                      ),
+                      formatFileSize(selectedFileSize ?? 0),
+                      style: const TextStyle(fontSize: 10, color: textMuted),
                     ),
                   ],
                 ),
               ),
               const Icon(
-                Icons.check_circle_rounded,
-                color: Color(0xFF059669),
+                Icons.check_circle,
+                color: Color(0xFF10B981),
                 size: 20,
               ),
             ],
           ),
-
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 11),
-            child: Divider(height: 1, color: border),
+            padding: EdgeInsets.symmetric(vertical: 13),
+            child: Divider(height: 1, color: Color(0xFFDBEAFE)),
           ),
-
-          Row(
+          Wrap(
+            spacing: 5,
             children: [
-              Expanded(
-                child: TextButton.icon(
-                  onPressed: () {
-                    showFilePreviewModal(
-                      fileName: file.name,
-                      localFile: selectedFile,
-                    );
-                  },
-                  icon: const Icon(
-                    Icons.visibility_outlined,
-                    size: 15,
-                  ),
-                  label: const Text(
-                    'Preview',
-                    style: TextStyle(fontSize: 11),
-                  ),
-                  style: TextButton.styleFrom(
-                    foregroundColor: primary,
-                  ),
-                ),
+              TextButton.icon(
+                onPressed: () {
+                  showFilePreviewModal(fileName: file.name, localFile: file);
+                },
+                icon: const Icon(Icons.visibility_outlined, size: 14),
+                label: const Text('Lihat File'),
               ),
-              Expanded(
-                child: TextButton.icon(
-                  onPressed: isSubmitting ? null : pickFile,
-                  icon: const Icon(
-                    Icons.refresh_rounded,
-                    size: 15,
-                  ),
-                  label: const Text(
-                    'Ganti File',
-                    style: TextStyle(fontSize: 11),
-                  ),
-                  style: TextButton.styleFrom(
-                    foregroundColor: textMuted,
-                  ),
-                ),
+              TextButton.icon(
+                onPressed: isSubmitting ? null : pickFile,
+                icon: const Icon(Icons.refresh_rounded, size: 14),
+                label: const Text('Ganti'),
               ),
-              IconButton(
+              TextButton.icon(
                 onPressed: isSubmitting ? null : removeSelectedFile,
-                icon: const Icon(
-                  Icons.delete_outline_rounded,
-                  color: Color(0xFFE11D48),
-                  size: 19,
-                ),
-                tooltip: 'Hapus file',
+                icon: const Icon(Icons.delete_outline, size: 14),
+                label: const Text('Hapus'),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
               ),
             ],
           ),
@@ -1034,7 +1042,9 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  // INFO PENGUMPULAN //
+  // ============================================================
+  // INFORMASI UPLOAD
+  // ============================================================
 
   Widget _buildInfoBox() {
     return Container(
@@ -1042,20 +1052,18 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
       decoration: BoxDecoration(
         color: const Color(0xFFEFF6FF),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFDBEAFE)),
       ),
       child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.info_outline_rounded,
-            color: Color(0xFF2563EB),
-            size: 18,
-          ),
+          Icon(Icons.info_outline_rounded, color: Color(0xFF2563EB), size: 18),
           SizedBox(width: 9),
           Expanded(
             child: Text(
-              'Pastikan berkas jawaban sudah benar dan dapat dibuka '
-              'sebelum kamu mengumpulkan tugas.',
+              'Periksa kembali berkas tugas sebelum dikirim. '
+              'Kamu dapat melihat pratinjau file terlebih dahulu. '
+              'Ukuran maksimal file adalah 10 MB.',
               style: TextStyle(
                 color: Color(0xFF1D4ED8),
                 fontSize: 11,
@@ -1068,50 +1076,47 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  // TOMBOL KIRIM //
+  // ============================================================
+  // TOMBOL KUMPULKAN
+  // ============================================================
 
   Widget _buildSubmitButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 49,
-      child: ElevatedButton.icon(
-        onPressed: selectedFile == null || isSubmitting
-            ? null
-            : submitTask,
-        icon: isSubmitting
-            ? const SizedBox(
-                width: 17,
-                height: 17,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
+    return Center(
+      child: SizedBox(
+        width: 190,
+        height: 47,
+        child: ElevatedButton(
+          onPressed: selectedFile == null || isSubmitting ? null : submitTask,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: primary,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: const Color(0xFFA5B4FC),
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(11),
+            ),
+          ),
+          child: isSubmitting
+              ? const SizedBox(
+                  width: 17,
+                  height: 17,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Text(
+                  'Kirim Jawaban',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                 ),
-              )
-            : const Icon(
-                Icons.send_rounded,
-                size: 17,
-              ),
-        label: Text(
-          isSubmitting ? 'Mengirim...' : 'Kirim Tugas Sekarang',
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF4F46E5),
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: const Color(0xFFA5B4FC),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
         ),
       ),
     );
   }
 
-  // NOTIFIKASI SUDAH TERKUMPUL // 
+  // ============================================================
+  // NOTIFIKASI SUDAH TERKUMPUL
+  // ============================================================
 
   Widget _buildSubmittedNotice() {
     return Container(
@@ -1124,11 +1129,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
       child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.check_circle_rounded,
-            color: Color(0xFF059669),
-            size: 20,
-          ),
+          Icon(Icons.check_circle_rounded, color: Color(0xFF059669), size: 20),
           SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -1144,7 +1145,8 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Berkas jawabanmu sudah diterima dan tersimpan.',
+                  'Berkas tugas kamu sudah tersimpan dan '
+                  'berhasil dikirim kepada guru.',
                   style: TextStyle(
                     fontSize: 11,
                     height: 1.5,
@@ -1159,182 +1161,287 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  // KARTU FILE TERKUMPUL //
+  // ============================================================
+  // FILE TERKUMPUL
+  // ============================================================
 
   Widget _buildSubmittedFileCard() {
     final fileName = submittedFileName ?? 'jawaban_tugas';
 
     return Container(
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(13),
-        border: Border.all(color: border),
-      ),
-      child: Row(
-        children: [
-          _fileIconBox(fileName),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  fileName,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: textDark,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Berkas jawaban',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: textMuted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: submittedFileUrl == null
-                ? null
-                : () {
-                    showFilePreviewModal(
-                      fileName: fileName,
-                      fileUrl: submittedFileUrl,
-                    );
-                  },
-            icon: const Icon(
-              Icons.visibility_outlined,
-              color: primary,
-              size: 21,
-            ),
-            tooltip: 'Lihat berkas',
-          ),
-        ],
-      ),
-    );
-  }
-
-  // MENUNGGU PENILAIAN //
-
-  Widget _buildWaitingNotice() {
-    return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFBEB),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFEF3C7)),
+        border: Border.all(color: borderColor),
       ),
-      child: const Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
         children: [
-          Icon(
-            Icons.hourglass_top_rounded,
-            color: Color(0xFFD97706),
-            size: 19,
+          Row(
+            children: [
+              fileIconBox(fileName, size: 46),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Berkas Tugas',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      fileName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 10, color: textMuted),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.check_circle,
+                color: Color(0xFF10B981),
+                size: 19,
+              ),
+            ],
           ),
-          SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Menunggu Penilaian',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFFB45309),
-                  ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 13),
+            child: Divider(height: 1, color: borderColor),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Dikirim pada',
+                      style: TextStyle(fontSize: 10, color: textMuted),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      submittedAt != null ? formatDeadline(submittedAt!) : '-',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: textDark,
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 4),
-                Text(
-                  'Guru belum memberikan nilai untuk tugas ini.',
-                  style: TextStyle(
-                    fontSize: 11,
-                    height: 1.5,
-                    color: Color(0xFF92400E),
-                  ),
+              ),
+              OutlinedButton.icon(
+                onPressed: submittedFileUrl == null
+                    ? null
+                    : () {
+                        showFilePreviewModal(
+                          fileName: fileName,
+                          fileUrl: submittedFileUrl,
+                        );
+                      },
+                icon: const Icon(Icons.visibility_outlined, size: 14),
+                label: const Text('Lihat File', style: TextStyle(fontSize: 10)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: primary,
+                  backgroundColor: const Color(0xFFEEF2FF),
+                  side: const BorderSide(color: Color(0xFFE0E7FF)),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  // NILAI TUGAS //
+  // ============================================================
+  // REVISI BERKAS
+  // ============================================================
+
+  Widget _buildRevisionSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFFBEB),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFFDE68A)),
+          ),
+          child: const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.access_time_rounded,
+                color: Color(0xFFD97706),
+                size: 18,
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Tugas sedang menunggu pemeriksaan guru. '
+                  'Kamu masih dapat melakukan revisi jika diperlukan.',
+                  style: TextStyle(
+                    color: Color(0xFF92400E),
+                    fontSize: 11,
+                    height: 1.6,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 15),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.refresh_rounded, color: primary, size: 17),
+                  SizedBox(width: 8),
+                  Text(
+                    'Ganti Berkas Jawaban',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: textDark,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Pilih berkas baru jika ingin mengganti tugas sebelumnya.',
+                style: TextStyle(fontSize: 11, color: textMuted),
+              ),
+              const SizedBox(height: 13),
+              if (selectedFile == null)
+                _buildUploadArea()
+              else
+                _buildSelectedFileCard(),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: selectedFile == null || isSubmitting
+                      ? null
+                      : submitTask,
+                  icon: isSubmitting
+                      ? const SizedBox(
+                          width: 15,
+                          height: 15,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.refresh_rounded, size: 16),
+                  label: Text(isSubmitting ? 'Menyimpan...' : 'Simpan Revisi'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primary,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: const Color(0xFFA5B4FC),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ============================================================
+  // NILAI TUGAS
+  // ============================================================
 
   Widget _buildScoreCard() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
+        color: const Color(0xFFEEF2FF),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFDCFCE7)),
+        border: Border.all(color: const Color(0xFFE0E7FF)),
       ),
-      child: Column(
+      child: Row(
         children: [
-          const Text(
-            'NILAI TUGAS',
-            style: TextStyle(
-              color: Color(0xFF15803D),
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.8,
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Nilai dari Guru',
+                  style: TextStyle(
+                    color: Color(0xFF4338CA),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: 5),
+                Text(
+                  'Hasil penilaian tugas kamu',
+                  style: TextStyle(color: Color(0xFF6366F1), fontSize: 10),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 6),
           Text(
-            score?.toStringAsFixed(
-                  score == score?.roundToDouble() ? 0 : 2,
-                ) ??
-                '-',
+            score?.toStringAsFixed(0) ?? '-',
             style: const TextStyle(
-              color: Color(0xFF166534),
-              fontSize: 36,
+              color: primary,
+              fontSize: 27,
               fontWeight: FontWeight.w900,
             ),
           ),
           const Text(
-            'dari 100',
-            style: TextStyle(
-              color: Color(0xFF15803D),
-              fontSize: 11,
-            ),
+            ' / 100',
+            style: TextStyle(color: Color(0xFF818CF8), fontSize: 11),
           ),
         ],
       ),
     );
   }
 
+  // ============================================================
+  // TUGAS SUDAH DINILAI
+  // ============================================================
+
   Widget _buildLockedNotice() {
     return Container(
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
+        color: const Color(0xFFECFDF5),
         borderRadius: BorderRadius.circular(12),
       ),
       child: const Row(
         children: [
-          Icon(
-            Icons.lock_outline_rounded,
-            color: textMuted,
-            size: 18,
-          ),
+          Icon(Icons.lock_outline_rounded, color: Color(0xFF047857), size: 17),
           SizedBox(width: 9),
           Expanded(
             child: Text(
-              'Tugas sudah dinilai. Pengumpulan berkas telah ditutup.',
+              'Tugas sudah dinilai. Berkas tidak dapat diubah lagi.',
               style: TextStyle(
-                color: textMuted,
+                color: Color(0xFF047857),
                 fontSize: 11,
                 height: 1.5,
               ),
@@ -1345,7 +1452,9 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     );
   }
 
-  // BUILD HALAMAN //
+  // ============================================================
+  // BUILD HALAMAN
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -1370,79 +1479,132 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
         ),
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, color: border),
+          child: Divider(height: 1, color: borderColor),
         ),
       ),
       body: SafeArea(
-        child: isLoadingSubmission && !isSubmitted
-            ? const Center(
-                child: CircularProgressIndicator(color: primary),
-              )
-            : RefreshIndicator(
-                onRefresh: _loadSubmissionDetails,
-                color: primary,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 30),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 720),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            children: [
-                              const Text(
-                                'Beranda',
-                                style: TextStyle(
-                                  color: textMuted,
-                                  fontSize: 11,
-                                ),
-                              ),
-                              const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 7),
-                                child: Icon(
-                                  Icons.chevron_right_rounded,
-                                  color: Color(0xFF94A3B8),
-                                  size: 15,
-                                ),
-                              ),
-                              const Text(
-                                'Tugas',
-                                style: TextStyle(
-                                  color: primary,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator(color: primary))
+            : errorMessage != null
+            ? _buildError()
+            : _buildContent(),
+      ),
+    );
+  }
 
-                          const SizedBox(height: 16),
+  // ============================================================
+  // ERROR
+  // ============================================================
 
-                          _buildTaskInfoCard(),
+  Widget _buildError() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.error_outline_rounded,
+              size: 45,
+              color: Colors.redAccent,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              errorMessage ?? 'Terjadi kesalahan.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: textMuted, fontSize: 12),
+            ),
+            const SizedBox(height: 15),
+            ElevatedButton.icon(
+              onPressed: loadDetail,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Coba Lagi'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-                          if (attachmentUrl != null &&
-                              attachmentUrl!.isNotEmpty) ...[
-                            const SizedBox(height: 15),
-                            _buildAttachmentCard(),
-                          ],
+  // ============================================================
+  // CONTENT
+  // ============================================================
 
-                          const SizedBox(height: 15),
-
-                          _buildSubmissionSectionCard(),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+  Widget _buildContent() {
+    return RefreshIndicator(
+      onRefresh: loadDetail,
+      color: primary,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 30),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildTaskInfo(),
+                if (attachmentUrl != null && attachmentUrl!.isNotEmpty) ...[
+                  const SizedBox(height: 15),
+                  _buildAttachment(),
+                ],
+                const SizedBox(height: 15),
+                _buildSubmissionInfo(),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
 }
 
-// HALAMAN PREVIEW BERKAS //
+// ============================================================
+// CUSTOM PAINTER BORDER PUTUS-PUTUS
+// ============================================================
+
+class DashedRoundedRectPainter extends CustomPainter {
+  final Color color;
+  final double radius;
+
+  DashedRoundedRectPainter({required this.color, this.radius = 12});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4;
+
+    final rect = Rect.fromLTWH(0.7, 0.7, size.width - 1.4, size.height - 1.4);
+
+    final path = Path()
+      ..addRRect(RRect.fromRectAndRadius(rect, Radius.circular(radius)));
+
+    final metrics = path.computeMetrics();
+
+    for (final metric in metrics) {
+      double distance = 0;
+
+      while (distance < metric.length) {
+        final end = (distance + 7).clamp(0.0, metric.length);
+
+        canvas.drawPath(metric.extractPath(distance, end), paint);
+
+        distance = end + 5;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant DashedRoundedRectPainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.radius != radius;
+  }
+}
+
+// ============================================================
+// HALAMAN PREVIEW BERKAS
+// ============================================================
 
 class TaskFilePreviewPage extends StatelessWidget {
   final String fileName;
@@ -1471,10 +1633,7 @@ class TaskFilePreviewPage extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             message,
-            style: const TextStyle(
-              color: Color(0xFF64748B),
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
           ),
         ],
       ),
@@ -1487,7 +1646,7 @@ class TaskFilePreviewPage extends StatelessWidget {
         return SfPdfViewer.memory(fileBytes!);
       }
 
-      if (fileUrl != null) {
+      if (fileUrl != null && fileUrl!.isNotEmpty) {
         return SfPdfViewer.network(
           fileUrl!,
           canShowScrollHead: true,
@@ -1507,7 +1666,7 @@ class TaskFilePreviewPage extends StatelessWidget {
         );
       }
 
-      if (fileUrl != null) {
+      if (fileUrl != null && fileUrl!.isNotEmpty) {
         return DocxView(
           filePath: fileUrl!,
           fontSize: 14,
@@ -1519,36 +1678,46 @@ class TaskFilePreviewPage extends StatelessWidget {
     }
 
     if (['jpg', 'jpeg', 'png'].contains(extension)) {
-      final image = fileBytes != null
-          ? Image.memory(
+      if (fileBytes != null) {
+        return Container(
+          color: const Color(0xFFF1F5F9),
+          alignment: Alignment.center,
+          child: InteractiveViewer(
+            minScale: 0.5,
+            maxScale: 4,
+            child: Image.memory(
               fileBytes!,
               fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) =>
-                  _previewError('Gagal menampilkan gambar.'),
-            )
-          : Image.network(
+              errorBuilder: (_, __, ___) {
+                return _previewError('Gagal menampilkan gambar.');
+              },
+            ),
+          ),
+        );
+      }
+
+      if (fileUrl != null && fileUrl!.isNotEmpty) {
+        return Container(
+          color: const Color(0xFFF1F5F9),
+          alignment: Alignment.center,
+          child: InteractiveViewer(
+            minScale: 0.5,
+            maxScale: 4,
+            child: Image.network(
               fileUrl!,
               fit: BoxFit.contain,
               loadingBuilder: (context, child, progress) {
                 if (progress == null) return child;
 
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
+                return const Center(child: CircularProgressIndicator());
               },
-              errorBuilder: (_, __, ___) =>
-                  _previewError('Gagal memuat gambar.'),
-            );
-
-      return Container(
-        color: const Color(0xFFF1F5F9),
-        alignment: Alignment.center,
-        child: InteractiveViewer(
-          minScale: 0.5,
-          maxScale: 4,
-          child: image,
-        ),
-      );
+              errorBuilder: (_, __, ___) {
+                return _previewError('Gagal memuat gambar.');
+              },
+            ),
+          ),
+        );
+      }
     }
 
     return _previewError('File tidak dapat ditampilkan.');
@@ -1564,10 +1733,7 @@ class TaskFilePreviewPage extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(
-            Icons.arrow_back_rounded,
-            color: Color(0xFF0F172A),
-          ),
+          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF0F172A)),
         ),
         title: Text(
           fileName,
@@ -1581,10 +1747,7 @@ class TaskFilePreviewPage extends StatelessWidget {
         ),
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),
-          child: Divider(
-            height: 1,
-            color: Color(0xFFE2E8F0),
-          ),
+          child: Divider(height: 1, color: Color(0xFFE2E8F0)),
         ),
       ),
       body: _buildPreview(),

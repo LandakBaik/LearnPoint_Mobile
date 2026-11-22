@@ -10,6 +10,7 @@ import 'package:learnpoint_mobile/features/siswa/dashboard/screens/notifikasi_sc
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/dashboard_header_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/widgets/materi_header_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/widgets/materi_section.dart';
+import 'package:learnpoint_mobile/features/siswa/tugas/widgets/tugas_section.dart';
 
 class Materimapel extends StatefulWidget {
   final VoidCallback? onBackTap;

@@ -14,6 +14,7 @@ import 'package:learnpoint_mobile/features/siswa/tugas/screens/tugas_screen.dart
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/hero_banner_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/gamification/data/gacha_service.dart';
 import 'package:learnpoint_mobile/features/siswa/gamification/models/item_model.dart';
+import 'package:learnpoint_mobile/features/siswa/gamification/screens/inventory_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/data/materi_preferences_service.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/services/task_api_service.dart';
@@ -321,7 +322,14 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
                   profile: context.watch<ProfileProvider>().currentProfile,
                   activeBanner: activeBanner,
                   onNotificationTap: _openNotifications,
-                  onProfileTap: _openProfile,
+                  onProfileTap: _openProfile, 
+                  onBannerTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const Inventory(initialTab: 1),
+                      ),
+                    );
+                  },
                   continueSubject: _lastReadMateri?.subject,
                   continueTitle: _lastReadMateri?.title,
                   onContinueTap: () async {
@@ -392,6 +400,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
     );
   }
 
+// --- WIDGET: TUGAS TERBARU SECTION ---
   Widget _buildTugasTerbaruSection() {
     // 1. Kondisi loading
     if (_isLoadingTasks) {
@@ -754,58 +763,6 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
               const SizedBox(height: 14),
               const Divider(color: Color(0xFFE5E7EB), height: 1),
               const SizedBox(height: 14),
-
-                  const SizedBox(height: 10),
-
-                  // GURU PENGAMPU
-                  Row(
-                    children: [
-                      Container(
-                        width: 27,
-                        height: 27,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEEF2FF),
-                          borderRadius: BorderRadius.circular(9),
-                        ),
-                        child: const Icon(
-                          Icons.person_outline_rounded,
-                          size: 16,
-                          color: Color(0xFF6366F1),
-                        ),
-                      ),
-
-                      const SizedBox(width: 8),
-
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Guru Pengampu',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 10,
-                                color: const Color(0xFF94A3B8),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            Text(
-                              currentTask['teacher']?.toString().isNotEmpty ==
-                                      true
-                                  ? currentTask['teacher'].toString()
-                                  : 'Belum tersedia',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11,
-                                color: const Color(0xFF475569),
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
 
                   const SizedBox(height: 10),
 
