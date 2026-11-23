@@ -1,25 +1,16 @@
 import 'package:flutter/material.dart';
-
-import 'package:learnpoint_mobile/features/siswa/ujian/screens/soal_ujian_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/dashboard_header_widget.dart';
+import 'package:learnpoint_mobile/features/siswa/ujian/models/ujian_model.dart';
 import 'package:learnpoint_mobile/features/siswa/ujian/screens/detail_ujian_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/ujian/screens/hasil_ujian_screen.dart';
-import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/dashboard_header_widget.dart';
-
-// ============================================================
-// COLORS
-// ============================================================
+import 'package:learnpoint_mobile/features/siswa/ujian/screens/soal_ujian_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/ujian/services/ujian_api_service.dart';
 
 const Color primaryBlue = Color(0xFF0757C9);
 const Color darkText = Color(0xFF13233A);
 const Color secondaryText = Color(0xFF596579);
 const Color lightBlue = Color(0xFFEAF4FF);
 const Color cardBlue = Color(0xFFF0F5FF);
-
-// ============================================================
-// NAMA: ABDUL AZIZ NURULLAH
-// NIM : E412518866
-// GOL : E
-// ============================================================
 
 class UjianScreen extends StatefulWidget {
   const UjianScreen({super.key});
@@ -29,12 +20,22 @@ class UjianScreen extends StatefulWidget {
 }
 
 class _UjianScreenState extends State<UjianScreen> {
-  int selectedFilter = 0;
-
   final TextEditingController _searchController = TextEditingController();
+
+  List<UjianItem> _ujians = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  // 0 = Semua, 1 = Belum, 2 = Selesai
+  int _selectedFilter = 0;
+  bool _sortTerbaru = true;
   String _searchText = '';
 
-  final List<String> filters = ['Semua (6)', 'Urutkan: Terbaru'];
+  @override
+  void initState() {
+    super.initState();
+    _loadUjians();
+  }
 
   @override
   void dispose() {
@@ -42,8 +43,258 @@ class _UjianScreenState extends State<UjianScreen> {
     super.dispose();
   }
 
+  Future<void> _loadUjians() async {
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
+
+    try {
+      final result = await UjianApiService.getUjians();
+      if (!mounted) return;
+      setState(() {
+        _ujians = result;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      });
+    }
+  }
+
+  List<UjianItem> get _filteredUjians {
+    final query = _searchText.trim().toLowerCase();
+
+    final list = _ujians.where((item) {
+      if (_selectedFilter == 1 && item.sudahDikerjakan) return false;
+      if (_selectedFilter == 2 && !item.sudahDikerjakan) return false;
+
+      if (query.isNotEmpty) {
+        final matchJudul = item.judul.toLowerCase().contains(query);
+        final matchMapel = item.mapel.toLowerCase().contains(query);
+        if (!matchJudul && !matchMapel) return false;
+      }
+      return true;
+    }).toList();
+
+    list.sort((a, b) {
+      final dateA = DateTime.tryParse(a.waktuMulai ?? a.deadline ?? '');
+      final dateB = DateTime.tryParse(b.waktuMulai ?? b.deadline ?? '');
+      if (dateA == null && dateB == null) return 0;
+      if (dateA == null) return 1;
+      if (dateB == null) return -1;
+      return _sortTerbaru ? dateB.compareTo(dateA) : dateA.compareTo(dateB);
+    });
+
+    return list;
+  }
+
+  int get _totalBelum => _ujians.where((e) => !e.sudahDikerjakan).length;
+  int get _totalSelesai => _ujians.where((e) => e.sudahDikerjakan).length;
+
+  String _formatDateTime(String? raw) {
+    if (raw == null || raw.isEmpty) return 'Sesuai Jadwal';
+    final dt = DateTime.tryParse(raw)?.toLocal();
+    if (dt == null) return raw;
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+    ];
+    final day = dt.day.toString().padLeft(2, '0');
+    final hour = dt.hour.toString().padLeft(2, '0');
+    final minute = dt.minute.toString().padLeft(2, '0');
+    return '$day ${months[dt.month - 1]} ${dt.year}, $hour:$minute WIB';
+  }
+
+  Future<void> _handleMulaiUjian(UjianItem item) async {
+    // Jika siswa sudah pernah validasi token & sesi sedang berjalan/terkunci, langsung masuk
+    if (item.sudahMulai && !item.sudahDikerjakan) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => QuizStartPage(ujianId: item.id),
+        ),
+      );
+      if (mounted) _loadUjians();
+      return;
+    }
+
+    // Jika belum mulai, tampilkan dialog input token sesi
+    final tokenController = TextEditingController();
+    String? tokenError;
+    bool isValidating = false;
+
+    final berhasil = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEAF2FF),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.vpn_key_rounded, color: primaryBlue, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Masukkan Token Sesi',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: darkText),
+                    ),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${item.judul} (${item.mapel} • Sesi ${item.sesi})',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: darkText),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Minta kode masuk (token) sesi ujian kepada guru pengawas untuk mulai mengerjakan.',
+                    style: TextStyle(fontSize: 11.5, color: secondaryText, height: 1.4),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: tokenController,
+                    textCapitalization: TextCapitalization.characters,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 2.5,
+                      color: darkText,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Contoh: S1-AB12',
+                      hintStyle: const TextStyle(
+                        fontSize: 13,
+                        letterSpacing: 0.5,
+                        color: Color(0xFF94A3B8),
+                      ),
+                      filled: true,
+                      fillColor: const Color(0xFFF1F5F9),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: primaryBlue, width: 1.8),
+                      ),
+                    ),
+                  ),
+                  if (tokenError != null) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFEBEE),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFFFCDD2)),
+                      ),
+                      child: Text(
+                        tokenError!,
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          color: Color(0xFFC62828),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isValidating ? null : () => Navigator.pop(dialogContext, false),
+                  child: const Text('Batal'),
+                ),
+                ElevatedButton(
+                  onPressed: isValidating
+                      ? null
+                      : () async {
+                          final kode = tokenController.text.trim();
+                          if (kode.isEmpty) {
+                            setDialogState(() {
+                              tokenError = 'Token ujian wajib diisi.';
+                            });
+                            return;
+                          }
+                          setDialogState(() {
+                            isValidating = true;
+                            tokenError = null;
+                          });
+                          try {
+                            await UjianApiService.validasiToken(
+                              ujianId: item.id,
+                              token: kode,
+                            );
+                            if (dialogContext.mounted) {
+                              Navigator.pop(dialogContext, true);
+                            }
+                          } catch (e) {
+                            setDialogState(() {
+                              isValidating = false;
+                              tokenError = e.toString().replaceFirst('Exception: ', '');
+                            });
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryBlue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: isValidating
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Mulai Ujian', style: TextStyle(fontWeight: FontWeight.w700)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    tokenController.dispose();
+
+    if (berhasil == true && mounted) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => QuizStartPage(ujianId: item.id),
+        ),
+      );
+      if (mounted) _loadUjians();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final displayed = _filteredUjians;
+
     return Scaffold(
       backgroundColor: lightBlue,
       body: SafeArea(
@@ -51,86 +302,41 @@ class _UjianScreenState extends State<UjianScreen> {
           children: [
             _buildHeader(),
             Expanded(
-              child: CustomScrollView(
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  SliverToBoxAdapter(child: _buildPageTitle()),
-                  SliverToBoxAdapter(child: _buildSearch()),
-                  SliverToBoxAdapter(child: _buildFilter()),
-                  SliverToBoxAdapter(child: _buildTaskBanner()),
-                  SliverToBoxAdapter(
-                    child: _buildQuizCard(
-                      type: 'UJIAN',
-                      subject: 'IPA',
-                      grade: 'Kelas VIII',
-                      title: 'Sistem Pernapasan pada\nManusia',
-                      icon: Icons.science_outlined,
-                      iconColor: const Color(0xFFFF5C5C),
-                      iconBackground: const Color(0xFFFFD9D9),
-                      info1: '20 Soal Pilihan\nGanda',
-                      info2: '30 Menit\nPengerjaan',
-                      infoIcon1: Icons.quiz_outlined,
-                      infoIcon2: Icons.access_time,
-                      bottomInfo: 'Batas: 24 Mei 2024, 23.59 WIB',
-                      bottomIcon: Icons.event_busy_outlined,
-                      bottomColor: Colors.red,
-                      status: 'Belum dikerjakan',
-                      statusColor: const Color(0xFFDDEBFF),
-                      buttonText: 'Mulai Ujian',
-                      buttonIcon: Icons.play_arrow,
-                      buttonEnabled: true,
-                    ),
+              child: RefreshIndicator(
+                color: primaryBlue,
+                onRefresh: _loadUjians,
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
                   ),
-                  SliverToBoxAdapter(
-                    child: _buildQuizCard(
-                      type: 'UJIAN',
-                      subject: 'Matematika',
-                      grade: 'Kelas VIII',
-                      title: 'Ujian Tengah Semester\n(UTS)',
-                      icon: Icons.assignment_outlined,
-                      iconColor: const Color(0xFF0088B5),
-                      iconBackground: const Color(0xFFD4F0FF),
-                      info1: '40 Soal Terstruktur',
-                      info2: '60 Menit Durasi',
-                      infoIcon1: Icons.help_outline,
-                      infoIcon2: Icons.timer_outlined,
-                      bottomInfo: 'Jadwal: 30 Mei 2024 • 08.00–09.00 WIB',
-                      bottomIcon: Icons.calendar_month_outlined,
-                      bottomColor: const Color(0xFF0072A8),
-                      status: 'Belum dimulai',
-                      statusColor: const Color(0xFFE4EDFA),
-                      buttonText: 'Lihat Detail',
-                      buttonIcon: Icons.info_outline,
-                      buttonEnabled: true,
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: _buildQuizCard(
-                      type: 'UJIAN',
-                      subject: 'Matematika',
-                      grade: 'Kelas VIII',
-                      title: 'Persamaan Linear Satu\nVariabel',
-                      icon: Icons.insights_outlined,
-                      iconColor: const Color(0xFF00A875),
-                      iconBackground: const Color(0xFFBFFFE7),
-                      info1: '15 Soal Diselesaikan',
-                      info2: '20 Menit',
-                      infoIcon1: Icons.check_circle_outline,
-                      infoIcon2: Icons.access_time,
-                      bottomInfo: 'Selesai pada 18 Mei 2024, 14.12 WIB',
-                      bottomIcon: Icons.check_circle_outline,
-                      bottomColor: const Color(0xFF007A58),
-                      status: 'Lihat Hasil',
-                      statusColor: const Color(0xFFE7F7F1),
-                      buttonText: 'Lihat Hasil',
-                      buttonIcon: Icons.check,
-                      buttonEnabled: true,
-                      completed: true,
-                    ),
-                  ),
-                  SliverToBoxAdapter(child: _buildHelpCard()),
-                  const SliverToBoxAdapter(child: SizedBox(height: 20)),
-                ],
+                  slivers: [
+                    SliverToBoxAdapter(child: _buildPageTitle()),
+                    SliverToBoxAdapter(child: _buildSearch()),
+                    SliverToBoxAdapter(child: _buildFilter()),
+                    SliverToBoxAdapter(child: _buildSummaryBanner()),
+                    if (_isLoading)
+                      const SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 64),
+                          child: Center(
+                            child: CircularProgressIndicator(color: primaryBlue),
+                          ),
+                        ),
+                      )
+                    else if (_errorMessage != null)
+                      SliverToBoxAdapter(child: _buildErrorState())
+                    else if (displayed.isEmpty)
+                      SliverToBoxAdapter(child: _buildEmptyState())
+                    else
+                      SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) => _buildUjianCard(displayed[index]),
+                          childCount: displayed.length,
+                        ),
+                      ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                  ],
+                ),
               ),
             ),
           ],
@@ -139,25 +345,19 @@ class _UjianScreenState extends State<UjianScreen> {
     );
   }
 
-  // ============================================================
-  // HEADER
-  // ============================================================
-
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-      decoration: const BoxDecoration(
-        color: Color(0xFF080C24),
-      ),
+      decoration: const BoxDecoration(color: Color(0xFF080C24)),
       child: const DashboardHeaderWidget(),
     );
   }
 
-  // ============================================================
-  // TITLE
-  // ============================================================
-
   Widget _buildPageTitle() {
+    final kelasLabel = _ujians.isNotEmpty && _ujians.first.kelas != '-'
+        ? 'Kelas ${_ujians.first.kelas}'
+        : 'Evaluasi CBT';
+
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
       child: Column(
@@ -166,26 +366,19 @@ class _UjianScreenState extends State<UjianScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 11,
-                  vertical: 5,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
                 decoration: BoxDecoration(
                   color: const Color(0xFFCBEAFF),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.school_outlined,
-                      size: 13,
-                      color: Color(0xFF0874AD),
-                    ),
-                    SizedBox(width: 5),
+                    const Icon(Icons.school_outlined, size: 13, color: Color(0xFF0874AD)),
+                    const SizedBox(width: 5),
                     Text(
-                      'T.A. 2024/2025 Genap',
-                      style: TextStyle(
+                      kelasLabel,
+                      style: const TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFF0874AD),
@@ -195,16 +388,12 @@ class _UjianScreenState extends State<UjianScreen> {
                 ),
               ),
               const Spacer(),
-              const Flexible(
-                child: Text(
-                  'SMP Negeri 1 Cerdas',
-                  textAlign: TextAlign.right,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF0874AD),
-                  ),
+              const Text(
+                'LearnPoint CBT',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF0874AD),
                 ),
               ),
             ],
@@ -221,17 +410,13 @@ class _UjianScreenState extends State<UjianScreen> {
           ),
           const SizedBox(height: 5),
           const Text(
-            'Uji pemahamanmu melalui ujian yang tersedia',
+            'Pelajari kisi-kisi pada ujian terjadwal dan kerjakan ujian yang aktif',
             style: TextStyle(fontSize: 12, color: secondaryText, height: 1.5),
           ),
         ],
       ),
     );
   }
-
-  // ============================================================
-  // SEARCH
-  // ============================================================
 
   Widget _buildSearch() {
     return Padding(
@@ -244,29 +429,21 @@ class _UjianScreenState extends State<UjianScreen> {
         ),
         child: TextField(
           controller: _searchController,
-          onChanged: (value) {
-            setState(() {
-              _searchText = value;
-            });
-          },
+          onChanged: (value) => setState(() => _searchText = value),
           style: const TextStyle(fontSize: 12),
           decoration: InputDecoration(
             border: InputBorder.none,
-            prefixIcon: const Icon(
-              Icons.search,
-              size: 20,
-              color: Color(0xFF7C8799),
-            ),
-            suffixIcon: IconButton(
-              onPressed: () {
-                _searchController.clear();
-                setState(() {
-                  _searchText = '';
-                });
-              },
-              icon: const Icon(Icons.tune, size: 18, color: Color(0xFF7C8799)),
-            ),
-            hintText: 'Cari ujian...',
+            prefixIcon: const Icon(Icons.search, size: 20, color: Color(0xFF7C8799)),
+            suffixIcon: _searchText.isNotEmpty
+                ? IconButton(
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _searchText = '');
+                    },
+                    icon: const Icon(Icons.close, size: 18, color: Color(0xFF7C8799)),
+                  )
+                : null,
+            hintText: 'Cari judul ujian atau mata pelajaran...',
             hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF7C8799)),
             contentPadding: const EdgeInsets.symmetric(vertical: 12),
           ),
@@ -275,72 +452,80 @@ class _UjianScreenState extends State<UjianScreen> {
     );
   }
 
-  // ============================================================
-  // FILTER
-  // ============================================================
-
   Widget _buildFilter() {
+    final tabs = [
+      'Semua (${_ujians.length})',
+      'Belum ($_totalBelum)',
+      'Selesai ($_totalSelesai)',
+    ];
+
     return SizedBox(
-      height: 43,
-      child: ListView.builder(
+      height: 40,
+      child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         scrollDirection: Axis.horizontal,
-        itemCount: filters.length,
-        itemBuilder: (context, index) {
-          final bool selected = selectedFilter == index;
-
-          return Padding(
-            padding: const EdgeInsets.only(right: 7),
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  selectedFilter = index;
-                });
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color: selected ? primaryBlue : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                alignment: Alignment.center,
-                child: Row(
-                  children: [
-                    if (index == 1) ...[
-                      Icon(
-                        Icons.swap_vert,
-                        size: 15,
-                        color: selected ? Colors.white : primaryBlue,
-                      ),
-                      const SizedBox(width: 3),
-                    ],
-                    Text(
-                      filters[index],
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: selected
-                            ? Colors.white
-                            : const Color(0xFF39445A),
-                      ),
+        children: [
+          for (int i = 0; i < tabs.length; i++)
+            Padding(
+              padding: const EdgeInsets.only(right: 7),
+              child: GestureDetector(
+                onTap: () => setState(() => _selectedFilter = i),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: _selectedFilter == i ? primaryBlue : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    tabs[i],
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      color: _selectedFilter == i ? Colors.white : const Color(0xFF39445A),
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
-          );
-        },
+          GestureDetector(
+            onTap: () => setState(() => _sortTerbaru = !_sortTerbaru),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFDCE5F3)),
+              ),
+              alignment: Alignment.center,
+              child: Row(
+                children: [
+                  const Icon(Icons.swap_vert, size: 15, color: primaryBlue),
+                  const SizedBox(width: 4),
+                  Text(
+                    _sortTerbaru ? 'Terbaru' : 'Terlama',
+                    style: const TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      color: primaryBlue,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // ============================================================
-  // TASK BANNER
-  // ============================================================
+  Widget _buildSummaryBanner() {
+    final aktifCount = _ujians
+        .where((e) => !e.sudahDikerjakan && e.status == 'published')
+        .length;
 
-  Widget _buildTaskBanner() {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: const Color(0xFFD5E1FF),
@@ -353,7 +538,7 @@ class _UjianScreenState extends State<UjianScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'PERFORMA BELAJAR',
+                  'STATUS EVALUASI',
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w800,
@@ -362,19 +547,21 @@ class _UjianScreenState extends State<UjianScreen> {
                   ),
                 ),
                 const SizedBox(height: 3),
-                const Text(
-                  'Tugas Perlu Aksi Segera',
-                  style: TextStyle(
-                    fontSize: 16,
+                Text(
+                  aktifCount > 0
+                      ? '$aktifCount Ujian Tersedia Sekarang'
+                      : 'Tidak Ada Ujian Berlangsung',
+                  style: const TextStyle(
+                    fontSize: 15,
                     fontWeight: FontWeight.w800,
                     color: darkText,
                   ),
                 ),
                 const SizedBox(height: 3),
-                const Text(
-                  'Selesaikan sebelum batas waktu berakhir hari ini!',
-                  style: TextStyle(
-                    fontSize: 10,
+                Text(
+                  'Total ${_ujians.length} ujian • $_totalSelesai selesai • $_totalBelum belum selesai',
+                  style: const TextStyle(
+                    fontSize: 10.5,
                     color: secondaryText,
                     height: 1.4,
                   ),
@@ -390,277 +577,304 @@ class _UjianScreenState extends State<UjianScreen> {
               color: Colors.white,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.timer_outlined,
-              color: primaryBlue,
-              size: 25,
-            ),
+            child: const Icon(Icons.timer_outlined, color: primaryBlue, size: 25),
           ),
         ],
       ),
     );
   }
 
-  // ============================================================
-  // QUIZ CARD
-  // ============================================================
+  Widget _buildUjianCard(UjianItem item) {
+    final bool isCompleted = item.sudahDikerjakan;
+    final bool isScheduled = !isCompleted && item.status == 'scheduled';
+    final bool isExpired = !isCompleted && item.status == 'completed';
+    final bool isActive = !isCompleted && item.status == 'published';
 
-  Widget _buildQuizCard({
-    required String type,
-    required String subject,
-    required String grade,
-    required String title,
-    required IconData icon,
-    required Color iconColor,
-    required Color iconBackground,
-    required String info1,
-    required String info2,
-    required IconData infoIcon1,
-    required IconData infoIcon2,
-    required String bottomInfo,
-    required IconData bottomIcon,
-    required Color bottomColor,
-    required String status,
-    required Color statusColor,
-    required String buttonText,
-    required IconData buttonIcon,
-    required bool buttonEnabled,
-    bool completed = false,
-  }) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 7),
-      padding: const EdgeInsets.all(17),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: iconBackground,
-                  borderRadius: BorderRadius.circular(10),
+    final String typeTag = item.jenisUjian == 'remidi'
+        ? 'REMIDI'
+        : (item.jenisUjian == 'susulan' ? 'SUSULAN' : 'UJIAN');
+
+    final Color iconColor = isCompleted
+        ? const Color(0xFF00A875)
+        : (isScheduled
+            ? const Color(0xFF0088B5)
+            : (isExpired ? const Color(0xFF64748B) : const Color(0xFFFF5C5C)));
+
+    final Color iconBg = isCompleted
+        ? const Color(0xFFBFFFE7)
+        : (isScheduled
+            ? const Color(0xFFD4F0FF)
+            : (isExpired ? const Color(0xFFE2E8F0) : const Color(0xFFFFD9D9)));
+
+    final String statusText = isCompleted
+        ? (item.tampilkanNilai && item.nilaiSiswa != null
+            ? 'Nilai: ${item.nilaiSiswa!.toStringAsFixed(0)}'
+            : 'Selesai')
+        : (isScheduled
+            ? 'Terjadwal'
+            : (isExpired
+                ? 'Waktu Habis'
+                : (item.sudahMulai ? 'Sedang Dikerjakan' : 'Tersedia')));
+
+    final Color statusBg = isCompleted
+        ? const Color(0xFFE7F7F1)
+        : (isScheduled
+            ? const Color(0xFFFFF4E0)
+            : (isExpired ? const Color(0xFFF1F5F9) : const Color(0xFFDDEBFF)));
+
+    final Color statusFg = isCompleted
+        ? const Color(0xFF007A58)
+        : (isScheduled
+            ? const Color(0xFFB45309)
+            : (isExpired ? const Color(0xFF64748B) : primaryBlue));
+
+    final String buttonText = isCompleted
+        ? 'Lihat Hasil'
+        : (isScheduled
+            ? 'Lihat Detail'
+            : (isExpired
+                ? 'Detail'
+                : (item.sudahMulai ? 'Lanjutkan' : 'Mulai Ujian')));
+
+    final IconData buttonIcon = isCompleted
+        ? Icons.bar_chart_rounded
+        : (isActive ? Icons.play_arrow_rounded : Icons.info_outline_rounded);
+
+    final String bottomInfo = isCompleted
+        ? 'Selesai pada ${_formatDateTime(item.waktuSelesai)}'
+        : (isScheduled
+            ? 'Mulai: ${_formatDateTime(item.waktuMulai)}'
+            : 'Batas: ${_formatDateTime(item.deadline)}');
+
+    final Color bottomColor = isCompleted
+        ? const Color(0xFF007A58)
+        : (isScheduled ? const Color(0xFF0072A8) : const Color(0xFFDC2626));
+
+    return GestureDetector(
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => DetailUjianPage(ujianId: item.id),
+          ),
+        );
+        if (mounted) _loadUjians();
+      },
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 8, 16, 7),
+        padding: const EdgeInsets.all(17),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: iconBg,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    isCompleted
+                        ? Icons.task_alt_rounded
+                        : (isScheduled ? Icons.event_note_rounded : Icons.assignment_outlined),
+                    color: iconColor,
+                    size: 24,
+                  ),
                 ),
-                child: Icon(icon, color: iconColor, size: 24),
-              ),
-              const SizedBox(width: 11),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Wrap(
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 6,
-                      runSpacing: 3,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: iconBackground,
-                            borderRadius: BorderRadius.circular(7),
-                          ),
-                          child: Text(
-                            type,
-                            style: TextStyle(
-                              fontSize: 8,
-                              fontWeight: FontWeight.w800,
-                              color: iconColor,
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                            decoration: BoxDecoration(
+                              color: iconBg,
+                              borderRadius: BorderRadius.circular(7),
+                            ),
+                            child: Text(
+                              typeTag,
+                              style: TextStyle(
+                                fontSize: 8.5,
+                                fontWeight: FontWeight.w800,
+                                color: iconColor,
+                              ),
                             ),
                           ),
-                        ),
-                        Text(
-                          '$subject • $grade',
-                          style: const TextStyle(
-                            fontSize: 9,
-                            color: secondaryText,
-                            fontWeight: FontWeight.w500,
+                          Text(
+                            '${item.mapel} • Kelas ${item.kelas} • Sesi ${item.sesi}',
+                            style: const TextStyle(
+                              fontSize: 9.5,
+                              color: secondaryText,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: darkText,
-                        height: 1.25,
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 11),
-            decoration: BoxDecoration(
-              color: cardBlue,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(child: _infoItem(infoIcon1, info1)),
-                    Expanded(child: _infoItem(infoIcon2, info2)),
-                  ],
-                ),
-                const SizedBox(height: 9),
-                Row(
-                  children: [
-                    Icon(bottomIcon, size: 15, color: bottomColor),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        bottomInfo,
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          color: bottomColor,
+                      const SizedBox(height: 5),
+                      Text(
+                        item.judul,
+                        style: const TextStyle(
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w800,
+                          color: darkText,
+                          height: 1.25,
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 13),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 11,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      completed ? Icons.visibility_outlined : Icons.circle,
-                      size: completed ? 14 : 7,
-                      color: completed
-                          ? const Color(0xFF007A58)
-                          : const Color(0xFF6D778A),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      status,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
-                        color: completed
-                            ? const Color(0xFF007A58)
-                            : const Color(0xFF596579),
-                      ),
-                    ),
-                  ],
-                ),
+            const SizedBox(height: 13),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
+              decoration: BoxDecoration(
+                color: cardBlue,
+                borderRadius: BorderRadius.circular(10),
               ),
-              const Spacer(),
-              if (buttonText.isNotEmpty)
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _infoItem(
+                          Icons.quiz_outlined,
+                          '${item.totalSoal} Butir Soal',
+                        ),
+                      ),
+                      Expanded(
+                        child: _infoItem(
+                          Icons.access_time_rounded,
+                          '${item.durasiMenit} Menit • KKM ${item.kkm.toStringAsFixed(0)}',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        isCompleted
+                            ? Icons.check_circle_outline
+                            : (isScheduled ? Icons.calendar_month_outlined : Icons.event_busy_outlined),
+                        size: 15,
+                        color: bottomColor,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          bottomInfo,
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w600,
+                            color: bottomColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 13),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: statusBg,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isCompleted ? Icons.verified_outlined : Icons.circle,
+                        size: isCompleted ? 14 : 7,
+                        color: statusFg,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        statusText,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: statusFg,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
                 SizedBox(
-                  height: 34,
+                  height: 35,
                   child: TextButton(
-                    onPressed: buttonEnabled
-                        ? () {
-                            if (buttonText == 'Lihat Detail') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const DetailUjianPage(),
-                                ),
-                              );
-                            } else if (buttonText == 'Mulai Ujian') {
-                              // Navigasi ke halaman mulai ujian
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const QuizStartPage(),
-                                ),
-                              );
-                            } else if (buttonText == 'Lihat Hasil') {
-                              // Navigasi ke halaman hasil ujian
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const HasilUjianPage(),
-                                ),
-                              );
-                            }
-                          }
-                        : null,
-                    // dinonaktifkan sementara
+                    onPressed: () async {
+                      if (isCompleted) {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => HasilUjianPage(ujianId: item.id),
+                          ),
+                        );
+                        if (mounted) _loadUjians();
+                      } else if (isActive) {
+                        await _handleMulaiUjian(item);
+                      } else {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DetailUjianPage(ujianId: item.id),
+                          ),
+                        );
+                        if (mounted) _loadUjians();
+                      }
+                    },
                     style: TextButton.styleFrom(
-                      backgroundColor: buttonEnabled
-                          ? primaryBlue
-                          : const Color(0xFFD7E5FF),
-                      foregroundColor: buttonEnabled
-                          ? Colors.white
-                          : primaryBlue,
-                      padding: const EdgeInsets.symmetric(horizontal: 13),
+                      backgroundColor: isExpired ? const Color(0xFFE2E8F0) : primaryBlue,
+                      foregroundColor: isExpired ? const Color(0xFF475569) : Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           buttonText,
-                          maxLines: 1,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: buttonEnabled ? Colors.white : primaryBlue,
-                          ),
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(width: 5),
-                        Icon(
-                          buttonIcon,
-                          size: 16,
-                          color: buttonEnabled ? Colors.white : primaryBlue,
-                        ),
+                        Icon(buttonIcon, size: 16),
                       ],
                     ),
                   ),
                 ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // ============================================================
-  // INFO ITEM
-  // ============================================================
-
   Widget _infoItem(IconData icon, String text) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, size: 15, color: primaryBlue),
         const SizedBox(width: 6),
@@ -668,9 +882,9 @@ class _UjianScreenState extends State<UjianScreen> {
           child: Text(
             text,
             style: const TextStyle(
-              fontSize: 9,
+              fontSize: 10,
               color: secondaryText,
-              height: 1.5,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -678,62 +892,58 @@ class _UjianScreenState extends State<UjianScreen> {
     );
   }
 
-  // ============================================================
-  // HELP CARD
-  // ============================================================
-
-  Widget _buildHelpCard() {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F6FF),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Row(
+  Widget _buildErrorState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+      child: Column(
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: const BoxDecoration(
-              color: Color(0xFFDDEAFF),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.help_outline, color: primaryBlue, size: 20),
+          const Icon(Icons.wifi_off_rounded, size: 46, color: Color(0xFF94A3B8)),
+          const SizedBox(height: 12),
+          const Text(
+            'Gagal memuat daftar ujian',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: darkText),
           ),
-          const SizedBox(width: 10),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Butuh Kisi-Kisi Tambahan?',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: darkText,
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'Unduh modul latihan dari gurumu',
-                  style: TextStyle(fontSize: 9, color: secondaryText),
-                ),
-              ],
-            ),
+          const SizedBox(height: 6),
+          Text(
+            _errorMessage ?? '',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 12, color: secondaryText),
           ),
-          Container(
-            width: 32,
-            height: 32,
-            decoration: const BoxDecoration(
-              color: Color(0xFFD4E5FF),
-              shape: BoxShape.circle,
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _loadUjians,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryBlue,
+              foregroundColor: Colors.white,
             ),
-            child: const Icon(
-              Icons.arrow_forward,
-              size: 18,
-              color: primaryBlue,
-            ),
+            child: const Text('Coba Lagi'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 44),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Column(
+        children: [
+          Icon(Icons.assignment_turned_in_outlined, size: 44, color: Color(0xFF94A3B8)),
+          SizedBox(height: 12),
+          Text(
+            'Belum Ada Ujian',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: darkText),
+          ),
+          SizedBox(height: 6),
+          Text(
+            'Ujian yang dijadwalkan atau diterbitkan oleh guru akan muncul di halaman ini.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, color: secondaryText, height: 1.5),
           ),
         ],
       ),
