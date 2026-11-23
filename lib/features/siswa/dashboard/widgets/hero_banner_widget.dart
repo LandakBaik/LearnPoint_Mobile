@@ -87,15 +87,16 @@ class HeroBannerWidget extends StatelessWidget {
               children: [
                 // Background sesuai active_banner dari API (GIF atau Gradient Default)
                 _buildBannerBackground(),
-                // Gradient overlay to enhance text readability
+                // Gradient overlay to enhance text readability on bright banners
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        Colors.black.withValues(alpha: 0.35),
-                        Colors.transparent,
-                        const Color(0xFF0B1030).withValues(alpha: 0.75),
+                        Colors.black.withValues(alpha: 0.44),
+                        Colors.black.withValues(alpha: 0.28),
+                        const Color(0xFF0B1030).withValues(alpha: 0.78),
                       ],
+                      stops: const [0.0, 0.45, 1.0],
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                     ),
@@ -128,6 +129,18 @@ class HeroBannerWidget extends StatelessWidget {
                             fontSize: 24,
                             fontWeight: FontWeight.w800,
                             letterSpacing: -0.5,
+                            shadows: const [
+                              Shadow(
+                                color: Color(0x99000000),
+                                offset: Offset(0, 2),
+                                blurRadius: 8,
+                              ),
+                              Shadow(
+                                color: Color(0x55000000),
+                                offset: Offset(0, 1),
+                                blurRadius: 2,
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -137,6 +150,13 @@ class HeroBannerWidget extends StatelessWidget {
                             color: const Color(0xFFE0E7FF),
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
+                            shadows: const [
+                              Shadow(
+                                color: Color(0x88000000),
+                                offset: Offset(0, 1),
+                                blurRadius: 6,
+                              ),
+                            ],
                           ),
                         ),
 
@@ -160,42 +180,42 @@ class HeroBannerWidget extends StatelessWidget {
                                   : (profile.academicYear ??
                                       (profile.isActive ? 'Aktif' : 'Nonaktif')),
                             ),
-                            if (onBannerTap != null)
-                              GestureDetector(
-                                onTap: onBannerTap,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 5,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.22),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.45),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.wallpaper_rounded,
-                                        color: Colors.white,
-                                        size: 13,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'Ganti Banner',
-                                        style: GoogleFonts.plusJakartaSans(
-                                          color: Colors.white,
-                                          fontSize: 11.5,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
+                            // if (onBannerTap != null)
+                            //   GestureDetector(
+                            //     onTap: onBannerTap,
+                            //     child: Container(
+                            //       padding: const EdgeInsets.symmetric(
+                            //         horizontal: 10,
+                            //         vertical: 5,
+                            //       ),
+                            //       decoration: BoxDecoration(
+                            //         color: Colors.white.withValues(alpha: 0.22),
+                            //         borderRadius: BorderRadius.circular(20),
+                            //         border: Border.all(
+                            //           color: Colors.white.withValues(alpha: 0.45),
+                            //         ),
+                            //       ),
+                            //       child: Row(
+                            //         mainAxisSize: MainAxisSize.min,
+                            //         children: [
+                            //           const Icon(
+                            //             Icons.wallpaper_rounded,
+                            //             color: Colors.white,
+                            //             size: 13,
+                            //           ),
+                            //           const SizedBox(width: 4),
+                            //           Text(
+                            //             'Ganti Banner',
+                            //             style: GoogleFonts.plusJakartaSans(
+                            //               color: Colors.white,
+                            //               fontSize: 11.5,
+                            //               fontWeight: FontWeight.w700,
+                            //             ),
+                            //           ),
+                            //         ],
+                            //       ),
+                            //     ),
+                            //   ),
                           ],
                         ),
                       ],
@@ -310,9 +330,16 @@ class HeroBannerWidget extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.14),
+        color: const Color(0xFF0B1030).withValues(alpha: 0.36),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.22),
+            offset: const Offset(0, 2),
+            blurRadius: 8,
+          ),
+        ],
       ),
       child: Text(
         text,
@@ -320,6 +347,13 @@ class HeroBannerWidget extends StatelessWidget {
           color: Colors.white,
           fontSize: 13,
           fontWeight: FontWeight.w700,
+          shadows: const [
+            Shadow(
+              color: Color(0x77000000),
+              offset: Offset(0, 1),
+              blurRadius: 4,
+            ),
+          ],
         ),
       ),
     );

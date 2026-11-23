@@ -1,41 +1,199 @@
 import 'package:flutter/material.dart';
+import 'package:learnpoint_mobile/features/siswa/ujian/models/ujian_model.dart';
+import 'package:learnpoint_mobile/features/siswa/ujian/screens/hasil_ujian_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/ujian/screens/soal_ujian_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/ujian/services/ujian_api_service.dart';
 
-void main() {
-  runApp(
-    const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: DetailUjianPage(),
-    ),
-  );
+class DetailUjianPage extends StatefulWidget {
+  final int ujianId;
+
+  const DetailUjianPage({super.key, required this.ujianId});
+
+  @override
+  State<DetailUjianPage> createState() => _DetailUjianPageState();
 }
 
-class DetailUjianPage extends StatelessWidget {
-  const DetailUjianPage({super.key});
+class _DetailUjianPageState extends State<DetailUjianPage> {
+  static const Color bgScaffold = Color(0xFFF0F6FE);
+  static const Color primaryBlue = Color(0xFF1D61E7);
+
+  UjianDetail? _detail;
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDetail();
+  }
+
+  Future<void> _loadDetail() async {
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
+    try {
+      final result = await UjianApiService.getUjianDetail(widget.ujianId);
+      if (!mounted) return;
+      setState(() {
+        _detail = result;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      });
+    }
+  }
+
+  String _formatDate(String? raw) {
+    if (raw == null || raw.isEmpty) return 'Belum dijadwalkan';
+    final dt = DateTime.tryParse(raw)?.toLocal();
+    if (dt == null) return raw;
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+    ];
+    return '${dt.day.toString().padLeft(2, '0')} ${months[dt.month - 1]} ${dt.year}';
+  }
+
+  String _formatHour(String? raw) {
+    if (raw == null || raw.isEmpty) return '--:--';
+    final dt = DateTime.tryParse(raw)?.toLocal();
+    if (dt == null) return '--:--';
+    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _countdownText(String? rawStart) {
+    if (rawStart == null || rawStart.isEmpty) return '-';
+    final start = DateTime.tryParse(rawStart)?.toLocal();
+    if (start == null) return '-';
+    final diff = start.difference(DateTime.now());
+    if (diff.isNegative) return 'Sudah Dibuka';
+    if (diff.inDays > 0) {
+      return '${diff.inDays} Hari ${diff.inHours % 24} Jam Lagi';
+    }
+    if (diff.inHours > 0) {
+      return '${diff.inHours} Jam ${diff.inMinutes % 60} Menit Lagi';
+    }
+    return '${diff.inMinutes} Menit Lagi';
+  }
+
+  Future<void> _bukaDialogToken(UjianDetail detail) async {
+    if (detail.sudahMulai) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => QuizStartPage(ujianId: detail.id)),
+      );
+      if (mounted) _loadDetail();
+      return;
+    }
+
+    final controller = TextEditingController();
+    String? err;
+    bool submitting = false;
+
+    final ok = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: const Text(
+            'Validasi Token Ujian',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Masukkan token Sesi ${detail.sesi} dari pengawas untuk mulai mengerjakan.',
+                style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                textCapitalization: TextCapitalization.characters,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 2),
+                decoration: InputDecoration(
+                  hintText: 'S1-XXXX',
+                  filled: true,
+                  fillColor: const Color(0xFFF1F5F9),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              if (err != null) ...[
+                const SizedBox(height: 8),
+                Text(err!, style: const TextStyle(fontSize: 11.5, color: Colors.red)),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: submitting ? null : () => Navigator.pop(dialogContext, false),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: submitting
+                  ? null
+                  : () async {
+                      if (controller.text.trim().isEmpty) {
+                        setDialogState(() => err = 'Token wajib diisi.');
+                        return;
+                      }
+                      setDialogState(() {
+                        submitting = true;
+                        err = null;
+                      });
+                      try {
+                        await UjianApiService.validasiToken(
+                          ujianId: detail.id,
+                          token: controller.text.trim(),
+                        );
+                        if (dialogContext.mounted) Navigator.pop(dialogContext, true);
+                      } catch (e) {
+                        setDialogState(() {
+                          submitting = false;
+                          err = e.toString().replaceFirst('Exception: ', '');
+                        });
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryBlue,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Mulai'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    controller.dispose();
+    if (ok == true && mounted) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => QuizStartPage(ujianId: detail.id)),
+      );
+      if (mounted) _loadDetail();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    const Color bgScaffold = Color(0xFFF0F6FE);
-    const Color primaryBlue = Color(0xFF1D61E7);
-
     return Scaffold(
       backgroundColor: bgScaffold,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leadingWidth:
-            46, // Menyesuaikan area klik tombol back agar rapi ke kiri
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 12.0),
-          child: IconButton(
-            onPressed: () => Navigator.pop(context),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 35, minHeight: 35),
-            icon: const Icon(
-              Icons.arrow_back,
-              size: 22,
-              color: Color(0xFF1E293B),
-            ),
-          ),
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back, size: 22, color: Color(0xFF1E293B)),
         ),
         title: const Text(
           'Detail Ujian',
@@ -45,19 +203,55 @@ class DetailUjianPage extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        titleSpacing: 8,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(
-              radius: 17,
-              backgroundColor: const Color(0xFF1D61E7),
-              child: const Icon(Icons.person, color: Colors.white, size: 20),
-            ),
-          ),
-        ],
       ),
-      body: SingleChildScrollView(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: primaryBlue))
+          : _errorMessage != null || _detail == null
+              ? _buildErrorView()
+              : _buildBody(_detail!),
+    );
+  }
+
+  Widget _buildErrorView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 46, color: Colors.redAccent),
+            const SizedBox(height: 12),
+            Text(
+              _errorMessage ?? 'Detail ujian tidak ditemukan.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13, color: Color(0xFF475569)),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadDetail,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryBlue,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Coba Lagi'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody(UjianDetail detail) {
+    final pgCount = detail.singleChoiceCount + detail.multipleChoiceCount;
+    final totalSoal = detail.totalSoal > 0 ? detail.totalSoal : (pgCount + detail.essayCount);
+    final pgPersen = totalSoal > 0 ? ((pgCount / totalSoal) * 100).round() : 0;
+    final essayPersen = totalSoal > 0 ? ((detail.essayCount / totalSoal) * 100).round() : 0;
+
+    return RefreshIndicator(
+      onRefresh: _loadDetail,
+      color: primaryBlue,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,28 +266,20 @@ class DetailUjianPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Badge UTS
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: const Color(0xFFD6E8FE),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.verified_outlined,
-                          size: 13,
-                          color: primaryBlue,
-                        ),
-                        SizedBox(width: 4),
+                        const Icon(Icons.verified_outlined, size: 13, color: primaryBlue),
+                        const SizedBox(width: 4),
                         Text(
-                          'UTS GENAP TA 2023/2024',
-                          style: TextStyle(
+                          '${detail.jenisUjian.toUpperCase()} • SESI ${detail.sesi}',
+                          style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                             color: primaryBlue,
@@ -106,23 +292,23 @@ class DetailUjianPage extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Matematika SMP',
-                              style: TextStyle(
+                              detail.judul,
+                              style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF0F172A),
                               ),
                             ),
-                            SizedBox(height: 3),
+                            const SizedBox(height: 4),
                             Text(
-                              'Kelas VIII • Semester 2 (Kurikulum Merdeka)',
-                              style: TextStyle(
-                                fontSize: 11,
+                              '${detail.mapel} • Kelas ${detail.kelas} • ${detail.guru}',
+                              style: const TextStyle(
+                                fontSize: 11.5,
                                 fontWeight: FontWeight.w600,
                                 color: primaryBlue,
                               ),
@@ -130,53 +316,36 @@ class DetailUjianPage extends StatelessWidget {
                           ],
                         ),
                       ),
+                      const SizedBox(width: 10),
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: const Color(0xFFE2EDFE),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(
-                          Icons.calculate_outlined,
-                          color: primaryBlue,
-                          size: 26,
-                        ),
+                        child: const Icon(Icons.assignment_outlined, color: primaryBlue, size: 26),
                       ),
                     ],
                   ),
                   const SizedBox(height: 14),
-                  // Tanggal & Durasi
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF1F6FE),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
-                          Icons.calendar_today_outlined,
-                          size: 18,
-                          color: primaryBlue,
-                        ),
+                        const Icon(Icons.calendar_today_outlined, size: 18, color: primaryBlue),
                         const SizedBox(width: 8),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              const Text('Tanggal', style: TextStyle(fontSize: 10, color: Color(0xFF64748B))),
                               Text(
-                                'Tanggal',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Color(0xFF64748B),
-                                ),
-                              ),
-                              Text(
-                                '30 Mei 2024',
-                                style: TextStyle(
+                                _formatDate(detail.waktuMulai),
+                                style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFF1E293B),
@@ -185,34 +354,20 @@ class DetailUjianPage extends StatelessWidget {
                             ],
                           ),
                         ),
-                        Container(
-                          width: 1,
-                          height: 26,
-                          color: const Color(0xFFCBD5E1),
-                        ),
+                        Container(width: 1, height: 26, color: const Color(0xFFCBD5E1)),
                         const SizedBox(width: 12),
-                        const Icon(
-                          Icons.access_time,
-                          size: 18,
-                          color: primaryBlue,
-                        ),
+                        const Icon(Icons.access_time, size: 18, color: primaryBlue),
                         const SizedBox(width: 8),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              const Text('Jam & Durasi', style: TextStyle(fontSize: 10, color: Color(0xFF64748B))),
                               Text(
-                                'Durasi Waktu',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Color(0xFF64748B),
-                                ),
-                              ),
-                              Text(
-                                '08.00 - 09.30 (90m)',
+                                '${_formatHour(detail.waktuMulaiSesi)} - ${_formatHour(detail.batasAkhirSesi)} (${detail.durasiMenit}m)',
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 12,
+                                style: const TextStyle(
+                                  fontSize: 11.5,
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFF1E293B),
                                 ),
@@ -224,12 +379,8 @@ class DetailUjianPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  // Status Belum Dimulai
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 9,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                     decoration: BoxDecoration(
                       color: const Color(0xFFE5EDFF),
                       borderRadius: BorderRadius.circular(10),
@@ -242,26 +393,25 @@ class DetailUjianPage extends StatelessWidget {
                             Container(
                               width: 8,
                               height: 8,
-                              decoration: const BoxDecoration(
-                                color: primaryBlue,
-                                shape: BoxShape.circle,
-                              ),
+                              decoration: const BoxDecoration(color: primaryBlue, shape: BoxShape.circle),
                             ),
                             const SizedBox(width: 6),
-                            const Text(
-                              'Belum Dimulai',
-                              style: TextStyle(
-                                fontSize: 11,
+                            Text(
+                              detail.sudahDikerjakan ? 'Sudah Selesai' : detail.statusLabel,
+                              style: const TextStyle(
+                                fontSize: 11.5,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF1E293B),
                               ),
                             ),
                           ],
                         ),
-                        const Text(
-                          '5 Hari 14 Jam Lagi',
-                          style: TextStyle(
-                            fontSize: 11,
+                        Text(
+                          detail.status == 'scheduled'
+                              ? _countdownText(detail.waktuMulai)
+                              : (detail.sudahDikerjakan ? 'Selesai' : 'Aktif'),
+                          style: const TextStyle(
+                            fontSize: 11.5,
                             fontWeight: FontWeight.bold,
                             color: primaryBlue,
                           ),
@@ -274,28 +424,23 @@ class DetailUjianPage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Spesifikasi & Format Soal Header
-            const Row(
+            // Spesifikasi & Format Soal
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
+                const Text(
                   'Spesifikasi & Format Soal',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                 ),
                 Text(
-                  'Standar KKM: 75',
-                  style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                  'Standar KKM: ${detail.kkm.toStringAsFixed(0)}',
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                 ),
               ],
             ),
             const SizedBox(height: 12),
 
-            // Grid Spesifikasi Soal (2 Kolom)
             Row(
               children: [
                 Expanded(
@@ -304,8 +449,8 @@ class DetailUjianPage extends StatelessWidget {
                     icon: Icons.assignment_outlined,
                     iconBg: const Color(0xFFE2EDFE),
                     iconColor: primaryBlue,
-                    value: '40',
-                    subtitle: 'Butir Ujian Lengkap',
+                    value: '$totalSoal',
+                    subtitle: 'Total ${detail.totalPoin.toStringAsFixed(0)} Poin',
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -315,7 +460,7 @@ class DetailUjianPage extends StatelessWidget {
                     icon: Icons.military_tech_outlined,
                     iconBg: const Color(0xFFD1FAE5),
                     iconColor: const Color(0xFF10B981),
-                    value: '75 / 100',
+                    value: '${detail.kkm.toStringAsFixed(0)} / 100',
                     valueColor: const Color(0xFF047857),
                     subtitle: 'Batas Minimal Lulus',
                   ),
@@ -328,178 +473,51 @@ class DetailUjianPage extends StatelessWidget {
                 Expanded(
                   child: _buildMetricCard(
                     title: 'Pilihan Ganda',
-                    tag: '70%',
+                    tag: '$pgPersen%',
                     tagBg: const Color(0xFFDCE7FF),
                     tagColor: primaryBlue,
-                    value: '35 Soal',
-                    subtitle: 'Bobot per soal: 2.0 pt',
+                    value: '$pgCount Soal',
+                    subtitle: 'Tunggal: ${detail.singleChoiceCount} • Kompleks: ${detail.multipleChoiceCount}',
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildMetricCard(
                     title: 'Uraian / Esai',
-                    tag: '30%',
+                    tag: '$essayPersen%',
                     tagBg: const Color(0xFFD6F2FE),
                     tagColor: const Color(0xFF0284C7),
-                    value: '5 Soal',
-                    subtitle: 'Bobot per soal: 6.0 pt',
+                    value: '${detail.essayCount} Soal',
+                    subtitle: 'Dinilai oleh Guru Pengampu',
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 18),
 
-            // Tombol Kisi-Kisi Materi
-            OutlinedButton(
-              onPressed: () {},
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(42),
-                backgroundColor: Colors.white,
-                side: const BorderSide(color: Color(0xFFE2E8F0)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: const Text(
-                'Kisi-Kisi Materi',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: primaryBlue,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Section Bab & Distribusi Bobot Ujian
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '4 Bab • Distribusi Bobot Ujian',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF334155),
-                  ),
-                ),
-                Text(
-                  'Kurikulum 2024',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: primaryBlue,
-                  ),
-                ),
-              ],
+            // Kisi-kisi Materi
+            const Text(
+              'Kisi-Kisi Materi Ujian',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
             ),
             const SizedBox(height: 10),
-
-            // Bab 1 (Expanded)
             Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(14),
               ),
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          Icons.change_history,
-                          color: primaryBlue,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Bab 1: Teorema Pythagoras',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF0F172A),
-                              ),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              '10 Butir Soal • Level C2 - C4',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(
-                        Icons.keyboard_arrow_down,
-                        color: Color(0xFF64748B),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // Box Biru Poin-Poin Bab 1
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF0F5FE),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Column(
-                      children: [
-                        _buildSubPoint(
-                          'Menentukan panjang salah satu sisi segitiga siku-siku menggunakan teorema dasar.',
-                        ),
-                        const SizedBox(height: 8),
-                        _buildSubPoint(
-                          'Identifikasi kelompok bilangan Tripel Pythagoras & jenis segitiga.',
-                        ),
-                        const SizedBox(height: 8),
-                        _buildSubPoint(
-                          'Penerapan kontekstual dalam masalah nyata (tangga bersandar, jarak mercusuar).',
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              child: Text(
+                (detail.kisiKisi != null && detail.kisiKisi!.trim().isNotEmpty)
+                    ? detail.kisiKisi!
+                    : 'Guru belum menambahkan rincian kisi-kisi khusus untuk ujian ini.',
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  color: Color(0xFF334155),
+                  height: 1.6,
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-
-            // Bab 2
-            _buildBabItem(
-              icon: Icons.circle_outlined,
-              title: 'Bab 2: Lingkaran & Unsur-Unsur',
-              subtitle: '12 Butir Soal • Level C2 - C4',
-            ),
-            const SizedBox(height: 10),
-
-            // Bab 3
-            _buildBabItem(
-              icon: Icons.view_in_ar_outlined,
-              title: 'Bab 3: Bangun Ruang Sisi Datar',
-              subtitle: '10 Butir Soal • Level C3 - C4',
-            ),
-            const SizedBox(height: 10),
-
-            // Bab 4
-            _buildBabItem(
-              icon: Icons.bar_chart_rounded,
-              title: 'Bab 4: Statistika Dasar & Peluan',
-              subtitle: '8 Butir Soal • Level C2 - C3',
             ),
             const SizedBox(height: 14),
 
@@ -510,42 +528,27 @@ class DetailUjianPage extends StatelessWidget {
                 color: const Color(0xFFE8F1FD),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Row(
+              child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF1EA1F2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.wifi_tethering,
-                      color: Colors.white,
-                      size: 20,
-                    ),
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: Color(0xFF1EA1F2),
+                    child: Icon(Icons.shield_outlined, color: Colors.white, size: 18),
                   ),
-                  const SizedBox(width: 12),
-                  const Expanded(
+                  SizedBox(width: 12),
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Persiapan Sebelum Ujian',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF0F172A),
-                          ),
+                          'Tata Tertib & Anti-Curang',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                         ),
                         SizedBox(height: 4),
                         Text(
-                          'Pastikan koneksi internet stabil sebelum ujian dimulai. Waktu pengerjaan akan otomatis terhitung saat tombol Mulai Ujian aktif pada jadwal yang ditentukan.',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFF475569),
-                            height: 1.4,
-                          ),
+                          'Pastikan koneksi internet stabil. Jangan berpindah aplikasi saat ujian berlangsung — pelanggaran 3 kali akan mengunci sesi secara otomatis.',
+                          style: TextStyle(fontSize: 11, color: Color(0xFF475569), height: 1.45),
                         ),
                       ],
                     ),
@@ -553,14 +556,54 @@ class DetailUjianPage extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
+
+            // Tombol Aksi Utama
+            if (detail.sudahDikerjakan)
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => HasilUjianPage(ujianId: detail.id)),
+                    );
+                  },
+                  icon: const Icon(Icons.bar_chart_rounded),
+                  label: const Text('Lihat Hasil Ujian', style: TextStyle(fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF007E59),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              )
+            else if (detail.status == 'published')
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: () => _bukaDialogToken(detail),
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: Text(
+                    detail.sudahMulai ? 'Lanjutkan Mengerjakan' : 'Masukkan Token & Mulai Ujian',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryBlue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            const SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
 
-  // Widget Kartu Spesifikasi & Bobot Soal
   static Widget _buildMetricCard({
     required String title,
     IconData? icon,
@@ -586,40 +629,21 @@ class DetailUjianPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
+                child: Text(title, style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
               ),
               if (icon != null)
                 Container(
                   padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: iconBg,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
+                  decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(6)),
                   child: Icon(icon, size: 14, color: iconColor),
                 ),
               if (tag != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: tagBg,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(color: tagBg, borderRadius: BorderRadius.circular(10)),
                   child: Text(
                     tag,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: tagColor,
-                    ),
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: tagColor),
                   ),
                 ),
             ],
@@ -627,93 +651,12 @@ class DetailUjianPage extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: valueColor,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: valueColor),
           ),
           const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
-          ),
+          Text(subtitle, style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
         ],
       ),
-    );
-  }
-
-  // Widget Item List Bab (Collapsed)
-  static Widget _buildBabItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: const Color(0xFF1D61E7), size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Icon(Icons.keyboard_arrow_down, color: Color(0xFF64748B)),
-        ],
-      ),
-    );
-  }
-
-  // Sub-poin list indikator Bab 1
-  static Widget _buildSubPoint(String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Icon(Icons.check, size: 14, color: Color(0xFF1D61E7)),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 10.5,
-              color: Color(0xFF1E293B),
-              height: 1.35,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
