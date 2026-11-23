@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/data/materi_preferences_service.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/data/materi_service.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/widgets/materi_error_state_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/screens/detail_materi_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/tugas/services/task_api_service.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/widgets/tugas_section.dart';
 import 'package:learnpoint_mobile/features/siswa/ujian/models/ujian_model.dart';
 import 'package:learnpoint_mobile/features/siswa/ujian/screens/detail_ujian_screen.dart';
@@ -40,6 +42,9 @@ class _MateriSectionWidgetState extends State<MateriSectionWidget> {
   bool isLoadingUjian = false;
   String? ujianErrorMessage;
 
+  int _totalTugasCount = 0;
+  int _activeTugasCount = 0;
+
   final List<String> tabs = ['Materi', 'Tugas', 'Ujian'];
 
   @override
@@ -48,6 +53,35 @@ class _MateriSectionWidgetState extends State<MateriSectionWidget> {
     _loadProgressStates();
     _loadMateriFromApi();
     _loadUjianFromApi();
+    _loadTugasCountFromApi();
+  }
+
+  Future<void> _loadTugasCountFromApi() async {
+    try {
+      final tasks = await TaskApiService.getTasks();
+      if (!mounted) return;
+      final filtered = tasks.where((t) {
+        final tMapelId = t['mapel_id']?.toString();
+        final tMapelName = (t['mapel'] ?? '').toString().toLowerCase().trim();
+        if (widget.mapelId != null && tMapelId != null) {
+          return tMapelId == widget.mapelId.toString();
+        }
+        return tMapelName == widget.subjectName.toLowerCase().trim();
+      }).toList();
+
+      final activeCount = filtered.where((t) {
+        final submitted = t['is_submitted'];
+        return !(submitted == true ||
+            submitted == 1 ||
+            submitted == '1' ||
+            submitted?.toString().toLowerCase() == 'true');
+      }).length;
+
+      setState(() {
+        _totalTugasCount = filtered.length;
+        _activeTugasCount = activeCount;
+      });
+    } catch (_) {}
   }
 
   Future<void> _loadProgressStates() async {
@@ -289,87 +323,204 @@ class _MateriSectionWidgetState extends State<MateriSectionWidget> {
     }
   }
 
+  int get _completedMateriCount {
+    int count = 0;
+    for (final apiItem in apiMateriList) {
+      final itemKey = MateriPreferencesService.getMateriKey(
+        widget.subjectName,
+        apiItem.judul,
+        id: apiItem.id,
+      );
+      final oldItemKey = MateriPreferencesService.getMateriKey(
+        widget.subjectName,
+        apiItem.judul,
+      );
+      if (completedKeys.contains(itemKey) || completedKeys.contains(oldItemKey)) {
+        count++;
+      }
+    }
+    return count;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isSmallScreen = MediaQuery.sizeOf(context).width < 360;
+    final totalMateri = apiMateriList.length;
+    final completedMateri = _completedMateriCount;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(30),
-          topRight: Radius.circular(30),
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 3 Stat Cards
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  value: '$completedMateri/$totalMateri',
+                  label: 'Materi selesai',
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildStatCard(
+                  value: '$_activeTugasCount',
+                  label: 'Tugas aktif',
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildStatCard(
+                  value: '${apiUjianList.length}',
+                  label: 'Ujian',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 22),
+
           Text(
             _headerTitle,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF28233E),
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF0F172A),
+              letterSpacing: -0.3,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(top: 8, bottom: 20),
-            child: Text(
-              _headerSubtitle,
-              style: const TextStyle(color: Colors.grey),
+          const SizedBox(height: 3),
+          Text(
+            _headerSubtitle,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF64748B),
             ),
           ),
+          const SizedBox(height: 16),
 
-          // Tab pilihan tipe: Materi, Tugas, Ujian
-          SizedBox(
-            height: 45,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: tabs.length,
-              itemBuilder: (context, index) {
+          // Segmented Tab Bar: Materi, Tugas, Ujian
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF2F7),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: List.generate(tabs.length, (index) {
                 final isSelected = selectedIndex == index;
-                final label = index == 2 && apiUjianList.isNotEmpty
-                    ? '${tabs[index]} (${apiUjianList.length})'
-                    : tabs[index];
+                final count = index == 0
+                    ? totalMateri
+                    : (index == 1 ? _totalTugasCount : apiUjianList.length);
 
-                return Padding(
-                  padding: const EdgeInsets.only(right: 10),
+                return Expanded(
                   child: GestureDetector(
                     onTap: () {
                       setState(() {
                         selectedIndex = index;
                       });
                     },
-                    child: Container(
-                      alignment: Alignment.center,
-                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(vertical: 9),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? const Color(0xFF6336ED)
-                            : const Color(0xFFF1EEFF),
-                        borderRadius: BorderRadius.circular(12),
+                            ? const Color(0xFF7B4AE2)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(11),
                       ),
-                      child: Text(
-                        label,
-                        style: TextStyle(
-                          color: isSelected
-                              ? Colors.white
-                              : const Color(0xFF6336ED),
-                          fontWeight: FontWeight.w600,
-                        ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            tabs[index],
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: isSelected
+                                  ? Colors.white
+                                  : const Color(0xFF475569),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 1.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? Colors.white.withValues(alpha: 0.22)
+                                  : const Color(0xFFE2E8F0),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '$count',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: isSelected
+                                    ? Colors.white
+                                    : const Color(0xFF475569),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 );
-              },
+              }),
             ),
           ),
 
-          Padding(
-            padding: const EdgeInsets.only(top: 24),
-            child: _buildSelectedTabContent(isSmallScreen),
+          const SizedBox(height: 18),
+          _buildSelectedTabContent(isSmallScreen),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard({
+    required String value,
+    required String label,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF0F172A),
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF64748B),
+            ),
           ),
         ],
       ),
@@ -415,17 +566,8 @@ class _MateriSectionWidgetState extends State<MateriSectionWidget> {
       );
     }
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1,
-      ),
-      itemCount: apiMateriList.length,
-      itemBuilder: (context, index) {
+    return Column(
+      children: List.generate(apiMateriList.length, (index) {
         final MateriItemModel apiItem = apiMateriList[index];
         final String title = apiItem.judul;
 
@@ -441,95 +583,173 @@ class _MateriSectionWidgetState extends State<MateriSectionWidget> {
         final isCompleted =
             completedKeys.contains(itemKey) ||
             completedKeys.contains(oldItemKey);
-        final isBookmarked =
-            bookmarkedKeys.contains(itemKey) ||
-            bookmarkedKeys.contains(oldItemKey);
 
-        return GestureDetector(
-          onTap: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => DetailMateriPage(
-                  title: title,
-                  subject: widget.subjectName,
-                  materiItem: apiItem,
-                ),
+        final subtitleParts = <String>['Bab ${index + 1}'];
+        if (apiItem.hasVideo) subtitleParts.add('Video');
+        if (apiItem.hasFile) subtitleParts.add('Lampiran');
+        final subtitleText = subtitleParts.join(' • ');
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF0F172A).withValues(alpha: 0.035),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
-            );
-            _loadProgressStates();
-          },
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0F4FF),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Icon(
-                      Icons.menu_book_rounded,
-                      color: Color(0xFF6336ED),
-                      size: 32,
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(18),
+            child: InkWell(
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => DetailMateriPage(
+                      title: title,
+                      subject: widget.subjectName,
+                      materiItem: apiItem,
                     ),
+                  ),
+                );
+                _loadProgressStates();
+              },
+              borderRadius: BorderRadius.circular(18),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Row(
-                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        if (apiItem.isDownloaded)
-                          const Padding(
-                            padding: EdgeInsets.only(right: 4),
-                            child: Icon(
-                              Icons.download_done_rounded,
-                              color: Color(0xFF10B981),
-                              size: 18,
-                            ),
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF3EEFF),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        if (isBookmarked)
-                          const Padding(
-                            padding: EdgeInsets.only(right: 4),
-                            child: Icon(
-                              Icons.bookmark_rounded,
-                              color: Color(0xFF6336ED),
-                              size: 18,
-                            ),
+                          child: const Icon(
+                            Icons.menu_book_rounded,
+                            color: Color(0xFF7B4AE2),
+                            size: 22,
                           ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF0F172A),
+                                  height: 1.3,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                subtitleText,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: const Icon(
+                            Icons.chevron_right_rounded,
+                            color: Color(0xFF475569),
+                            size: 20,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Progres belajar',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF64748B),
+                          ),
+                        ),
                         if (isCompleted)
-                          const Icon(
-                            Icons.check_circle_rounded,
-                            color: Color(0xFF10B981),
-                            size: 18,
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE0F2FE),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Selesai',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF0284C7),
+                              ),
+                            ),
+                          )
+                        else
+                          Text(
+                            'Belum dimulai',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF64748B),
+                            ),
                           ),
                       ],
                     ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(99),
+                      child: LinearProgressIndicator(
+                        value: isCompleted ? 1.0 : 0.0,
+                        minHeight: 5,
+                        backgroundColor: const Color(0xFFF1F5F9),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          Color(0xFF5B9BF3),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-                Text(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF28233E),
-                  ),
-                ),
-                const Align(
-                  alignment: Alignment.bottomRight,
-                  child: Icon(
-                    Icons.arrow_forward_rounded,
-                    color: Color(0xFF6336ED),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         );
-      },
+      }),
     );
   }
 
