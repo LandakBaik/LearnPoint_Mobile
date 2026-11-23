@@ -5,6 +5,7 @@ import 'package:learnpoint_mobile/features/siswa/materi/data/materi_service.dart
 import 'package:learnpoint_mobile/features/siswa/materi/widgets/materi_error_state_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/screens/detail_materi_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/models/task_model.dart';
+import 'package:learnpoint_mobile/features/siswa/tugas/widgets/tugas_section.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/screens/detail_tugas_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/ujian/screens/detail_ujian_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/ujian/screens/soal_ujian_screen.dart';
@@ -194,13 +195,17 @@ class _MateriSectionWidgetState extends State<MateriSectionWidget> {
   }
 
   Widget _buildSelectedTabContent(bool isSmallScreen) {
-    if (selectedIndex == 1) {
-      return _buildTugasList(isSmallScreen);
-    } else if (selectedIndex == 2) {
-      return _buildUjianList();
-    }
-    return _buildMateriGrid();
+  if (selectedIndex == 1) {
+    return TugasSection(
+      mapelId: widget.mapelId,
+      subjectName: widget.subjectName,
+    );
+  } else if (selectedIndex == 2) {
+    return _buildUjianList();
   }
+
+  return _buildMateriGrid();
+}
 
   Widget _buildMateriGrid() {
     if (isLoadingApi) {
