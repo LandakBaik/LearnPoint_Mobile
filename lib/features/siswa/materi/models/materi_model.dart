@@ -60,11 +60,16 @@ class MateriModel {
       iconColor: style.iconColor,
       icon: style.icon,
       description: desc,
-      planetImageAsset: 'assets/images/planet1.png',
+      planetImageAsset: style.planetAsset,
     );
   }
 
-  static ({Color bgColor, Color iconColor, IconData icon}) _resolveSubjectStyle(
+  static ({
+    Color bgColor,
+    Color iconColor,
+    IconData icon,
+    String planetAsset,
+  }) _resolveSubjectStyle(
     String subjectName,
   ) {
     final lower = subjectName.toLowerCase();
@@ -73,18 +78,21 @@ class MateriModel {
         bgColor: const Color(0xFFEAF2FF),
         iconColor: const Color(0xFF3674D9),
         icon: Icons.calculate_outlined,
+        planetAsset: 'assets/images/planet1.png',
       );
     } else if (lower.contains('fisika')) {
       return (
         bgColor: const Color(0xFFEAFBF3),
         iconColor: const Color(0xFF218B5B),
         icon: Icons.bolt_outlined,
+        planetAsset: 'assets/images/planet2.png',
       );
     } else if (lower.contains('biologi') || lower.contains('ipa')) {
       return (
         bgColor: const Color(0xFFFFF7E6),
         iconColor: const Color(0xFFD97706),
         icon: Icons.eco_outlined,
+        planetAsset: 'assets/images/planet3.png',
       );
     } else if (lower.contains('indonesia') ||
         lower.contains('inggris') ||
@@ -93,18 +101,21 @@ class MateriModel {
         bgColor: const Color(0xFFFEE2E2),
         iconColor: const Color(0xFFDC2626),
         icon: Icons.menu_book_outlined,
+        planetAsset: 'assets/images/planet3.png',
       );
     } else if (lower.contains('kimia')) {
       return (
         bgColor: const Color(0xFFF3E8FF),
         iconColor: const Color(0xFF9333EA),
         icon: Icons.science_outlined,
+        planetAsset: 'assets/images/planet2.png',
       );
     }
     return (
       bgColor: const Color(0xFFEAF2FF),
       iconColor: const Color(0xFF3674D9),
       icon: Icons.school_outlined,
+      planetAsset: 'assets/images/planet1.png',
     );
   }
 }
@@ -310,7 +321,7 @@ final List<MateriModel> subjek = [
     iconColor: const Color(0xFF218B5B),
     icon: Icons.bolt_outlined,
     description: 'Energi, gaya, dan gerak',
-    planetImageAsset: 'assets/images/planet1.png',
+    planetImageAsset: 'assets/images/planet2.png',
   ),
   MateriModel(
     id: 3,
@@ -319,7 +330,7 @@ final List<MateriModel> subjek = [
     iconColor: const Color(0xFFD97706),
     icon: Icons.eco_outlined,
     description: 'Makhluk hidup dan ekosistem',
-    planetImageAsset: 'assets/images/planet1.png',
+    planetImageAsset: 'assets/images/planet3.png',
   ),
   MateriModel(
     id: 4,
@@ -337,6 +348,6 @@ final List<MateriModel> subjek = [
     iconColor: const Color(0xFF9333EA),
     icon: Icons.science_outlined,
     description: 'Struktur dan reaksi zat',
-    planetImageAsset: 'assets/images/planet1.png',
+    planetImageAsset: 'assets/images/planet2.png',
   ),
 ];

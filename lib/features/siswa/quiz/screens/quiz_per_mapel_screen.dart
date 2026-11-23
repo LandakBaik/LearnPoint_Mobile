@@ -136,10 +136,16 @@ class _QuizPerMapelState extends State<QuizPerMapel>
                     onThemeTap: (item) async {
                       await _bgmPlayer.pause();
                       if (!context.mounted) return;
+                      final planetAsset = widget.subject?.planetImageAsset ?? '';
+                      final String? sceneThemeOverride =
+                          planetAsset.contains('planet3') ? 'ribbon1' : null;
                       await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => QuizLevel(themeItem: item),
+                          builder: (_) => QuizLevel(
+                            themeItem: item,
+                            sceneThemeOverride: sceneThemeOverride,
+                          ),
                         ),
                       );
                       if (mounted && !_isMuted) {

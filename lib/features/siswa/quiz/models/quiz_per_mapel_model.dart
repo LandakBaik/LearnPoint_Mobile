@@ -5,7 +5,7 @@ class QuizPerMapelM {
   final String subtitle;
   final Color color;
   final String? menuImageAsset;
-  // Nama tema background di halaman QuizLevel ('chess', 'chess1', atau 'chess2')
+  // Nama tema background di halaman QuizLevel ('chess', 'chess1', 'chess2', atau 'ribbon1')
   final String levelSceneTheme;
 
   QuizPerMapelM({

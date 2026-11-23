@@ -94,12 +94,20 @@ class _QuizThemeListSectionWidgetState extends State<QuizThemeListSectionWidget>
 
     if (!mounted) return;
 
+    // Jika planet yang dipilih adalah planet3.png, gunakan map leveling 'ribbon1'
+    final planetAsset = widget.subject?.planetImageAsset ?? '';
+    final String? sceneThemeOverride =
+        planetAsset.contains('planet3') ? 'ribbon1' : null;
+
     // Pindah ke halaman QuizLevel dengan transisi fade halus dari layar bercahaya
     await Navigator.of(context).push(
       PageRouteBuilder<void>(
         transitionDuration: const Duration(milliseconds: 500),
         pageBuilder: (context, animation, secondaryAnimation) =>
-            QuizLevel(themeItem: item),
+            QuizLevel(
+              themeItem: item,
+              sceneThemeOverride: sceneThemeOverride,
+            ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(
             opacity: animation,

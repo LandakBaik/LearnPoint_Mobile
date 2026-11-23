@@ -7,10 +7,12 @@ import 'package:learnpoint_mobile/features/siswa/quiz/widgets/quiz_level_map_sec
 
 class QuizLevel extends StatefulWidget {
   final QuizPerMapelM? themeItem;
+  final String? sceneThemeOverride;
 
   const QuizLevel({
     super.key,
     this.themeItem,
+    this.sceneThemeOverride,
   });
 
   @override
@@ -24,6 +26,8 @@ class _QuizLevelState extends State<QuizLevel> {
         return const Color(0xFF4B5335);
       case 'chess2':
         return const Color(0xFF6B6552);
+      case 'ribbon1':
+        return const Color(0xFF90B8D8);
       case 'chess':
       default:
         return const Color(0xFF0A4D5E);
@@ -34,7 +38,8 @@ class _QuizLevelState extends State<QuizLevel> {
   Widget build(BuildContext context) {
     final themeTitle = widget.themeItem?.title ?? 'Geometri';
     final themeColor = widget.themeItem?.color ?? const Color(0xFF4338CA);
-    final sceneTheme = widget.themeItem?.levelSceneTheme ?? 'chess';
+    final sceneTheme =
+        widget.sceneThemeOverride ?? widget.themeItem?.levelSceneTheme ?? 'chess';
 
     return Scaffold(
       backgroundColor: _resolveBgColor(sceneTheme),
