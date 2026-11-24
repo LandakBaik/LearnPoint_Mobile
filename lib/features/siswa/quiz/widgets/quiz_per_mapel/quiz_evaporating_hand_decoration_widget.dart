@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:learnpoint_mobile/features/siswa/quiz/config/quiz_assets.dart';
 
-/// Widget hiasan untuk menampilkan hand1.png sebagai gambar statis biasa
+/// Widget hiasan untuk menampilkan hand_decor.png sebagai gambar statis biasa
 /// tanpa efek animasi menguap.
 class QuizEvaporatingHandDecorationWidget extends StatelessWidget {
   final String imageAsset;
@@ -8,7 +9,7 @@ class QuizEvaporatingHandDecorationWidget extends StatelessWidget {
 
   const QuizEvaporatingHandDecorationWidget({
     super.key,
-    this.imageAsset = 'assets/images/hand1.png',
+    this.imageAsset = QuizAssets.planet1HandDecor,
     this.widthFactor = 0.76,
   });
 

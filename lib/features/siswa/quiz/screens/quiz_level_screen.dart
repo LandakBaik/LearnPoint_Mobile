@@ -28,6 +28,8 @@ class _QuizLevelState extends State<QuizLevel> {
         return const Color(0xFF6B6552);
       case 'ribbon1':
         return const Color(0xFF90B8D8);
+      case 'void_ruin':
+        return const Color(0xFF0F051D);
       case 'chess':
       default:
         return const Color(0xFF0A4D5E);

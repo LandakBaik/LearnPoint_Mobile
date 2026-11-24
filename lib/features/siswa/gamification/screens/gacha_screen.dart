@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-import 'package:learnpoint_mobile/core/config/api_config.dart';
 import 'package:learnpoint_mobile/features/siswa/gamification/data/gacha_service.dart';
 import 'package:learnpoint_mobile/features/siswa/gamification/models/item_model.dart';
+import 'package:learnpoint_mobile/features/siswa/quiz/config/quiz_assets.dart';
 
 class Gacha extends StatefulWidget {
   final VoidCallback? onBackTap;
@@ -22,6 +23,7 @@ class _GachaState extends State<Gacha> {
 
   bool _isLoadingStatus = true;
   bool _isPulling = false;
+  bool _hideOptionsForPull = false;
 
   @override
   void initState() {
@@ -91,136 +93,75 @@ class _GachaState extends State<Gacha> {
       return;
     }
 
+    // 1. Pudarkan opsi tombol Gacha terlebih dahulu
     setState(() {
       _isPulling = true;
+      _hideOptionsForPull = true;
     });
 
     try {
-      final pullResponse = await GachaService.pullGacha(count);
+      // Jalankan request API secara paralel dengan durasi pudarnya tombol opsi (380ms)
+      final results = await Future.wait([
+        GachaService.pullGacha(count),
+        Future<void>.delayed(const Duration(milliseconds: 380)),
+      ]);
+      final pullResponse = results[0] as GachaPullResponseModel;
       if (!mounted) return;
 
       setState(() {
         _coins = pullResponse.sisaKoin;
         _pityCounter = pullResponse.pityCounter;
         _pityMax = pullResponse.pityMax;
-        _isPulling = false;
       });
 
-      await _showSummonAnimationDialog();
+      // 2. Tampilkan animasi `gacha_pull.gif` di tengah layar + extend cahaya putih di akhir
+      await _showSummonAnimationOverlay();
       if (!mounted) return;
 
+      // 3. Tampilkan dialog item yang didapat
       await _showResultDialog(pullResponse);
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _isPulling = false;
-      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
           backgroundColor: Colors.redAccent,
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPulling = false;
+          _hideOptionsForPull = false;
+        });
+      }
     }
   }
 
-  Future<void> _showSummonAnimationDialog() async {
-    final summonUrl = ApiConfig.gachaSummonGifUrl;
-    Timer? autoCloseTimer;
+  /// Menampilkan animasi `gacha_pull.gif` tepat di tengah layar tanpa efek meteor tambahan,
+  /// lalu menahan (extend) cahaya putih di akhir animasi sebentar sebelum menampilkan hasil item.
+  Future<void> _showSummonAnimationOverlay() async {
+    // Evict cache GIF agar selalu mulai dari frame 0 setiap kali pull
+    await AssetImage(QuizAssets.gachaPullEffect).evict();
+    if (!mounted) return;
 
-    await showDialog<void>(
+    await showGeneralDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) {
-        autoCloseTimer = Timer(const Duration(milliseconds: 2400), () {
-          if (Navigator.of(ctx).canPop()) {
-            Navigator.of(ctx).pop();
-          }
-        });
-
-        return Dialog(
-          backgroundColor: const Color(0xFF0B1026),
-          insetPadding: const EdgeInsets.symmetric(horizontal: 20),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
-            side: const BorderSide(color: Color(0xFFF6C445), width: 2.5),
+      barrierColor: Colors.transparent,
+      transitionDuration: const Duration(milliseconds: 220),
+      pageBuilder: (ctx, animation, secondaryAnimation) {
+        return const _GachaPullAnimationOverlay();
+      },
+      transitionBuilder: (ctx, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOut,
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  height: 260,
-                  width: double.infinity,
-                  child: summonUrl.isNotEmpty
-                      ? Image.network(
-                          summonUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => _buildSummonFallback(),
-                        )
-                      : _buildSummonFallback(),
-                ),
-                Positioned(
-                  bottom: 12,
-                  right: 12,
-                  child: TextButton.icon(
-                    onPressed: () {
-                      autoCloseTimer?.cancel();
-                      if (Navigator.of(ctx).canPop()) {
-                        Navigator.of(ctx).pop();
-                      }
-                    },
-                    style: TextButton.styleFrom(
-                      backgroundColor: Colors.black.withValues(alpha: 0.65),
-                      foregroundColor: const Color(0xFFFBBF24),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                    ),
-                    icon: const Icon(Icons.fast_forward_rounded, size: 16),
-                    label: const Text(
-                      'Lewati',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          child: child,
         );
       },
-    );
-
-    autoCloseTimer?.cancel();
-  }
-
-  Widget _buildSummonFallback() {
-    return Container(
-      color: const Color(0xFF14182D),
-      child: const Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.rocket_launch_rounded,
-            color: Color(0xFFF6C445),
-            size: 64,
-          ),
-          SizedBox(height: 14),
-          Text(
-            'Mendaratkan Kapsul Galaksi...',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-              fontSize: 15,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -366,7 +307,10 @@ class _GachaState extends State<Gacha> {
     );
   }
 
-  Widget _buildJackpotBannerCard(BuildContext dialogCtx, BannerItemModel banner) {
+  Widget _buildJackpotBannerCard(
+    BuildContext dialogCtx,
+    BannerItemModel banner,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(10),
@@ -382,7 +326,11 @@ class _GachaState extends State<Gacha> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.auto_awesome, color: Color(0xFFFBBF24), size: 16),
+              const Icon(
+                Icons.auto_awesome,
+                color: Color(0xFFFBBF24),
+                size: 16,
+              ),
               const SizedBox(width: 6),
               Text(
                 banner.isPity ? 'JACKPOT PITY BANNER!' : 'JACKPOT BANNER GIF!',
@@ -435,7 +383,9 @@ class _GachaState extends State<Gacha> {
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Banner "${banner.nama}" berhasil dipasang!'),
+                      content: Text(
+                        'Banner "${banner.nama}" berhasil dipasang!',
+                      ),
                       backgroundColor: const Color(0xFF10B981),
                     ),
                   );
@@ -532,7 +482,8 @@ class _GachaState extends State<Gacha> {
                               ),
                             ),
                             const SizedBox(height: 6),
-                            for (final p in (snapshot.data?.powers.isNotEmpty == true
+                            for (final p in (snapshot.data?.powers.isNotEmpty ==
+                                    true
                                 ? snapshot.data!.powers
                                 : GachaService.powersNotifier.value))
                               Padding(
@@ -566,7 +517,9 @@ class _GachaState extends State<Gacha> {
                                 ),
                               ),
                               const SizedBox(height: 6),
-                              for (final b in (snapshot.data?.banners.isNotEmpty == true
+                              for (final b in (snapshot
+                                          .data?.banners.isNotEmpty ==
+                                      true
                                   ? snapshot.data!.banners
                                   : GachaService.bannersNotifier.value))
                                 Padding(
@@ -621,537 +574,741 @@ class _GachaState extends State<Gacha> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF14182D),
+      backgroundColor: const Color(0xFF0E0728),
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          // 1. Fullscreen Galaxy Train Interior Background
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/gacha_train_bg.jpg',
-              fit: BoxFit.cover,
-              alignment: Alignment.center,
-            ),
+          // 1. Background Parallax Gacha (Tanpa efek goyang/wavy)
+          const Positioned.fill(
+            child: _GachaParallaxBackground(),
           ),
 
           // 2. Top Bar: Back Button (kiri), Info Panduan & Koin Badge (kanan)
+          //    Ikut memudar ketika animasi gacha sedang berjalan
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Material(
-                      color: Colors.black.withValues(alpha: 0.35),
-                      shape: const CircleBorder(),
-                      child: InkWell(
-                        customBorder: const CircleBorder(),
-                        onTap:
-                            widget.onBackTap ??
-                            () {
-                              if (Navigator.of(context).canPop()) {
-                                Navigator.of(context).pop();
-                              }
-                            },
-                        child: const Padding(
-                          padding: EdgeInsets.all(8),
-                          child: Icon(
-                            Icons.arrow_back_rounded,
-                            color: Colors.white,
-                            size: 22,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 320),
+                opacity: _hideOptionsForPull ? 0.0 : 1.0,
+                child: IgnorePointer(
+                  ignoring: _hideOptionsForPull,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Material(
-                          color: Colors.black.withValues(alpha: 0.45),
+                          color: Colors.black.withValues(alpha: 0.38),
                           shape: const CircleBorder(),
                           child: InkWell(
                             customBorder: const CircleBorder(),
-                            onTap: _showPanduanDialog,
+                            onTap: widget.onBackTap ??
+                                () {
+                                  if (Navigator.of(context).canPop()) {
+                                    Navigator.of(context).pop();
+                                  }
+                                },
                             child: const Padding(
-                              padding: EdgeInsets.all(8),
+                              padding: EdgeInsets.all(9),
                               child: Icon(
-                                Icons.help_outline_rounded,
-                                color: Color(0xFFF6C445),
-                                size: 20,
+                                Icons.arrow_back_rounded,
+                                color: Colors.white,
+                                size: 22,
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.45),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: const Color(0xFFF6C445),
-                              width: 1.5,
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 11,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.48),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: const Color(0xFFF59E0B).withValues(
+                                    alpha: 0.75,
+                                  ),
+                                  width: 1.3,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.auto_awesome_rounded,
+                                    size: 14,
+                                    color: Color(0xFFFBBF24),
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    'Pity $_pityCounter/$_pityMax',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 16,
-                                height: 16,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFBBF24),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: const Color(0xFFB45309),
-                                    width: 1,
+                            const SizedBox(width: 8),
+                            Material(
+                              color: Colors.black.withValues(alpha: 0.45),
+                              shape: const CircleBorder(),
+                              child: InkWell(
+                                customBorder: const CircleBorder(),
+                                onTap: _showPanduanDialog,
+                                child: const Padding(
+                                  padding: EdgeInsets.all(8),
+                                  child: Icon(
+                                    Icons.help_outline_rounded,
+                                    color: Color(0xFFF6C445),
+                                    size: 20,
                                   ),
                                 ),
-                                child: const Icon(
-                                  Icons.star_rounded,
-                                  size: 11,
-                                  color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.48),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: const Color(0xFFF6C445),
+                                  width: 1.5,
                                 ),
                               ),
-                              const SizedBox(width: 6),
-                              Text(
-                                _isLoadingStatus ? '...' : '$_coins',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w800,
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 16,
+                                    height: 16,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFBBF24),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: const Color(0xFFB45309),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.star_rounded,
+                                      size: 11,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _isLoadingStatus ? '...' : '$_coins',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
 
-          // 3. Bottom Gacha Cards (Tiket Kereta Galaksi & Pity Counter)
+          // 3. Bottom Action Area: Tombol Gacha 1x & 10x Dibungkus dengan Asset `gacha op.gif`
+          //    Memudar terlebih dahulu saat user menekan salah satu opsi Gacha
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
             child: SafeArea(
               top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 14),
-                child: IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Card Kiri: Tiket Kereta Galaksi (Buka 1x & Buka 10x)
-                      Expanded(
-                        flex: 68,
-                        child: _buildGoldenCard(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Text(
-                                  'tiket kereta galaksi',
-                                  style: TextStyle(
-                                    color: Color(0xFF1E293B),
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: -0.2,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildTicketButton(
-                                        title: _isPulling ? 'Proses...' : 'Buka 1x',
-                                        cost: '$_harga1x',
-                                        gradientColors: const [
-                                          Color(0xFFFFFFFF),
-                                          Color(0xFFE0F2FE),
-                                          Color(0xFFBAE6FD),
-                                        ],
-                                        accentColor: const Color(0xFF2563EB),
-                                        borderColor: const Color(0xFFD4A753),
-                                        onTap: () => _performGacha(1),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: _buildTicketButton(
-                                        title: _isPulling ? 'Proses...' : 'Buka 10x',
-                                        cost: '$_harga10x',
-                                        gradientColors: const [
-                                          Color(0xFFFFFFFF),
-                                          Color(0xFFF3E8FF),
-                                          Color(0xFFDDD6FE),
-                                        ],
-                                        accentColor: const Color(0xFF7C3AED),
-                                        borderColor: const Color(0xFFD4A753),
-                                        isCosmic: true,
-                                        onTap: () => _performGacha(10),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(width: 10),
-
-                      // Card Kanan: Pity Counter (Jaminan Banner)
-                      Expanded(
-                        flex: 32,
-                        child: _buildGoldenCard(
-                          child: Stack(
-                            children: [
-                              Positioned(
-                                right: -4,
-                                bottom: -4,
-                                child: Icon(
-                                  Icons.directions_transit_rounded,
-                                  size: 40,
-                                  color: const Color(
-                                    0xFF3B82F6,
-                                  ).withValues(alpha: 0.14),
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
-                                child: Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    const Text(
-                                      'Pity Banner',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Color(0xFF1E293B),
-                                        fontSize: 11.5,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Transform.rotate(
-                                          angle: -0.25,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(4),
-                                            decoration: BoxDecoration(
-                                              gradient: const LinearGradient(
-                                                colors: [
-                                                  Color(0xFFFDE68A),
-                                                  Color(0xFFF59E0B),
-                                                ],
-                                                begin: Alignment.topLeft,
-                                                end: Alignment.bottomRight,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(6),
-                                              border: Border.all(
-                                                color: const Color(0xFFB45309),
-                                                width: 1,
-                                              ),
-                                            ),
-                                            child: const Icon(
-                                              Icons.confirmation_number_rounded,
-                                              color: Colors.white,
-                                              size: 16,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 5),
-                                        Flexible(
-                                          child: Text(
-                                            '$_pityCounter/$_pityMax',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              color: Color(0xFF0F172A),
-                                              fontSize: 17,
-                                              fontWeight: FontWeight.w900,
-                                              height: 1,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGoldenCard({required Widget child}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFF6C445), width: 3),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.38),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(15),
-        child: Column(
-          mainAxisSize: MainAxisSize.max,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              height: 22,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color(0xFFFDE047),
-                    Color(0xFFFBBF24),
-                    Color(0xFFF59E0B),
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Icon(
-                      Icons.auto_awesome,
-                      size: 11,
-                      color: Colors.white.withValues(alpha: 0.8),
-                    ),
-                    Icon(
-                      Icons.auto_awesome,
-                      size: 11,
-                      color: Colors.white.withValues(alpha: 0.8),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Expanded(child: child),
-            Container(
-              height: 7,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFFFBBF24), Color(0xFFF59E0B)],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTicketButton({
-    required String title,
-    required String cost,
-    required List<Color> gradientColors,
-    required Color accentColor,
-    required Color borderColor,
-    required VoidCallback onTap,
-    bool isCosmic = false,
-  }) {
-    return ClipPath(
-      clipper: _TicketNotchClipper(),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: _isPulling ? null : onTap,
-          child: Ink(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: gradientColors,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              border: Border.all(color: borderColor, width: 1.5),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Stack(
-              children: [
-                Positioned(
-                  right: -2,
-                  bottom: -3,
-                  child: Icon(
-                    Icons.directions_transit_rounded,
-                    size: 26,
-                    color: accentColor.withValues(alpha: 0.22),
-                  ),
-                ),
-                if (isCosmic)
-                  Positioned(
-                    right: 6,
-                    top: 4,
-                    child: Icon(
-                      Icons.auto_awesome,
-                      size: 11,
-                      color: accentColor.withValues(alpha: 0.45),
-                    ),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    children: [
-                      Transform.rotate(
-                        angle: -0.2,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: accentColor,
-                            borderRadius: BorderRadius.circular(6),
-                            boxShadow: [
-                              BoxShadow(
-                                color: accentColor.withValues(alpha: 0.3),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.confirmation_number_rounded,
-                            color: Colors.white,
-                            size: 15,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOutCubic,
+                opacity: _hideOptionsForPull ? 0.0 : 1.0,
+                child: IgnorePointer(
+                  ignoring: _hideOptionsForPull,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            Text(
-                              title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF0F172A),
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w800,
+                            // Tombol Gacha 1x dibungkus `gacha op.gif`
+                            Expanded(
+                              child: _buildGachaOpButton(
+                                pullCountLabel: '1x',
+                                subtitleLabel: 'Buka 1x',
+                                cost: '$_harga1x',
+                                glowColor: const Color(0xFFFB923C),
+                                onTap: () => _performGacha(1),
                               ),
                             ),
-                            const SizedBox(height: 2),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 13,
-                                  height: 13,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFBBF24),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: const Color(0xFFB45309),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: const Icon(
-                                    Icons.star_rounded,
-                                    size: 9,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  cost,
-                                  style: const TextStyle(
-                                    color: Color(0xFF1E293B),
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ],
+                            const SizedBox(width: 16),
+                            // Tombol Gacha 10x dibungkus `gacha op.gif`
+                            Expanded(
+                              child: _buildGachaOpButton(
+                                pullCountLabel: '10x',
+                                subtitleLabel: 'Buka 10x',
+                                cost: '$_harga10x',
+                                glowColor: const Color(0xFFFBBF24),
+                                isMultiPull: true,
+                                onTap: () => _performGacha(10),
+                              ),
                             ),
                           ],
                         ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Tombol Gacha (1x atau 10x) yang dibungkus langsung dengan aset `gacha op.gif`.
+  /// Untuk tombol 10x (`isMultiPull = true`), ukuran dibuat lebih besar dan aset `gacha op.gif` diputar 90 derajat.
+  Widget _buildGachaOpButton({
+    required String pullCountLabel,
+    required String subtitleLabel,
+    required String cost,
+    required Color glowColor,
+    required VoidCallback onTap,
+    bool isMultiPull = false,
+  }) {
+    final double orbSize = isMultiPull ? 174 : 140;
+    final double glowSize = isMultiPull ? 128 : 102;
+
+    return GestureDetector(
+      onTap: _isPulling ? null : onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: orbSize,
+            height: orbSize,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Cahaya lembut di belakang orb gacha op
+                Container(
+                  width: glowSize,
+                  height: glowSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: glowColor.withValues(
+                          alpha: isMultiPull ? 0.45 : 0.26,
+                        ),
+                        blurRadius: isMultiPull ? 36 : 22,
+                        spreadRadius: isMultiPull ? 5 : 1,
                       ),
                     ],
                   ),
+                ),
+
+                // Aset pembungkus tombol: `gacha op.gif`
+                // Untuk 10x diputar 90 derajat (quarterTurns: 1)
+                Positioned.fill(
+                  child: RotatedBox(
+                    quarterTurns: isMultiPull ? 1 : 0,
+                    child: Image.asset(
+                      QuizAssets.gachaOpOrb,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+
+                // Teks & Harga Koin di Tengah Lubang Orb `gacha op.gif`
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      pullCountLabel,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontSize: isMultiPull ? 26 : 22,
+                        fontWeight: FontWeight.w900,
+                        height: 1.0,
+                        shadows: [
+                          Shadow(
+                            color: glowColor.withValues(alpha: 0.9),
+                            blurRadius: 12,
+                          ),
+                          const Shadow(
+                            color: Colors.black,
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitleLabel.toUpperCase(),
+                      style: GoogleFonts.plusJakartaSans(
+                        color: const Color(0xFFFDE68A),
+                        fontSize: isMultiPull ? 10.5 : 9.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2.5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: glowColor.withValues(alpha: 0.8),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.star_rounded,
+                            size: 11,
+                            color: Color(0xFFFBBF24),
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            cost,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontSize: isMultiPull ? 12 : 11,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
-class _TicketNotchClipper extends CustomClipper<Path> {
+/// Background halaman Gacha (Tanpa efek goyang/wavy):
+/// 1. `gacha_main.png`
+/// 2. `gacha_spiral.png` (gelombang opacity berkilau)
+/// 3. `gacha_bigstars.png`
+/// 4. `gacha_stars.png` (geser pelan ke kanan + kedip berurutan dari kiri ke kanan)
+/// 5. `gacha_mist.png`
+/// 6. `gacha_lightpath.png` (animasi looping dari tengah ke pinggir dengan jeda)
+/// 7. `gacha_groundstars_light.png` (statis, tanpa efek bergoyang)
+class _GachaParallaxBackground extends StatefulWidget {
+  const _GachaParallaxBackground();
+
   @override
-  Path getClip(Size size) {
-    const double notchRadius = 5.0;
-    final Path path = Path();
-    path.moveTo(notchRadius, 0);
-    path.lineTo(size.width - notchRadius, 0);
-    path.arcToPoint(
-      Offset(size.width, notchRadius),
-      radius: const Radius.circular(notchRadius),
-      clockwise: false,
-    );
-    path.lineTo(size.width, size.height - notchRadius);
-    path.arcToPoint(
-      Offset(size.width - notchRadius, size.height),
-      radius: const Radius.circular(notchRadius),
-      clockwise: false,
-    );
-    path.lineTo(notchRadius, size.height);
-    path.arcToPoint(
-      Offset(0, size.height - notchRadius),
-      radius: const Radius.circular(notchRadius),
-      clockwise: false,
-    );
-    path.lineTo(0, notchRadius);
-    path.arcToPoint(
-      const Offset(notchRadius, 0),
-      radius: const Radius.circular(notchRadius),
-      clockwise: false,
-    );
-    path.close();
-    return path;
+  State<_GachaParallaxBackground> createState() =>
+      _GachaParallaxBackgroundState();
+}
+
+class _GachaParallaxBackgroundState extends State<_GachaParallaxBackground>
+    with TickerProviderStateMixin {
+  late final AnimationController _moveRightController;
+  late final AnimationController _twinkleWaveController;
+  late final AnimationController _lightPathLoopController;
+  late final Animation<double> _twinkleSweepAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // 1. Menggeser gacha_stars pelan ke kanan lalu loop
+    _moveRightController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 80),
+    )..repeat();
+
+    // 2. Gelombang kedipan bintang & spiral dari kiri ke kanan
+    _twinkleWaveController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 6),
+    )..repeat();
+
+    _twinkleSweepAnimation = Tween<double>(
+      begin: -2.0,
+      end: 2.0,
+    ).animate(_twinkleWaveController);
+
+    // 3. Animasi looping gacha_lightpath (total siklus 14 detik):
+    //    - Muncul dari tengah ke pinggir, lalu TAMPIL LAMA
+    //    - Setelah sekian waktu menghilang perlahan, lalu muncul lagi
+    _lightPathLoopController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 14),
+    )..repeat();
   }
 
   @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+  void dispose() {
+    _moveRightController.dispose();
+    _twinkleWaveController.dispose();
+    _lightPathLoopController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+
+    return ClipRect(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // 1. Background Utama Gacha
+          Image.asset(
+            QuizAssets.gachaMainBg,
+            fit: BoxFit.fill,
+            alignment: Alignment.center,
+          ),
+
+          // 2. Layer Spiral Angin Gacha (Efek gelombang opacity mengalir seperti di Lobby)
+          AnimatedBuilder(
+            animation: _twinkleSweepAnimation,
+            builder: (context, spiralChild) {
+              return ShaderMask(
+                blendMode: BlendMode.dstIn,
+                shaderCallback: (rect) {
+                  return LinearGradient(
+                    begin: Alignment(_twinkleSweepAnimation.value - 1.0, -0.2),
+                    end: Alignment(_twinkleSweepAnimation.value + 1.0, 0.2),
+                    tileMode: TileMode.repeated,
+                    colors: [
+                      Colors.white.withValues(alpha: 0.28),
+                      Colors.white,
+                      Colors.white.withValues(alpha: 0.40),
+                      Colors.white,
+                      Colors.white.withValues(alpha: 0.28),
+                    ],
+                    stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
+                  ).createShader(rect);
+                },
+                child: spiralChild,
+              );
+            },
+            child: Image.asset(
+              QuizAssets.gachaSpiral,
+              fit: BoxFit.fill,
+              alignment: Alignment.center,
+            ),
+          ),
+
+          // 3. Layer 3 Bintang Kuning Besar
+          Image.asset(
+            QuizAssets.gachaBigStars,
+            fit: BoxFit.fill,
+            alignment: Alignment.center,
+          ),
+
+          // 4. Layer Bintang Kecil (Geser pelan ke kanan & kedip berurutan dari kiri ke kanan)
+          AnimatedBuilder(
+            animation: Listenable.merge([
+              _moveRightController,
+              _twinkleSweepAnimation,
+            ]),
+            builder: (context, starChild) {
+              final dx = _moveRightController.value * screenWidth;
+
+              return ShaderMask(
+                blendMode: BlendMode.dstIn,
+                shaderCallback: (rect) {
+                  return LinearGradient(
+                    begin: Alignment(_twinkleSweepAnimation.value - 1.0, 0),
+                    end: Alignment(_twinkleSweepAnimation.value + 1.0, 0),
+                    tileMode: TileMode.repeated,
+                    colors: [
+                      Colors.white.withValues(alpha: 0.15),
+                      Colors.white,
+                      Colors.white.withValues(alpha: 0.25),
+                      Colors.white,
+                      Colors.white.withValues(alpha: 0.15),
+                    ],
+                    stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
+                  ).createShader(rect);
+                },
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Transform.translate(
+                      offset: Offset(dx, 0),
+                      child: starChild,
+                    ),
+                    Transform.translate(
+                      offset: Offset(dx - screenWidth, 0),
+                      child: starChild,
+                    ),
+                  ],
+                ),
+              );
+            },
+            child: Image.asset(
+              QuizAssets.gachaStars,
+              fit: BoxFit.fill,
+              alignment: Alignment.center,
+            ),
+          ),
+
+          // 5. Layer Kabut (Mist)
+          Image.asset(
+            QuizAssets.gachaMist,
+            fit: BoxFit.fill,
+            alignment: Alignment.center,
+          ),
+
+          // 6. Layer Lightpath Gacha (Tepat di belakang groundstars, animasi looping dari tengah ke pinggir)
+          _buildRevealingGachaLightPath(),
+
+          // 7. Layer Ground Stars & Light (Statis tanpa efek bergoyang)
+          Image.asset(
+            QuizAssets.gachaGroundStarsLight,
+            fit: BoxFit.fill,
+            alignment: Alignment.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRevealingGachaLightPath() {
+    const int stopCount = 21;
+
+    return AnimatedBuilder(
+      animation: _lightPathLoopController,
+      builder: (context, child) {
+        final cycle = _lightPathLoopController.value;
+
+        // Siklus 14 detik:
+        // • 0.00 -> 0.22 (~3.1 detik): Muncul perlahan dari tengah (0.5) melebar penuh ke pinggir.
+        // • 0.22 -> 0.72 (~7.0 detik): TAMPIL PENUH LAMA (stay visible).
+        // • 0.72 -> 0.88 (~2.2 detik): Menghilang perlahan dari tengah ke pinggir.
+        // • 0.88 -> 1.00 (~1.7 detik): Jeda menghilang sebentar sebelum muncul lagi dari tengah.
+        if (cycle >= 0.88) {
+          return const SizedBox.shrink();
+        }
+
+        final stops = <double>[];
+        final colors = <Color>[];
+        const transitionWidth = 0.26;
+
+        for (int i = 0; i < stopCount; i++) {
+          final x = i / (stopCount - 1);
+          final distFromCenter = (x - 0.5).abs(); // 0.0 di tengah, 0.5 di pinggir
+
+          double alpha;
+          if (cycle < 0.22) {
+            // Fase 1: Muncul dari tengah melebar ke pinggir
+            final pIn = cycle / 0.22;
+            final waveFront = (pIn * 0.90) - 0.12;
+            final raw =
+                ((waveFront - distFromCenter) / transitionWidth).clamp(0.0, 1.0);
+            alpha = raw * raw * (3.0 - 2.0 * raw);
+          } else if (cycle < 0.72) {
+            // Fase 2: Tampil penuh dalam waktu lama
+            alpha = 1.0;
+          } else {
+            // Fase 3: Menghilang perlahan dari tengah melebar ke pinggir
+            final pOut = (cycle - 0.72) / (0.88 - 0.72);
+            final fadeFront = (pOut * 0.90) - 0.12;
+            final rawFade =
+                ((fadeFront - distFromCenter) / transitionWidth).clamp(0.0, 1.0);
+            final smoothFade = rawFade * rawFade * (3.0 - 2.0 * rawFade);
+            alpha = (1.0 - smoothFade).clamp(0.0, 1.0);
+          }
+
+          stops.add(x);
+          colors.add(Colors.white.withValues(alpha: alpha));
+        }
+
+        return ShaderMask(
+          blendMode: BlendMode.dstIn,
+          shaderCallback: (rect) {
+            return LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: colors,
+              stops: stops,
+            ).createShader(rect);
+          },
+          child: child,
+        );
+      },
+      child: Image.asset(
+        QuizAssets.gachaLightPath,
+        fit: BoxFit.fill,
+        alignment: Alignment.center,
+      ),
+    );
+  }
+}
+
+/// Overlay untuk memutar `gacha_pull.gif` tepat di tengah layar (tanpa efek meteor jatuh tambahan),
+/// lalu menyambung & menahan (extend) cahaya putih di akhir animasi GIF sebelum menampilkan hasil item.
+class _GachaPullAnimationOverlay extends StatefulWidget {
+  const _GachaPullAnimationOverlay();
+
+  @override
+  State<_GachaPullAnimationOverlay> createState() =>
+      _GachaPullAnimationOverlayState();
+}
+
+class _GachaPullAnimationOverlayState extends State<_GachaPullAnimationOverlay>
+    with SingleTickerProviderStateMixin {
+  // Durasi asli gacha_pull.gif adalah 4660ms (56 frame).
+  // Pada ~4170ms - 4660ms, GIF menampilkan cahaya putih terang yang memenuhi layar.
+  // Kita extend cahaya putih tersebut hingga 5350ms sebelum menutup overlay & membuka dialog item.
+  static const int _totalOverlayDurationMs = 5350;
+
+  late final AnimationController _whiteExtendController;
+  Timer? _whiteFlashStartTimer;
+  Timer? _autoCloseTimer;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Controller untuk menyambung dan menahan cahaya putih dari akhir GIF (mulai di t = 4200ms)
+    _whiteExtendController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    );
+
+    _whiteFlashStartTimer = Timer(const Duration(milliseconds: 4200), () {
+      if (mounted) {
+        _whiteExtendController.forward();
+      }
+    });
+
+    _autoCloseTimer = Timer(
+      const Duration(milliseconds: _totalOverlayDurationMs),
+      _closeOverlay,
+    );
+  }
+
+  void _closeOverlay() {
+    _whiteFlashStartTimer?.cancel();
+    _autoCloseTimer?.cancel();
+    if (mounted && Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _whiteFlashStartTimer?.cancel();
+    _autoCloseTimer?.cancel();
+    _whiteExtendController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // 1. Animasi `gacha_pull.gif` tampil utuh tepat di tengah layar tanpa gerakan meteor jatuh buatan
+          Center(
+            child: Image.asset(
+              QuizAssets.gachaPullEffect,
+              width: double.infinity,
+              height: double.infinity,
+              fit: BoxFit.fill,
+              alignment: Alignment.center,
+              gaplessPlayback: true,
+            ),
+          ),
+
+          // 2. Extend cahaya putih di akhir GIF (~4200ms -> 5350ms) agar layar tetap terang putih sebentar
+          //    dan mencegah GIF mengulang kembali ke frame 0 sebelum dialog hasil item muncul
+          AnimatedBuilder(
+            animation: _whiteExtendController,
+            builder: (context, _) {
+              final v = Curves.easeInOut.transform(_whiteExtendController.value);
+              if (v <= 0.0) return const SizedBox.shrink();
+
+              return Positioned.fill(
+                child: IgnorePointer(
+                  child: ColoredBox(
+                    color: const Color(0xFFFAF9F0).withValues(alpha: v),
+                  ),
+                ),
+              );
+            },
+          ),
+
+          // 3. Tombol Lewati di kanan bawah
+          Positioned(
+            bottom: 28,
+            right: 20,
+            child: SafeArea(
+              child: TextButton.icon(
+                onPressed: _closeOverlay,
+                style: TextButton.styleFrom(
+                  backgroundColor: Colors.black.withValues(alpha: 0.65),
+                  foregroundColor: const Color(0xFFFBBF24),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: const BorderSide(
+                      color: Color(0xFFF6C445),
+                      width: 1.2,
+                    ),
+                  ),
+                ),
+                icon: const Icon(Icons.fast_forward_rounded, size: 17),
+                label: Text(
+                  'Lewati',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:learnpoint_mobile/features/siswa/quiz/config/quiz_assets.dart';
 
 class QuizParallaxBackgroundWidget extends StatefulWidget {
   final double topBgHeight;
@@ -76,7 +77,7 @@ class _QuizParallaxBackgroundWidgetState
           children: [
             // 1. Background Utama (Langit malam + tanah)
             Image.asset(
-              'assets/images/vg_main.png',
+              QuizAssets.lobbyMainBg,
               fit: BoxFit.cover,
               alignment: Alignment.bottomCenter,
             ),
@@ -106,7 +107,7 @@ class _QuizParallaxBackgroundWidgetState
                 );
               },
               child: Image.asset(
-                'assets/images/vg_spiral.png',
+                QuizAssets.lobbySpiral,
                 fit: BoxFit.cover,
                 alignment: Alignment.bottomCenter,
               ),
@@ -114,7 +115,7 @@ class _QuizParallaxBackgroundWidgetState
 
             // 3. Layer 3 Bintang Kuning Besar
             Image.asset(
-              'assets/images/vg_big_stars.png',
+              QuizAssets.lobbyBigStars,
               fit: BoxFit.cover,
               alignment: Alignment.bottomCenter,
             ),
@@ -164,7 +165,7 @@ class _QuizParallaxBackgroundWidgetState
                 );
               },
               child: Image.asset(
-                'assets/images/stars2.png',
+                QuizAssets.lobbyStars2,
                 fit: BoxFit.cover,
                 alignment: Alignment.bottomCenter,
               ),
@@ -172,7 +173,7 @@ class _QuizParallaxBackgroundWidgetState
 
             // 5. Layer Fog / Kabut Bawah (Di bawah fallenstar)
             Image.asset(
-              'assets/images/vg_mist.png',
+              QuizAssets.lobbyMist,
               fit: BoxFit.cover,
               alignment: Alignment.bottomCenter,
             ),
@@ -182,16 +183,23 @@ class _QuizParallaxBackgroundWidgetState
 
             // 7. Layer Fallenstar (Bintang jatuh di tanah, berada di ATAS fog)
             Image.asset(
-              'assets/images/vg_ground_stars.png',
+              QuizAssets.lobbyGroundStars,
               fit: BoxFit.cover,
               alignment: Alignment.bottomCenter,
             ),
 
-            // 8. Layer Character (Paling atas layer)
-            Image.asset(
-              'assets/images/vg_character.png',
-              fit: BoxFit.cover,
-              alignment: Alignment.bottomCenter,
+            // 8. Layer Character (Ukuran kecil berdiri di tengah tanah horizon)
+            Align(
+              alignment: const Alignment(0.0, 0.77),
+              child: SizedBox(
+                width: 82,
+                height: 82,
+                child: Image.asset(
+                  QuizAssets.lobbyCharacter,
+                  fit: BoxFit.contain,
+                  alignment: Alignment.bottomCenter,
+                ),
+              ),
             ),
           ],
         ),
@@ -255,7 +263,7 @@ class _QuizParallaxBackgroundWidgetState
         );
       },
       child: Image.asset(
-        'assets/images/fallenstar_light.png',
+        QuizAssets.lobbyFallenStarLight,
         fit: BoxFit.cover,
         alignment: Alignment.bottomCenter,
       ),

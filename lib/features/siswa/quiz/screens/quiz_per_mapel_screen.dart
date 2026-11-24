@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:learnpoint_mobile/features/siswa/quiz/config/quiz_assets.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/screens/quiz_level_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/models/quiz_per_mapel_model.dart';
@@ -138,7 +139,7 @@ class _QuizPerMapelState extends State<QuizPerMapel>
                       if (!context.mounted) return;
                       final planetAsset = widget.subject?.planetImageAsset ?? '';
                       final String? sceneThemeOverride =
-                          planetAsset.contains('planet3') ? 'ribbon1' : null;
+                          QuizAssets.resolveSceneThemeForPlanet(planetAsset);
                       await Navigator.push(
                         context,
                         MaterialPageRoute(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
+import 'package:learnpoint_mobile/features/siswa/quiz/config/quiz_assets.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/models/quiz_per_mapel_model.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/screens/quiz_level_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/widgets/quiz_per_mapel/quiz_planet_center_widget.dart';
@@ -94,10 +95,10 @@ class _QuizThemeListSectionWidgetState extends State<QuizThemeListSectionWidget>
 
     if (!mounted) return;
 
-    // Jika planet yang dipilih adalah planet3.png, gunakan map leveling 'ribbon1'
+    // Sesuaikan map leveling berdasarkan tema planet yang dipilih (Planet 2 -> 'void_ruin', Planet 3 -> 'ribbon1')
     final planetAsset = widget.subject?.planetImageAsset ?? '';
     final String? sceneThemeOverride =
-        planetAsset.contains('planet3') ? 'ribbon1' : null;
+        QuizAssets.resolveSceneThemeForPlanet(planetAsset);
 
     // Pindah ke halaman QuizLevel dengan transisi fade halus dari layar bercahaya
     await Navigator.of(context).push(

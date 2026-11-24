@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:learnpoint_mobile/features/siswa/quiz/config/quiz_assets.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/models/quiz_level_model.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/widgets/quiz_back_header_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/widgets/quiz_level_node_item_widget.dart';
@@ -75,13 +76,13 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
   // TEMA 1: 'chess' (Biru Teal • 619 x 1480 • layer0 + layer1..layer7)
   // =========================================================================
   static const _QuizLevelScenePreset _chessPreset = _QuizLevelScenePreset(
-    baseSkyAsset: 'assets/images/chess/layer0.png',
+    baseSkyAsset: '${QuizAssets.sceneChessTealDir}/layer0.png',
     imageAspectRatio: 1480.0 / 619.0,
     fallbackBgColor: Color(0xFF0A4D5E),
     layersBackToFront: [
       _SceneLayerSpec(
         levelOrder: 7,
-        assetPath: 'assets/images/chess/layer7.png',
+        assetPath: '${QuizAssets.sceneChessTealDir}/layer7.png',
         labelXFraction: 0.22,
         labelYFraction: 0.175,
         scrollShiftFactor: 0.95,
@@ -91,7 +92,7 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
       ),
       _SceneLayerSpec(
         levelOrder: 6,
-        assetPath: 'assets/images/chess/layer6.png',
+        assetPath: '${QuizAssets.sceneChessTealDir}/layer6.png',
         labelXFraction: 0.58,
         labelYFraction: 0.335,
         scrollShiftFactor: 0.77,
@@ -101,7 +102,7 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
       ),
       _SceneLayerSpec(
         levelOrder: 5,
-        assetPath: 'assets/images/chess/layer5.png',
+        assetPath: '${QuizAssets.sceneChessTealDir}/layer5.png',
         labelXFraction: 0.22,
         labelYFraction: 0.440,
         scrollShiftFactor: 0.54,
@@ -111,7 +112,7 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
       ),
       _SceneLayerSpec(
         levelOrder: 4,
-        assetPath: 'assets/images/chess/layer4.png',
+        assetPath: '${QuizAssets.sceneChessTealDir}/layer4.png',
         labelXFraction: 0.76,
         labelYFraction: 0.555,
         scrollShiftFactor: 0.30,
@@ -121,7 +122,7 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
       ),
       _SceneLayerSpec(
         levelOrder: 3,
-        assetPath: 'assets/images/chess/layer3.png',
+        assetPath: '${QuizAssets.sceneChessTealDir}/layer3.png',
         labelXFraction: 0.85,
         labelYFraction: 0.615,
         scrollShiftFactor: 0.18,
@@ -131,7 +132,7 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
       ),
       _SceneLayerSpec(
         levelOrder: 2,
-        assetPath: 'assets/images/chess/layer2.png',
+        assetPath: '${QuizAssets.sceneChessTealDir}/layer2.png',
         labelXFraction: 0.16,
         labelYFraction: 0.705,
         scrollShiftFactor: 0.05,
@@ -141,7 +142,7 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
       ),
       _SceneLayerSpec(
         levelOrder: 1,
-        assetPath: 'assets/images/chess/layer1.png',
+        assetPath: '${QuizAssets.sceneChessTealDir}/layer1.png',
         labelXFraction: 0.51,
         labelYFraction: 0.848,
         scrollShiftFactor: 0.0,
@@ -156,13 +157,13 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
   // TEMA 2: 'chess1' (Hijau Zaitun / Emas • 1080 x 2200 • layer1dasarlangit + 6 layer)
   // =========================================================================
   static const _QuizLevelScenePreset _chess1Preset = _QuizLevelScenePreset(
-    baseSkyAsset: 'assets/images/chess1/layer1dasarlangit.png',
+    baseSkyAsset: '${QuizAssets.sceneChessOliveDir}/layer1dasarlangit.png',
     imageAspectRatio: 2200.0 / 1080.0,
     fallbackBgColor: Color(0xFF4B5335),
     layersBackToFront: [
       _SceneLayerSpec(
         levelOrder: 6,
-        assetPath: 'assets/images/chess1/layer1.5.png',
+        assetPath: '${QuizAssets.sceneChessOliveDir}/layer1.5.png',
         // Tepat di atas bidak Ratu pada pedang raksasa paling belakang
         labelXFraction: 0.32,
         labelYFraction: 0.095,
@@ -173,7 +174,7 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
       ),
       _SceneLayerSpec(
         levelOrder: 5,
-        assetPath: 'assets/images/chess1/layer1.4.png',
+        assetPath: '${QuizAssets.sceneChessOliveDir}/layer1.4.png',
         // Tepat di atas ksatria pemanah / pilar kuda jembatan atas
         labelXFraction: 0.38,
         labelYFraction: 0.220,
@@ -184,7 +185,7 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
       ),
       _SceneLayerSpec(
         levelOrder: 4,
-        assetPath: 'assets/images/chess1/layer1.3.png',
+        assetPath: '${QuizAssets.sceneChessOliveDir}/layer1.3.png',
         // Tepat di atas ksatria berjubah di antara dua pedang tengah
         labelXFraction: 0.48,
         labelYFraction: 0.355,
@@ -195,7 +196,7 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
       ),
       _SceneLayerSpec(
         levelOrder: 3,
-        assetPath: 'assets/images/chess1/layer1.2.png',
+        assetPath: '${QuizAssets.sceneChessOliveDir}/layer1.2.png',
         // Tepat di atas bidak Benteng (Rook) di lereng papan catur kiri
         labelXFraction: 0.18,
         labelYFraction: 0.445,
@@ -206,7 +207,7 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
       ),
       _SceneLayerSpec(
         levelOrder: 2,
-        assetPath: 'assets/images/chess1/layer1.1.png',
+        assetPath: '${QuizAssets.sceneChessOliveDir}/layer1.1.png',
         // Tepat di atas ksatria berpedang di jembatan kanan bawah
         labelXFraction: 0.80,
         labelYFraction: 0.585,
@@ -217,7 +218,7 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
       ),
       _SceneLayerSpec(
         levelOrder: 1,
-        assetPath: 'assets/images/chess1/layer1.1start.png',
+        assetPath: '${QuizAssets.sceneChessOliveDir}/layer1.1start.png',
         // Tepat di atas balkon papan catur paling depan/bawah (FIXED saat di-scroll)
         labelXFraction: 0.50,
         labelYFraction: 0.825,
@@ -233,13 +234,13 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
   // TEMA 3: 'chess2' (Coklat Emas / Reruntuhan • 1080 x 2200 • layer2dasarlangit + 6 layer)
   // =========================================================================
   static const _QuizLevelScenePreset _chess2Preset = _QuizLevelScenePreset(
-    baseSkyAsset: 'assets/images/chess2/layer2dasarlangit.png',
+    baseSkyAsset: '${QuizAssets.sceneChessRuinsDir}/layer2dasarlangit.png',
     imageAspectRatio: 2200.0 / 1080.0,
     fallbackBgColor: Color(0xFF6B6552),
     layersBackToFront: [
       _SceneLayerSpec(
         levelOrder: 6,
-        assetPath: 'assets/images/chess2/layer2.5.png',
+        assetPath: '${QuizAssets.sceneChessRuinsDir}/layer2.5.png',
         // Tepat di atas bola merah menyala pada altar paling atas
         labelXFraction: 0.31,
         labelYFraction: 0.085,
@@ -250,7 +251,7 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
       ),
       _SceneLayerSpec(
         levelOrder: 5,
-        assetPath: 'assets/images/chess2/layer2.4.png',
+        assetPath: '${QuizAssets.sceneChessRuinsDir}/layer2.4.png',
         // Tepat di atas menara tinggi kanan
         labelXFraction: 0.82,
         labelYFraction: 0.220,
@@ -261,7 +262,7 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
       ),
       _SceneLayerSpec(
         levelOrder: 4,
-        assetPath: 'assets/images/chess2/layer2.3.png',
+        assetPath: '${QuizAssets.sceneChessRuinsDir}/layer2.3.png',
         // Tepat di atas jembatan lengkung bertingkat tengah
         labelXFraction: 0.32,
         labelYFraction: 0.495,
@@ -272,7 +273,7 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
       ),
       _SceneLayerSpec(
         levelOrder: 3,
-        assetPath: 'assets/images/chess2/layer2.2.png',
+        assetPath: '${QuizAssets.sceneChessRuinsDir}/layer2.2.png',
         // Tepat di atas bidak catur sisi kanan balkon tengah
         labelXFraction: 0.82,
         labelYFraction: 0.625,
@@ -283,7 +284,7 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
       ),
       _SceneLayerSpec(
         levelOrder: 2,
-        assetPath: 'assets/images/chess2/layer2.1.png',
+        assetPath: '${QuizAssets.sceneChessRuinsDir}/layer2.1.png',
         // Tepat di atas bidak Kuda & Ratu bagian kiri bawah
         labelXFraction: 0.24,
         labelYFraction: 0.725,
@@ -294,7 +295,7 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
       ),
       _SceneLayerSpec(
         levelOrder: 1,
-        assetPath: 'assets/images/chess2/layer2.0start.png',
+        assetPath: '${QuizAssets.sceneChessRuinsDir}/layer2.0start.png',
         // Tepat di atas lantai papan catur paling depan bawah (FIXED saat di-scroll)
         labelXFraction: 0.50,
         labelYFraction: 0.865,
@@ -310,13 +311,13 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
   // TEMA 4: 'ribbon1' (Planet 3 • Pita Merah & Kastil • 1080 x 2200 • layerbackground + 6 layer)
   // =========================================================================
   static const _QuizLevelScenePreset _ribbon1Preset = _QuizLevelScenePreset(
-    baseSkyAsset: 'assets/images/ribbon1/layerbackground.png',
+    baseSkyAsset: '${QuizAssets.sceneRibbonCastleDir}/layerbackground.png',
     imageAspectRatio: 2200.0 / 1080.0,
     fallbackBgColor: Color(0xFF90B8D8),
     layersBackToFront: [
       _SceneLayerSpec(
         levelOrder: 6,
-        assetPath: 'assets/images/ribbon1/layer4.5.png',
+        assetPath: '${QuizAssets.sceneRibbonCastleDir}/layer4.5.png',
         // Tepat di atas puncak menara kastil paling belakang
         labelXFraction: 0.52,
         labelYFraction: 0.145,
@@ -327,7 +328,7 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
       ),
       _SceneLayerSpec(
         levelOrder: 5,
-        assetPath: 'assets/images/ribbon1/layer4.4.png',
+        assetPath: '${QuizAssets.sceneRibbonCastleDir}/layer4.4.png',
         // Tepat di atas karakter berpita merah besar di lereng bukit merah kiri
         labelXFraction: 0.28,
         labelYFraction: 0.440,
@@ -338,7 +339,7 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
       ),
       _SceneLayerSpec(
         levelOrder: 4,
-        assetPath: 'assets/images/ribbon1/layer4.3.png',
+        assetPath: '${QuizAssets.sceneRibbonCastleDir}/layer4.3.png',
         // Tepat di atas biola yang terlilit pita merah di sisi kanan
         labelXFraction: 0.76,
         labelYFraction: 0.535,
@@ -349,7 +350,7 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
       ),
       _SceneLayerSpec(
         levelOrder: 3,
-        assetPath: 'assets/images/ribbon1/layer4.2.png',
+        assetPath: '${QuizAssets.sceneRibbonCastleDir}/layer4.2.png',
         // Tepat di atas kelinci berpita merah di padang rumput kiri
         labelXFraction: 0.20,
         labelYFraction: 0.675,
@@ -360,7 +361,7 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
       ),
       _SceneLayerSpec(
         levelOrder: 2,
-        assetPath: 'assets/images/ribbon1/layer4.1.png',
+        assetPath: '${QuizAssets.sceneRibbonCastleDir}/layer4.1.png',
         // Tepat di atas karakter duduk di dekat pepohonan tebing kanan
         labelXFraction: 0.78,
         labelYFraction: 0.725,
@@ -371,10 +372,87 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
       ),
       _SceneLayerSpec(
         levelOrder: 1,
-        assetPath: 'assets/images/ribbon1/layer4.0 dasar.png',
+        assetPath: '${QuizAssets.sceneRibbonCastleDir}/layer4.0 dasar.png',
         // Tepat di atas biola mengapung di air paling depan/bawah (FIXED saat di-scroll)
         labelXFraction: 0.44,
         labelYFraction: 0.875,
+        scrollShiftFactor: 0.0,
+        entranceSlideDistance: 14.0,
+        entranceIntervalStart: 0.35,
+        entranceIntervalEnd: 1.00,
+      ),
+    ],
+  );
+
+  // =========================================================================
+  // TEMA 5: 'void_ruin' (Planet 2 • Void Ruin Ungu & Jingga • 1080 x 2200 • layer5dasar + 6 layer)
+  // =========================================================================
+  static const _QuizLevelScenePreset _voidRuinPreset = _QuizLevelScenePreset(
+    baseSkyAsset: '${QuizAssets.sceneVoidRuinDir}/layer5dasar.png',
+    imageAspectRatio: 2200.0 / 1080.0,
+    fallbackBgColor: Color(0xFF0F051D),
+    layersBackToFront: [
+      _SceneLayerSpec(
+        levelOrder: 6,
+        assetPath: '${QuizAssets.sceneVoidRuinDir}/layer5.5.png',
+        // Tepat di atas simbol mata bintang raksasa di kubah atas
+        labelXFraction: 0.51,
+        labelYFraction: 0.115,
+        scrollShiftFactor: 0.88,
+        entranceSlideDistance: 140.0,
+        entranceIntervalStart: 0.00,
+        entranceIntervalEnd: 0.72,
+      ),
+      _SceneLayerSpec(
+        levelOrder: 5,
+        assetPath: '${QuizAssets.sceneVoidRuinDir}/layer5.4.png',
+        // Tepat di atas ujung kereta/jembatan melayang menuju portal kanan
+        labelXFraction: 0.62,
+        labelYFraction: 0.215,
+        scrollShiftFactor: 0.65,
+        entranceSlideDistance: 115.0,
+        entranceIntervalStart: 0.07,
+        entranceIntervalEnd: 0.78,
+      ),
+      _SceneLayerSpec(
+        levelOrder: 4,
+        assetPath: '${QuizAssets.sceneVoidRuinDir}/layer5.3.png',
+        // Tepat di sekitar gerbang-gerbang void ungu melayang di tengah
+        labelXFraction: 0.28,
+        labelYFraction: 0.355,
+        scrollShiftFactor: 0.44,
+        entranceSlideDistance: 90.0,
+        entranceIntervalStart: 0.14,
+        entranceIntervalEnd: 0.84,
+      ),
+      _SceneLayerSpec(
+        levelOrder: 3,
+        assetPath: '${QuizAssets.sceneVoidRuinDir}/layer5.2.png',
+        // Tepat di atas reruntuhan pilar kuil tengah-kiri
+        labelXFraction: 0.40,
+        labelYFraction: 0.505,
+        scrollShiftFactor: 0.25,
+        entranceSlideDistance: 65.0,
+        entranceIntervalStart: 0.21,
+        entranceIntervalEnd: 0.90,
+      ),
+      _SceneLayerSpec(
+        levelOrder: 2,
+        assetPath: '${QuizAssets.sceneVoidRuinDir}/layer5.1.png',
+        // Tepat di atas inti mata/kristal ungu yang memancarkan sinar ke bawah
+        labelXFraction: 0.67,
+        labelYFraction: 0.635,
+        scrollShiftFactor: 0.09,
+        entranceSlideDistance: 38.0,
+        entranceIntervalStart: 0.28,
+        entranceIntervalEnd: 0.96,
+      ),
+      _SceneLayerSpec(
+        levelOrder: 1,
+        assetPath: '${QuizAssets.sceneVoidRuinDir}/layer5.0dasar.png',
+        // Tepat di atas dataran pasir bercahaya jingga paling depan/bawah (FIXED saat di-scroll)
+        labelXFraction: 0.46,
+        labelYFraction: 0.855,
         scrollShiftFactor: 0.0,
         entranceSlideDistance: 14.0,
         entranceIntervalStart: 0.35,
@@ -391,6 +469,8 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
         return _chess2Preset;
       case 'ribbon1':
         return _ribbon1Preset;
+      case 'void_ruin':
+        return _voidRuinPreset;
       case 'chess':
       default:
         return _chessPreset;

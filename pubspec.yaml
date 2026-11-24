@@ -73,10 +73,17 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
-    - assets/images/chess/
-    - assets/images/chess1/
-    - assets/images/chess2/
-    - assets/images/ribbon1/
+    - assets/images/quiz/lobby/
+    - assets/images/quiz/gacha/
+    - assets/images/quiz/planets/planet_1_chess/
+    - assets/images/quiz/planets/planet_1_chess/scenes/chess_teal/
+    - assets/images/quiz/planets/planet_1_chess/scenes/chess_olive/
+    - assets/images/quiz/planets/planet_1_chess/scenes/chess_ruins/
+    - assets/images/quiz/planets/planet_2_void/
+    - assets/images/quiz/planets/planet_2_void/scenes/void_ruin/
+    - assets/images/quiz/planets/planet_3_ribbon/
+    - assets/images/quiz/planets/planet_3_ribbon/scenes/ribbon_castle/
+    - assets/images/quiz/planets/planet_4_sun/
     - assets/images/hero-banner/
     - assets/images/login/
     - assets/font/

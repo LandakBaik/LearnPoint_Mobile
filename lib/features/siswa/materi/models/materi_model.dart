@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:learnpoint_mobile/core/config/api_config.dart';
+import 'package:learnpoint_mobile/features/siswa/quiz/config/quiz_assets.dart';
 
 class MateriModel {
   final int? id;
@@ -78,21 +79,21 @@ class MateriModel {
         bgColor: const Color(0xFFEAF2FF),
         iconColor: const Color(0xFF3674D9),
         icon: Icons.calculate_outlined,
-        planetAsset: 'assets/images/planet1.png',
+        planetAsset: QuizAssets.planet1,
       );
     } else if (lower.contains('fisika')) {
       return (
         bgColor: const Color(0xFFEAFBF3),
         iconColor: const Color(0xFF218B5B),
         icon: Icons.bolt_outlined,
-        planetAsset: 'assets/images/planet2.png',
+        planetAsset: QuizAssets.planet2,
       );
     } else if (lower.contains('biologi') || lower.contains('ipa')) {
       return (
         bgColor: const Color(0xFFFFF7E6),
         iconColor: const Color(0xFFD97706),
         icon: Icons.eco_outlined,
-        planetAsset: 'assets/images/planet3.png',
+        planetAsset: QuizAssets.planet3,
       );
     } else if (lower.contains('indonesia') ||
         lower.contains('inggris') ||
@@ -101,21 +102,21 @@ class MateriModel {
         bgColor: const Color(0xFFFEE2E2),
         iconColor: const Color(0xFFDC2626),
         icon: Icons.menu_book_outlined,
-        planetAsset: 'assets/images/planet3.png',
+        planetAsset: QuizAssets.planet4,
       );
     } else if (lower.contains('kimia')) {
       return (
         bgColor: const Color(0xFFF3E8FF),
         iconColor: const Color(0xFF9333EA),
         icon: Icons.science_outlined,
-        planetAsset: 'assets/images/planet2.png',
+        planetAsset: QuizAssets.planet2,
       );
     }
     return (
       bgColor: const Color(0xFFEAF2FF),
       iconColor: const Color(0xFF3674D9),
       icon: Icons.school_outlined,
-      planetAsset: 'assets/images/planet1.png',
+      planetAsset: QuizAssets.planet1,
     );
   }
 }
@@ -312,7 +313,7 @@ final List<MateriModel> subjek = [
     iconColor: const Color(0xFF3674D9),
     icon: Icons.calculate_outlined,
     description: 'Angka, rumus, dan logika',
-    planetImageAsset: 'assets/images/planet1.png',
+    planetImageAsset: QuizAssets.planet1,
   ),
   MateriModel(
     id: 2,
@@ -321,7 +322,7 @@ final List<MateriModel> subjek = [
     iconColor: const Color(0xFF218B5B),
     icon: Icons.bolt_outlined,
     description: 'Energi, gaya, dan gerak',
-    planetImageAsset: 'assets/images/planet2.png',
+    planetImageAsset: QuizAssets.planet2,
   ),
   MateriModel(
     id: 3,
@@ -330,7 +331,7 @@ final List<MateriModel> subjek = [
     iconColor: const Color(0xFFD97706),
     icon: Icons.eco_outlined,
     description: 'Makhluk hidup dan ekosistem',
-    planetImageAsset: 'assets/images/planet3.png',
+    planetImageAsset: QuizAssets.planet3,
   ),
   MateriModel(
     id: 4,
@@ -339,7 +340,7 @@ final List<MateriModel> subjek = [
     iconColor: const Color(0xFFDC2626),
     icon: Icons.menu_book_outlined,
     description: 'Tata bahasa dan literasi',
-    planetImageAsset: 'assets/images/planet1.png',
+    planetImageAsset: QuizAssets.planet4,
   ),
   MateriModel(
     id: 5,
@@ -348,6 +349,6 @@ final List<MateriModel> subjek = [
     iconColor: const Color(0xFF9333EA),
     icon: Icons.science_outlined,
     description: 'Struktur dan reaksi zat',
-    planetImageAsset: 'assets/images/planet2.png',
+    planetImageAsset: QuizAssets.planet2,
   ),
 ];
