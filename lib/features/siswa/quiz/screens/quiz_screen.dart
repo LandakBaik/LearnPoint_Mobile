@@ -120,10 +120,7 @@ class _QuizState extends State<Quiz> with SingleTickerProviderStateMixin {
                     );
                   },
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
                     child: DashboardHeaderWidget(
                       onNotificationTap: () {
                         Navigator.of(context).push(

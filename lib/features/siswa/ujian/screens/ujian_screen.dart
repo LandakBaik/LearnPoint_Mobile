@@ -347,7 +347,7 @@ class _UjianScreenState extends State<UjianScreen> {
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
       decoration: const BoxDecoration(color: Color(0xFF080C24)),
       child: const DashboardHeaderWidget(),
     );

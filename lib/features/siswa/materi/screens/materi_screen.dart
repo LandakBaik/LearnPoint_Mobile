@@ -271,7 +271,7 @@ class _MateriState extends State<Materi> {
           child: SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 44),
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 44),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
