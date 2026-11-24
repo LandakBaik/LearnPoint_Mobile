@@ -28,7 +28,7 @@ class MateriModel {
     this.planetImageAsset,
   });
 
-  /// Factory untuk mengubah JSON dari endpoint GET /api/siswa/materi Laravel
+  /// Factory untuk mengubah JSON dari endpoint GET /api/siswa/mapel Laravel
   /// menjadi objek MateriModel lengkap dengan warna & ikon otomatis.
   factory MateriModel.fromJson(Map<String, dynamic> json) {
     final namaMapel = (json['nama_mapel'] ?? 'Mata Pelajaran').toString();
@@ -122,7 +122,7 @@ class MateriModel {
 }
 
 /// Informasi identitas mata pelajaran dan kelas siswa pada halaman opsi mapel,
-/// sesuai objek `data.mapel` dari GET /api/siswa/materi/{mapelId}.
+/// sesuai objek `data.mapel` dari GET /api/siswa/mapel/{mapelId}.
 class MapelDetailModel {
   final int id;
   final String namaMapel;
@@ -191,7 +191,7 @@ class MapelDetailModel {
 }
 
 /// Model untuk 1 item materi di dalam suatu mata pelajaran
-/// Sesuai response GET /api/siswa/materi/{mapelId} dari MateriController Laravel
+/// Sesuai response GET /api/siswa/mapel/{mapelId} dari MateriController Laravel
 class MateriItemModel {
   final int id;
   final String? idGrubMateri;

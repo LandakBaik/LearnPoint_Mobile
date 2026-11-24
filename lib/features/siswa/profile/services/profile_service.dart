@@ -94,10 +94,11 @@ class ProfileService {
 
   /// Memperbarui data kontak/biodata Guru via `PUT /api/profile`.
   /// Catatan API Laravel: hanya role Guru yang diperbolehkan mengubah `nomor_telepon`,
-  /// `jenis_kelamin`, atau `password` (Nama dan Email tidak dapat diubah).
+  /// `jenis_kelamin`, atau `password` (wajib menyertakan `current_password` jika mengganti password).
   static Future<StudentProfileModel> updateGuruProfile({
     String? nomorTelepon,
     String? jenisKelamin,
+    String? currentPassword,
     String? password,
     String? passwordConfirmation,
   }) async {
@@ -117,6 +118,9 @@ class ProfileService {
       payload['jenis_kelamin'] = jenisKelamin.trim();
     }
     if (password != null && password.isNotEmpty) {
+      if (currentPassword != null && currentPassword.isNotEmpty) {
+        payload['current_password'] = currentPassword;
+      }
       payload['password'] = password;
       payload['password_confirmation'] = passwordConfirmation ?? password;
     }

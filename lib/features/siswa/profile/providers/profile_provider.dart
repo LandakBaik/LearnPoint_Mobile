@@ -8,6 +8,7 @@ typedef FetchProfileRemoteFn = Future<StudentProfileModel> Function();
 typedef UpdateGuruProfileRemoteFn = Future<StudentProfileModel> Function({
   String? nomorTelepon,
   String? jenisKelamin,
+  String? currentPassword,
   String? password,
   String? passwordConfirmation,
 });
@@ -102,12 +103,14 @@ class ProfileProvider extends ChangeNotifier {
   Future<StudentProfileModel> updateGuruProfile({
     String? nomorTelepon,
     String? jenisKelamin,
+    String? currentPassword,
     String? password,
     String? passwordConfirmation,
   }) async {
     final updated = await _updateGuruProfileRemote(
       nomorTelepon: nomorTelepon,
       jenisKelamin: jenisKelamin,
+      currentPassword: currentPassword,
       password: password,
       passwordConfirmation: passwordConfirmation,
     );

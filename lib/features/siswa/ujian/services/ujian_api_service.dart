@@ -27,7 +27,7 @@ class UjianApiService {
   /// 1b. Ambil daftar ujian siswa khusus untuk satu mata pelajaran
   static Future<List<UjianItem>> getUjiansByMapel(int mapelId) async {
     try {
-      final response = await ApiConfig.dio.get('/siswa/materi/$mapelId');
+      final response = await ApiConfig.dio.get('/siswa/mapel/$mapelId');
       final payload = _getPayload(response.data);
 
       if (payload is! Map) {

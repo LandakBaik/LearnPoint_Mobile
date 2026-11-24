@@ -116,6 +116,7 @@ void main() {
         updateGuruProfileRemote: ({
           nomorTelepon,
           jenisKelamin,
+          currentPassword,
           password,
           passwordConfirmation,
         }) async =>
@@ -173,6 +174,7 @@ void main() {
       updateGuruProfileRemote: ({
         nomorTelepon,
         jenisKelamin,
+        currentPassword,
         password,
         passwordConfirmation,
       }) async =>
