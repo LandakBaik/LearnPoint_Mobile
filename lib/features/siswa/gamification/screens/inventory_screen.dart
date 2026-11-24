@@ -149,7 +149,7 @@ class _InventoryState extends State<Inventory> {
           children: [
             // 1. Header Profil
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
               child: DashboardHeaderWidget(
                 onNotificationTap: () {
                   Navigator.of(context).push(
