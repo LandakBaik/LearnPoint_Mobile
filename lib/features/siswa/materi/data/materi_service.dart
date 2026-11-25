@@ -24,11 +24,11 @@ class MateriException implements Exception {
 }
 
 class MateriService {
-  /// Mengambil daftar mata pelajaran siswa dari GET /api/siswa/materi.
+  /// Mengambil daftar mata pelajaran siswa dari GET /api/siswa/mapel.
   /// Jika offline / jaringan gagal, secara otomatis mengambil cache dari SQLite.
   static Future<List<MateriModel>> fetchDaftarMapelSiswa() async {
     try {
-      final body = await _get('/siswa/materi');
+      final body = await _get('/siswa/mapel');
       final data = body['data'];
 
       if (data is! List) {
@@ -59,11 +59,11 @@ class MateriService {
   }
 
   /// Mengambil identitas mapel (nama_mapel, nama_kelas, semester, tahun_ajaran)
-  /// beserta daftar materi dari GET /api/siswa/materi/{mapelId}.
+  /// beserta daftar materi dari GET /api/siswa/mapel/{mapelId}.
   /// Jika offline, mengambil data materi yang pernah tersimpan di SQLite.
   static Future<MapelDetailModel> fetchDetailMapelSiswa(int mapelId) async {
     try {
-      final body = await _get('/siswa/materi/$mapelId');
+      final body = await _get('/siswa/mapel/$mapelId');
       final data = body['data'];
 
       if (data is! Map<String, dynamic> || data['materis'] is! List) {
@@ -90,7 +90,7 @@ class MateriService {
   }
 
   /// Mengambil daftar materi di dalam suatu mata pelajaran dari
-  /// GET /api/siswa/materi/{mapelId}.
+  /// GET /api/siswa/mapel/{mapelId}.
   static Future<List<MateriItemModel>> fetchMateriPerMapel(int mapelId) async {
     final detail = await fetchDetailMapelSiswa(mapelId);
     return detail.materis;
