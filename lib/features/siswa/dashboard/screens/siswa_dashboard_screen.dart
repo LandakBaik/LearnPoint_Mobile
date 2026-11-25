@@ -8,7 +8,7 @@ import 'package:learnpoint_mobile/features/siswa/profile/screens/akun_screen.dar
 import 'package:learnpoint_mobile/features/siswa/materi/screens/detail_materi_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/screens/detail_tugas_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/screens/detail_tugas_pilgan_screen.dart';
-import 'package:learnpoint_mobile/features/siswa/materi/screens/materi_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/mapel/screens/mapel_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/screens/notifikasi_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/screens/tugas_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/hero_banner_widget.dart';
@@ -360,7 +360,9 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
                     } else {
                       // Jika belum ada materi yang pernah dibaca, arahkan ke daftar mapel
                       await Navigator.of(context).push(
-                        MaterialPageRoute<void>(builder: (_) => const Materi()),
+                        MaterialPageRoute<void>(
+                          builder: (_) => const MapelScreen(),
+                        ),
                       );
                     }
                     _loadLastReadMateri();
@@ -934,9 +936,11 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
             ),
             InkWell(
               onTap: () {
-                Navigator.of(
-                  context,
-                ).push(MaterialPageRoute<void>(builder: (_) => const Materi()));
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const MapelScreen(),
+                  ),
+                );
               },
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),

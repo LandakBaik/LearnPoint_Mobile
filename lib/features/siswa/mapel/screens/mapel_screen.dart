@@ -4,25 +4,25 @@ import 'package:provider/provider.dart';
 
 import 'package:learnpoint_mobile/features/siswa/dashboard/screens/notifikasi_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/dashboard_header_widget.dart';
+import 'package:learnpoint_mobile/features/siswa/mapel/screens/detail_mapel_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/mapel/widgets/mapel_card_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/data/materi_database_helper.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/data/materi_preferences_service.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/data/materi_service.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
-import 'package:learnpoint_mobile/features/siswa/materi/screens/materi_per_mapel_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/widgets/materi_error_state_widget.dart';
-import 'package:learnpoint_mobile/features/siswa/materi/widgets/subject_materi_card_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/models/student_profile_model.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/providers/profile_provider.dart';
 
-class Materi extends StatefulWidget {
+class MapelScreen extends StatefulWidget {
   final VoidCallback? onBackTap;
-  const Materi({super.key, this.onBackTap});
+  const MapelScreen({super.key, this.onBackTap});
 
   @override
-  State<Materi> createState() => _MateriState();
+  State<MapelScreen> createState() => _MapelScreenState();
 }
 
-class _MateriState extends State<Materi> {
+class _MapelScreenState extends State<MapelScreen> {
   List<MateriModel> _daftarMapel = [];
   Map<int, int> _completedPerMapel = {};
   bool _isLoading = true;
@@ -215,7 +215,7 @@ class _MateriState extends State<Materi> {
                           final completedCount = sub.id != null
                               ? (_completedPerMapel[sub.id!] ?? 0)
                               : 0;
-                          return SubjectMateriCardWidget(
+                          return MapelCardWidget(
                             subject: sub,
                             horizontalMargin: horizontalPadding,
                             completedCount: completedCount,
@@ -223,7 +223,8 @@ class _MateriState extends State<Materi> {
                               await Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => Materimapel(subject: sub),
+                                  builder: (_) =>
+                                      DetailMapelScreen(subject: sub),
                                 ),
                               );
                               if (mounted && _daftarMapel.isNotEmpty) {

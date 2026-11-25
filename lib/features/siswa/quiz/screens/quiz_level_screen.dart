@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:learnpoint_mobile/features/siswa/quiz/config/quiz_assets.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/models/quiz_per_mapel_model.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/models/quiz_level_model.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/screens/quiz_play_screen.dart';
@@ -7,11 +8,13 @@ import 'package:learnpoint_mobile/features/siswa/quiz/widgets/quiz_level_map_sec
 
 class QuizLevel extends StatefulWidget {
   final QuizPerMapelM? themeItem;
+  final QuizScenePreset? scenePreset;
   final String? sceneThemeOverride;
 
   const QuizLevel({
     super.key,
     this.themeItem,
+    this.scenePreset,
     this.sceneThemeOverride,
   });
 
@@ -20,37 +23,30 @@ class QuizLevel extends StatefulWidget {
 }
 
 class _QuizLevelState extends State<QuizLevel> {
-  Color _resolveBgColor(String sceneTheme) {
-    switch (sceneTheme) {
-      case 'chess1':
-        return const Color(0xFF4B5335);
-      case 'chess2':
-        return const Color(0xFF6B6552);
-      case 'ribbon1':
-        return const Color(0xFF90B8D8);
-      case 'void_ruin':
-        return const Color(0xFF0F051D);
-      case 'chess':
-      default:
-        return const Color(0xFF0A4D5E);
+  QuizScenePreset get _resolvedPreset {
+    if (widget.scenePreset != null) {
+      return widget.scenePreset!;
     }
+    final sceneId =
+        widget.sceneThemeOverride ?? widget.themeItem?.levelSceneTheme ?? 'chess';
+    return QuizAssets.resolveScenePreset(sceneId: sceneId);
   }
 
   @override
   Widget build(BuildContext context) {
     final themeTitle = widget.themeItem?.title ?? 'Geometri';
     final themeColor = widget.themeItem?.color ?? const Color(0xFF4338CA);
-    final sceneTheme =
-        widget.sceneThemeOverride ?? widget.themeItem?.levelSceneTheme ?? 'chess';
+    final activePreset = _resolvedPreset;
 
     return Scaffold(
-      backgroundColor: _resolveBgColor(sceneTheme),
+      backgroundColor: activePreset.fallbackBgColor,
       body: SafeArea(
         bottom: false,
         child: QuizLevelMapSectionWidget(
           themeTitle: themeTitle,
           themeColor: themeColor,
-          sceneTheme: sceneTheme,
+          scenePreset: activePreset,
+          sceneTheme: activePreset.id,
           levels: quizLevels,
           onLevelTap: (levelNode) {
             if (!levelNode.isUnlocked) {

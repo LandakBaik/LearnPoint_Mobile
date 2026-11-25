@@ -79,22 +79,26 @@ class _QuizPerMapelState extends State<QuizPerMapel>
     final subjectTitle = rawTitle.isNotEmpty
         ? '${rawTitle[0].toUpperCase()}${rawTitle.substring(1)}'
         : rawTitle;
+    final planetGroup =
+        widget.subject?.planetGroup ?? QuizAssets.planetGroupAt(0);
 
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 5, 51, 60),
+      backgroundColor: planetGroup.radialBgColor,
       body: Stack(
         children: [
-          // 1. Layer Background: Satu warna sesuai planet (sedikit lebih gelap)
+          // 1. Layer Background: Satu warna sesuai planetGroup.radialBgColor
           //    + efek kabut gelap bergelombang di atas dan bawah layar
-          const Positioned.fill(
+          Positioned.fill(
             child: QuizPerMapelBackgroundWidget(
-              baseColor: Color.fromARGB(255, 5, 58, 67),
+              baseColor: planetGroup.radialBgColor,
             ),
           ),
 
-          // 2. Layer Hiasan hand1.png dengan efek animasi menguap
-          const Positioned.fill(
-            child: QuizEvaporatingHandDecorationWidget(),
+          // 2. Layer Hiasan handDecorAsset sesuai planetGroup
+          Positioned.fill(
+            child: QuizEvaporatingHandDecorationWidget(
+              imageAsset: planetGroup.handDecorAsset,
+            ),
           ),
 
           // 3. Layer Konten Utama
@@ -137,15 +141,14 @@ class _QuizPerMapelState extends State<QuizPerMapel>
                     onThemeTap: (item) async {
                       await _bgmPlayer.pause();
                       if (!context.mounted) return;
-                      final planetAsset = widget.subject?.planetImageAsset ?? '';
-                      final String? sceneThemeOverride =
-                          QuizAssets.resolveSceneThemeForPlanet(planetAsset);
+                      final scenePreset = item.resolveScenePreset(planetGroup);
                       await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => QuizLevel(
                             themeItem: item,
-                            sceneThemeOverride: sceneThemeOverride,
+                            scenePreset: scenePreset,
+                            sceneThemeOverride: scenePreset.id,
                           ),
                         ),
                       );

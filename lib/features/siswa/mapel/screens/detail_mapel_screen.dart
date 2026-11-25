@@ -1,32 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// nama    : IDEA BRILIANTA
-// nim     : E41251668
-// kelompok: 2
-// golongan: E
-
 import 'package:learnpoint_mobile/features/siswa/dashboard/screens/notifikasi_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/dashboard_header_widget.dart';
+import 'package:learnpoint_mobile/features/siswa/mapel/widgets/mapel_header_widget.dart';
+import 'package:learnpoint_mobile/features/siswa/mapel/widgets/mapel_menu_section_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
-import 'package:learnpoint_mobile/features/siswa/materi/widgets/materi_header_widget.dart';
-import 'package:learnpoint_mobile/features/siswa/materi/widgets/materi_section.dart';
 
-class Materimapel extends StatefulWidget {
+class DetailMapelScreen extends StatefulWidget {
   final VoidCallback? onBackTap;
   final MateriModel? subject;
 
-  const Materimapel({
+  const DetailMapelScreen({
     super.key,
     this.onBackTap,
     this.subject,
   });
 
   @override
-  State<Materimapel> createState() => _MaterimapelState();
+  State<DetailMapelScreen> createState() => _DetailMapelScreenState();
 }
 
-class _MaterimapelState extends State<Materimapel> {
+class _DetailMapelScreenState extends State<DetailMapelScreen> {
   MapelDetailModel? _mapelDetail;
 
   String? get _kelasLabel {
@@ -151,7 +146,7 @@ class _MaterimapelState extends State<Materimapel> {
                   left: 20,
                   right: 20,
                   bottom: -68,
-                  child: MateriHeaderWidget(
+                  child: MapelHeaderWidget(
                     subjectName: subjectName,
                     description: _subtitleDescription,
                     kelasLabel: _kelasLabel,
@@ -160,7 +155,7 @@ class _MaterimapelState extends State<Materimapel> {
               ],
             ),
             const SizedBox(height: 84),
-            MateriSectionWidget(
+            MapelMenuSectionWidget(
               mapelId: widget.subject?.id,
               subjectName: subjectName,
               onMapelLoaded: (detail) {

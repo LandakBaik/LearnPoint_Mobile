@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class MateriHeaderWidget extends StatelessWidget {
+class MapelHeaderWidget extends StatelessWidget {
   final String subjectName;
   final String description;
   final String? kelasLabel;
 
-  const MateriHeaderWidget({
+  const MapelHeaderWidget({
     super.key,
     this.subjectName = 'Matematika',
     this.description = '',

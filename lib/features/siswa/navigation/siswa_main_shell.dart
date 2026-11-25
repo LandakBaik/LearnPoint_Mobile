@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'package:learnpoint_mobile/core/widgets/bottom_nav_bar.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/screens/siswa_dashboard_screen.dart';
-import 'package:learnpoint_mobile/features/siswa/materi/screens/materi_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/mapel/screens/mapel_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/providers/profile_provider.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/screens/quiz_screen.dart';
 
@@ -30,7 +30,7 @@ class _BottomNavSiswaState extends State<BottomNavSiswa> {
 
   final List<Widget> _pages = [
     const SiswaDashboardScreen(),
-    const Materi(),
+    const MapelScreen(),
     // const UjianScreen(),
     const Quiz(),
   ];

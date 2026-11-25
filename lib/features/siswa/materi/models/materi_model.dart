@@ -13,6 +13,8 @@ class MateriModel {
   final Color iconColor;
   final IconData icon;
   final String description;
+  /// Index ke dalam array `QuizAssets.planetGroups` (berasal dari kolom `mapels.asset` di database).
+  final int assetIndex;
   final String? planetImageAsset;
 
   MateriModel({
@@ -25,11 +27,20 @@ class MateriModel {
     required this.iconColor,
     required this.icon,
     required this.description,
-    this.planetImageAsset,
-  });
+    this.assetIndex = 0,
+    String? planetImageAsset,
+  }) : planetImageAsset =
+           planetImageAsset ?? QuizAssets.planetGroupAt(assetIndex).planetAsset;
+
+  /// Mengambil paket konfigurasi planet (`QuizPlanetAssetGroup`) sesuai `assetIndex`.
+  QuizPlanetAssetGroup get planetGroup =>
+      QuizAssets.resolvePlanetGroup(
+        assetIndex: assetIndex,
+        planetAsset: planetImageAsset,
+      );
 
   /// Factory untuk mengubah JSON dari endpoint GET /api/siswa/materi Laravel
-  /// menjadi objek MateriModel lengkap dengan warna & ikon otomatis.
+  /// menjadi objek MateriModel lengkap dengan warna, ikon, dan grup aset planet berdasarkan `mapels.asset`.
   factory MateriModel.fromJson(Map<String, dynamic> json) {
     final namaMapel = (json['nama_mapel'] ?? 'Mata Pelajaran').toString();
     final total = int.tryParse((json['total_materi'] ?? 0).toString()) ?? 0;
@@ -45,6 +56,12 @@ class MateriModel {
     }
 
     final style = _resolveSubjectStyle(namaMapel);
+    final rawAsset = json['asset'];
+    final int resolvedAssetIndex = rawAsset != null
+        ? (int.tryParse(rawAsset.toString()) ?? style.defaultAssetIndex)
+        : style.defaultAssetIndex;
+    final planetGroup = QuizAssets.planetGroupAt(resolvedAssetIndex);
+
     final desc = daftarGuru.isNotEmpty
         ? '$total Materi • ${daftarGuru.first}'
         : '$total Materi Pembelajaran';
@@ -61,7 +78,8 @@ class MateriModel {
       iconColor: style.iconColor,
       icon: style.icon,
       description: desc,
-      planetImageAsset: style.planetAsset,
+      assetIndex: planetGroup.index,
+      planetImageAsset: planetGroup.planetAsset,
     );
   }
 
@@ -69,7 +87,7 @@ class MateriModel {
     Color bgColor,
     Color iconColor,
     IconData icon,
-    String planetAsset,
+    int defaultAssetIndex,
   }) _resolveSubjectStyle(
     String subjectName,
   ) {
@@ -79,21 +97,21 @@ class MateriModel {
         bgColor: const Color(0xFFEAF2FF),
         iconColor: const Color(0xFF3674D9),
         icon: Icons.calculate_outlined,
-        planetAsset: QuizAssets.planet1,
+        defaultAssetIndex: 0, // planetGroups[0] -> planet_1_chess
       );
     } else if (lower.contains('fisika')) {
       return (
         bgColor: const Color(0xFFEAFBF3),
         iconColor: const Color(0xFF218B5B),
         icon: Icons.bolt_outlined,
-        planetAsset: QuizAssets.planet2,
+        defaultAssetIndex: 1, // planetGroups[1] -> planet_2_void
       );
     } else if (lower.contains('biologi') || lower.contains('ipa')) {
       return (
         bgColor: const Color(0xFFFFF7E6),
         iconColor: const Color(0xFFD97706),
         icon: Icons.eco_outlined,
-        planetAsset: QuizAssets.planet3,
+        defaultAssetIndex: 2, // planetGroups[2] -> planet_3_ribbon
       );
     } else if (lower.contains('indonesia') ||
         lower.contains('inggris') ||
@@ -102,21 +120,21 @@ class MateriModel {
         bgColor: const Color(0xFFFEE2E2),
         iconColor: const Color(0xFFDC2626),
         icon: Icons.menu_book_outlined,
-        planetAsset: QuizAssets.planet4,
+        defaultAssetIndex: 3, // planetGroups[3] -> planet_4_sun
       );
     } else if (lower.contains('kimia')) {
       return (
         bgColor: const Color(0xFFF3E8FF),
         iconColor: const Color(0xFF9333EA),
         icon: Icons.science_outlined,
-        planetAsset: QuizAssets.planet2,
+        defaultAssetIndex: 1, // planetGroups[1] -> planet_2_void
       );
     }
     return (
       bgColor: const Color(0xFFEAF2FF),
       iconColor: const Color(0xFF3674D9),
       icon: Icons.school_outlined,
-      planetAsset: QuizAssets.planet1,
+      defaultAssetIndex: 0, // planetGroups[0] -> planet_1_chess
     );
   }
 }
@@ -313,7 +331,7 @@ final List<MateriModel> subjek = [
     iconColor: const Color(0xFF3674D9),
     icon: Icons.calculate_outlined,
     description: 'Angka, rumus, dan logika',
-    planetImageAsset: QuizAssets.planet1,
+    assetIndex: 0, // planetGroups[0] -> planet_1_chess
   ),
   MateriModel(
     id: 2,
@@ -322,7 +340,7 @@ final List<MateriModel> subjek = [
     iconColor: const Color(0xFF218B5B),
     icon: Icons.bolt_outlined,
     description: 'Energi, gaya, dan gerak',
-    planetImageAsset: QuizAssets.planet2,
+    assetIndex: 1, // planetGroups[1] -> planet_2_void
   ),
   MateriModel(
     id: 3,
@@ -331,7 +349,7 @@ final List<MateriModel> subjek = [
     iconColor: const Color(0xFFD97706),
     icon: Icons.eco_outlined,
     description: 'Makhluk hidup dan ekosistem',
-    planetImageAsset: QuizAssets.planet3,
+    assetIndex: 2, // planetGroups[2] -> planet_3_ribbon
   ),
   MateriModel(
     id: 4,
@@ -340,7 +358,7 @@ final List<MateriModel> subjek = [
     iconColor: const Color(0xFFDC2626),
     icon: Icons.menu_book_outlined,
     description: 'Tata bahasa dan literasi',
-    planetImageAsset: QuizAssets.planet4,
+    assetIndex: 3, // planetGroups[3] -> planet_4_sun
   ),
   MateriModel(
     id: 5,
@@ -349,6 +367,6 @@ final List<MateriModel> subjek = [
     iconColor: const Color(0xFF9333EA),
     icon: Icons.science_outlined,
     description: 'Struktur dan reaksi zat',
-    planetImageAsset: QuizAssets.planet2,
+    assetIndex: 1, // planetGroups[1] -> planet_2_void
   ),
 ];

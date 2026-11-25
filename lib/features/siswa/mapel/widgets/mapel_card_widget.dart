@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
 
-class SubjectMateriCardWidget extends StatelessWidget {
+class MapelCardWidget extends StatelessWidget {
   final MateriModel subject;
   final String? imageUrl;
   final double elevation;
@@ -11,7 +11,7 @@ class SubjectMateriCardWidget extends StatelessWidget {
   final int completedCount;
   final VoidCallback? ontap;
 
-  const SubjectMateriCardWidget({
+  const MapelCardWidget({
     super.key,
     required this.subject,
     this.imageUrl,
@@ -100,8 +100,10 @@ class SubjectMateriCardWidget extends StatelessWidget {
     final theme = _resolveVisualTheme(subject.materi);
 
     final totalMateri = subject.totalMateri;
-    final safeCompleted = completedCount.clamp(0, totalMateri > 0 ? totalMateri : 0);
-    final double progress = totalMateri > 0 ? (safeCompleted / totalMateri) : 0.0;
+    final safeCompleted =
+        completedCount.clamp(0, totalMateri > 0 ? totalMateri : 0);
+    final double progress =
+        totalMateri > 0 ? (safeCompleted / totalMateri) : 0.0;
 
     final String guruText = subject.guru.isNotEmpty
         ? 'Guru: ${subject.guru.join(', ')}'
