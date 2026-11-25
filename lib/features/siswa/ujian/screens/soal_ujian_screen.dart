@@ -299,12 +299,18 @@ class _QuizStartPageState extends State<QuizStartPage> with WidgetsBindingObserv
     });
 
     try {
-      await UjianApiService.bukaKunciDenganKode(ujianId: widget.ujianId, kode: kode);
+      final res = await UjianApiService.bukaKunciDenganKode(
+        ujianId: widget.ujianId,
+        kode: kode,
+      );
       if (!mounted) return;
       _unlockCodeController.clear();
+      final updatedCount = int.tryParse(
+        '${res['pelanggaran_count'] ?? _pelanggaranCount}',
+      );
       setState(() {
         _isLocked = false;
-        _pelanggaranCount = 0;
+        _pelanggaranCount = updatedCount ?? _pelanggaranCount;
         _isUnlocking = false;
         _unlockError = null;
       });

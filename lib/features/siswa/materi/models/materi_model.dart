@@ -270,17 +270,22 @@ class MateriItemModel {
       createdAt == null ? null : DateTime.tryParse(createdAt!)?.toLocal();
 
   factory MateriItemModel.fromJson(Map<String, dynamic> json) {
+    final id = json['id'] is int
+        ? json['id'] as int
+        : int.tryParse((json['id'] ?? '0').toString()) ?? 0;
     final fileMateri = _nullIfEmpty(json['file_materi']);
     return MateriItemModel(
-      id: json['id'] is int
-          ? json['id'] as int
-          : int.tryParse((json['id'] ?? '0').toString()) ?? 0,
+      id: id,
       idGrubMateri: json['id_grub_materi']?.toString(),
       judul: (json['judul'] ?? 'Materi Pembelajaran').toString(),
       deskripsi: _nullIfEmpty(json['deskripsi']),
       urlYoutube: _nullIfEmpty(json['url_youtube']),
       fileMateri: fileMateri,
-      fileUrl: _resolveFileUrl(_nullIfEmpty(json['file_url']), fileMateri),
+      fileUrl: _resolveFileUrl(
+        _nullIfEmpty(json['file_url']),
+        fileMateri,
+        materiId: id,
+      ),
       guru: _nullIfEmpty(json['guru']),
       createdAt: json['created_at']?.toString(),
       isDownloaded: json['is_downloaded'] == 1 || json['is_downloaded'] == true,
@@ -293,29 +298,20 @@ class MateriItemModel {
     return (s == null || s.isEmpty) ? null : s;
   }
 
-  /// Laravel membuat `file_url` dengan `asset()`, yang bisa menghasilkan
-  /// `http://localhost/storage/...` (tidak bisa diakses dari HP/emulator).
+  /// Laravel membuat `file_url` dengan `url("/api/file/materi/{id}")`, yang bisa
+  /// menghasilkan host `http://localhost` (tidak bisa diakses dari HP/emulator).
   /// Host-nya disamakan dengan host [ApiConfig.baseUrl] agar selalu terjangkau.
-  static String? _resolveFileUrl(String? fileUrl, String? fileMateri) {
-    final apiUri = Uri.tryParse(ApiConfig.baseUrl);
-    if (apiUri == null || apiUri.host.isEmpty) return fileUrl;
-
-    if (fileUrl != null) {
-      final uri = Uri.tryParse(fileUrl);
-      if (uri != null && uri.hasScheme) {
-        return uri
-            .replace(
-              scheme: apiUri.scheme,
-              host: apiUri.host,
-              port: apiUri.hasPort ? apiUri.port : null,
-            )
-            .toString();
-      }
+  static String? _resolveFileUrl(
+    String? fileUrl,
+    String? fileMateri, {
+    int materiId = 0,
+  }) {
+    if (fileUrl != null && fileUrl.trim().isNotEmpty) {
+      return ApiConfig.resolveUrl(fileUrl);
     }
 
-    if (fileMateri != null) {
-      final origin = apiUri.replace(path: '', query: null).toString();
-      return '$origin/storage/$fileMateri';
+    if (fileMateri != null && materiId > 0) {
+      return ApiConfig.fileMateriEndpoint(materiId);
     }
     return fileUrl;
   }

@@ -2,13 +2,11 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
-import 'package:docx_viewer/docx_viewer.dart';
 
-import 'package:learnpoint_mobile/features/siswa/tugas/models/task_model.dart';
 import 'package:learnpoint_mobile/core/config/api_config.dart';
+import 'package:learnpoint_mobile/core/widgets/authenticated_file_preview_page.dart';
+import 'package:learnpoint_mobile/features/siswa/tugas/models/task_model.dart';
 
 class DetailTugasPage extends StatefulWidget {
   final TaskModel task;
@@ -116,8 +114,17 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
         final fileName = submission['nama_file']?.toString();
 
         if (fileUrl != null && fileUrl.isNotEmpty) {
-          newSubmittedFileUrl = fileUrl;
-          newSubmittedFileName = getFileNameFromUrl(fileUrl);
+          newSubmittedFileUrl = ApiConfig.resolveUrl(fileUrl);
+          final parsedFromUrl = getFileNameFromUrl(fileUrl);
+          if (fileName != null && fileName.isNotEmpty) {
+            newSubmittedFileName = fileName;
+          } else if (filePath != null && filePath.isNotEmpty) {
+            newSubmittedFileName = getFileNameFromUrl(filePath);
+          } else if (RegExp(r'^\d+$').hasMatch(parsedFromUrl)) {
+            newSubmittedFileName = 'Berkas Jawaban';
+          } else {
+            newSubmittedFileName = parsedFromUrl;
+          }
           newIsSubmitted = true;
         } else if (filePath != null && filePath.isNotEmpty) {
           newSubmittedFileName = getFileNameFromUrl(filePath);
@@ -138,6 +145,15 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
 
       if (!mounted) return;
 
+      final resolvedAttachmentUrl =
+          lampiranUrl != null && lampiranUrl.toString().trim().isNotEmpty
+          ? ApiConfig.resolveUrl(lampiranUrl.toString())
+          : (lampiran != null && lampiran.toString().trim().isNotEmpty
+                ? ApiConfig.fileTugasEndpoint(
+                    int.tryParse(widget.task.id) ?? 0,
+                  )
+                : null);
+
       setState(() {
         taskData = result;
 
@@ -150,12 +166,15 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
 
         isSubmitted = newIsSubmitted || widget.task.isSubmitted;
 
-        attachmentUrl = lampiranUrl?.toString();
+        attachmentUrl = resolvedAttachmentUrl;
 
         if (lampiran != null && lampiran.toString().isNotEmpty) {
           attachmentName = getFileNameFromUrl(lampiran.toString());
         } else if (attachmentUrl != null && attachmentUrl!.isNotEmpty) {
-          attachmentName = getFileNameFromUrl(attachmentUrl!);
+          final parsed = getFileNameFromUrl(attachmentUrl!);
+          attachmentName = RegExp(r'^\d+$').hasMatch(parsed)
+              ? 'Berkas Lampiran'
+              : parsed;
         }
 
         isLoading = false;
@@ -362,7 +381,7 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
   }) async {
     final extension = getExtension(fileName);
 
-    if (!allowedExtensions.contains(extension)) {
+    if (localFile != null && !allowedExtensions.contains(extension)) {
       showMessage('Format file tidak didukung.');
       return;
     }
@@ -393,11 +412,11 @@ class _DetailTugasPageState extends State<DetailTugasPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => TaskFilePreviewPage(
+        builder: (_) => AuthenticatedFilePreviewPage(
           fileName: fileName,
-          extension: extension,
-          fileBytes: fileBytes,
           fileUrl: fileUrl,
+          fileBytes: fileBytes,
+          extensionHint: extension.isNotEmpty ? extension : null,
         ),
       ),
     );
@@ -1599,158 +1618,5 @@ class DashedRoundedRectPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant DashedRoundedRectPainter oldDelegate) {
     return oldDelegate.color != color || oldDelegate.radius != radius;
-  }
-}
-
-// ============================================================
-// HALAMAN PREVIEW BERKAS
-// ============================================================
-
-class TaskFilePreviewPage extends StatelessWidget {
-  final String fileName;
-  final String extension;
-  final Uint8List? fileBytes;
-  final String? fileUrl;
-
-  const TaskFilePreviewPage({
-    super.key,
-    required this.fileName,
-    required this.extension,
-    this.fileBytes,
-    this.fileUrl,
-  });
-
-  Widget _previewError(String message) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.insert_drive_file_outlined,
-            size: 48,
-            color: Color(0xFF94A3B8),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            message,
-            style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPreview() {
-    if (extension == 'pdf') {
-      if (fileBytes != null) {
-        return SfPdfViewer.memory(fileBytes!);
-      }
-
-      if (fileUrl != null && fileUrl!.isNotEmpty) {
-        return SfPdfViewer.network(
-          fileUrl!,
-          canShowScrollHead: true,
-          canShowScrollStatus: true,
-        );
-      }
-    }
-
-    if (extension == 'docx') {
-      if (fileBytes != null) {
-        return DocxView(
-          bytes: fileBytes!,
-          fontSize: 14,
-          onError: (error) {
-            debugPrint('Gagal menampilkan DOCX: $error');
-          },
-        );
-      }
-
-      if (fileUrl != null && fileUrl!.isNotEmpty) {
-        return DocxView(
-          filePath: fileUrl!,
-          fontSize: 14,
-          onError: (error) {
-            debugPrint('Gagal menampilkan DOCX: $error');
-          },
-        );
-      }
-    }
-
-    if (['jpg', 'jpeg', 'png'].contains(extension)) {
-      if (fileBytes != null) {
-        return Container(
-          color: const Color(0xFFF1F5F9),
-          alignment: Alignment.center,
-          child: InteractiveViewer(
-            minScale: 0.5,
-            maxScale: 4,
-            child: Image.memory(
-              fileBytes!,
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) {
-                return _previewError('Gagal menampilkan gambar.');
-              },
-            ),
-          ),
-        );
-      }
-
-      if (fileUrl != null && fileUrl!.isNotEmpty) {
-        return Container(
-          color: const Color(0xFFF1F5F9),
-          alignment: Alignment.center,
-          child: InteractiveViewer(
-            minScale: 0.5,
-            maxScale: 4,
-            child: Image.network(
-              fileUrl!,
-              fit: BoxFit.contain,
-              loadingBuilder: (context, child, progress) {
-                if (progress == null) return child;
-
-                return const Center(child: CircularProgressIndicator());
-              },
-              errorBuilder: (_, __, ___) {
-                return _previewError('Gagal memuat gambar.');
-              },
-            ),
-          ),
-        );
-      }
-    }
-
-    return _previewError('File tidak dapat ditampilkan.');
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF0F172A)),
-        ),
-        title: Text(
-          fileName,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Color(0xFF0F172A),
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, color: Color(0xFFE2E8F0)),
-        ),
-      ),
-      body: _buildPreview(),
-    );
   }
 }

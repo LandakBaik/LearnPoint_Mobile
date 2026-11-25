@@ -72,8 +72,11 @@ class ApiConfig {
       '$baseUrl/notifikasi/$notifikasiId/read';
   static String get notifikasiMarkAllReadEndpoint =>
       '$baseUrl/notifikasi/mark-all-read';
+  static String get notifikasiTandaiSemuaDibacaEndpoint =>
+      '$baseUrl/notifikasi/tandai-semua-dibaca';
   static String notifikasiDeleteEndpoint(int notifikasiId) =>
       '$baseUrl/notifikasi/$notifikasiId';
+  static String get notifikasiClearAllEndpoint => '$baseUrl/notifikasi';
 
   // ==========================================
   // Endpoints Siswa
@@ -175,6 +178,8 @@ class ApiConfig {
       '$baseUrl/guru/tugas/$id/jawaban-siswa/$pengumpulanId';
   static String guruTugasNilaiEndpoint(dynamic id) =>
       '$baseUrl/guru/tugas/$id/nilai';
+  static String guruPengumpulanNilaiEndpoint(dynamic id) =>
+      '$baseUrl/guru/pengumpulan/$id/nilai';
 
   // Kuis Guru
   static String get guruKuisEndpoint => '$baseUrl/guru/kuis';
@@ -210,15 +215,41 @@ class ApiConfig {
       '$baseUrl/guru/ujian/$ujianId/toggle-archive';
   static String guruUjianMonitoringEndpoint(int ujianId) =>
       '$baseUrl/guru/ujian/$ujianId/monitoring';
+  static String guruUjianMonitoringDataEndpoint(int ujianId) =>
+      '$baseUrl/guru/ujian/$ujianId/monitoring/data';
+  static String guruUjianUnlockPesertaEndpoint(int ujianId, int seleksiId) =>
+      '$baseUrl/guru/ujian/$ujianId/peserta/$seleksiId/unlock';
+  static String guruUjianForceSubmitPesertaEndpoint(
+    int ujianId,
+    int seleksiId,
+  ) =>
+      '$baseUrl/guru/ujian/$ujianId/peserta/$seleksiId/force-submit';
+  static String guruUjianReopenPesertaEndpoint(int ujianId, int seleksiId) =>
+      '$baseUrl/guru/ujian/$ujianId/peserta/$seleksiId/reopen';
+  static String guruUjianResetTokenEndpoint(int ujianId) =>
+      '$baseUrl/guru/ujian/$ujianId/reset-token';
+  static String guruUjianAturSesiEndpoint(int ujianId) =>
+      '$baseUrl/guru/ujian/$ujianId/atur-sesi';
+  static String guruUjianRefreshUnlockCodeEndpoint(int ujianId) =>
+      '$baseUrl/guru/ujian/$ujianId/refresh-unlock-code';
   static String guruUjianRekapEndpoint(int ujianId) =>
       '$baseUrl/guru/ujian/$ujianId/rekap';
   static String guruUjianKoreksiEssayEndpoint(int ujianId) =>
       '$baseUrl/guru/ujian/$ujianId/koreksi-essay';
   static String guruUjianSimpanNilaiEssayEndpoint(int ujianId) =>
       '$baseUrl/guru/ujian/$ujianId/simpan-nilai-essay';
+  static String guruUjianDetailJawabanSiswaEndpoint(int ujianId, int siswaId) =>
+      '$baseUrl/guru/ujian/$ujianId/peserta/$siswaId/jawaban';
+  static String guruUjianBuatRemidiSusulanEndpoint(int ujianId) =>
+      '$baseUrl/guru/ujian/$ujianId/buat-remidi-susulan';
 
   // Relokasi Aktivitas Guru
   static String get guruRelokasiEndpoint => '$baseUrl/guru/relokasi';
+
+  /// Menyamakan scheme, host, dan port URL dari Laravel (misal `/api/file/...`
+  /// atau `http://localhost:8000/api/file/...`) dengan [baseUrl] aktif agar
+  /// selalu dapat diakses dari emulator maupun perangkat fisik.
+  static String resolveUrl(String? rawUrl) => publicAssetUrl(rawUrl);
 
   /// Mengubah path aset publik relatif (misal: 'images/Banner/space-hero.gif')
   /// menjadi URL penuh '{BASE_URL}/{asset_path}' (tanpa '/api').

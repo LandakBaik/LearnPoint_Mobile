@@ -6,6 +6,7 @@ class DetailMateriAttachmentsCardWidget extends StatelessWidget {
   final List<Map<String, String>> attachments;
   final bool hasVideo;
   final String? youtubeUrl;
+  final void Function(String fileName, String url)? onOpenAttachment;
   final void Function(String label, String url, {bool isVideo}) onOpenUrl;
 
   const DetailMateriAttachmentsCardWidget({
@@ -14,6 +15,7 @@ class DetailMateriAttachmentsCardWidget extends StatelessWidget {
     required this.attachments,
     required this.hasVideo,
     required this.youtubeUrl,
+    this.onOpenAttachment,
     required this.onOpenUrl,
   });
 
@@ -47,57 +49,79 @@ class DetailMateriAttachmentsCardWidget extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFE4E6),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
-                            Icons.picture_as_pdf_outlined,
-                            color: Color(0xFFE11D48),
-                            size: 22,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                file['title']!,
-                                style: const TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w800,
-                                  color: DetailMateriColors.textDark,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${file['filename']} • ${file['size']}',
-                                style: const TextStyle(
-                                  fontSize: 10.5,
-                                  color: DetailMateriColors.textMuted,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => onOpenUrl(
+                    InkWell(
+                      onTap: () {
+                        if (onOpenAttachment != null) {
+                          onOpenAttachment!(file['filename']!, file['url']!);
+                        } else {
+                          onOpenUrl(
                             'berkas ${file['filename']}',
                             file['url']!,
+                          );
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(10),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFE4E6),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.picture_as_pdf_outlined,
+                              color: Color(0xFFE11D48),
+                              size: 22,
+                            ),
                           ),
-                          icon: const Icon(
-                            Icons.download_rounded,
-                            color: DetailMateriColors.primaryPurple,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  file['title']!,
+                                  style: const TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: DetailMateriColors.textDark,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${file['filename']} • ${file['size']}',
+                                  style: const TextStyle(
+                                    fontSize: 10.5,
+                                    color: DetailMateriColors.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          tooltip: 'Unduh berkas',
-                        ),
-                      ],
+                          IconButton(
+                            onPressed: () {
+                              if (onOpenAttachment != null) {
+                                onOpenAttachment!(
+                                  file['filename']!,
+                                  file['url']!,
+                                );
+                              } else {
+                                onOpenUrl(
+                                  'berkas ${file['filename']}',
+                                  file['url']!,
+                                );
+                              }
+                            },
+                            icon: const Icon(
+                              Icons.visibility_outlined,
+                              color: DetailMateriColors.primaryPurple,
+                            ),
+                            tooltip: 'Lihat berkas',
+                          ),
+                        ],
+                      ),
                     ),
                     if (hasVideo && youtubeUrl != null) ...[
                       const SizedBox(height: 18),

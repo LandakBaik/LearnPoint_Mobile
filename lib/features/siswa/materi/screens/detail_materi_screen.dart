@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:learnpoint_mobile/core/widgets/authenticated_file_preview_page.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/data/materi_database_helper.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/data/materi_preferences_service.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
@@ -58,6 +59,7 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
   bool isBookmarked = false;
   bool isDownloaded = false;
   bool isDownloading = false;
+  String? localFilePath;
 
   late final List<Map<String, String>> attachments = _buildAttachments();
 
@@ -79,15 +81,17 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
       subject: widget.subject,
       title: widget.title,
     );
-    final downloaded = materiId != null
-        ? await MateriDatabaseHelper.instance.isMateriDownloaded(materiId)
-        : false;
+    final savedLocalPath = materiId != null
+        ? await MateriDatabaseHelper.instance.getLocalFilePath(materiId)
+        : widget.materiItem?.localFilePath;
+    final downloaded = savedLocalPath != null;
 
     if (!mounted) return;
     setState(() {
       isCompleted = completed;
       isBookmarked = bookmarked;
       isDownloaded = downloaded;
+      localFilePath = savedLocalPath;
     });
 
     // Catat materi ini sebagai materi terakhir yang dibuka
@@ -115,6 +119,7 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
         if (!mounted) return;
         setState(() {
           isDownloaded = false;
+          localFilePath = null;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -150,6 +155,9 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
     setState(() {
       isDownloading = false;
       isDownloaded = savedPath != null;
+      if (savedPath != null) {
+        localFilePath = savedPath;
+      }
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -216,8 +224,24 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
     return '${d.day} ${_namaBulan[d.month - 1]} ${d.year}';
   }
 
+  /// Membuka berkas materi secara langsung di dalam aplikasi (terautentikasi
+  /// Bearer token via Dio, atau membaca file lokal jika sudah diunduh offline).
+  Future<void> _openAttachmentPreview(String fileName, String fileUrl) async {
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AuthenticatedFilePreviewPage(
+          fileName: fileName,
+          fileUrl: fileUrl,
+          localFilePath: localFilePath,
+        ),
+      ),
+    );
+  }
+
   /// Menampilkan pop-up konfirmasi sebelum membuka aplikasi eksternal
-  /// (YouTube / Browser / PDF Reader), lalu membuka link jika disetujui.
+  /// (YouTube / Browser), lalu membuka link jika disetujui.
   Future<void> _openExternalUrl(
     String label,
     String rawUrl, {
@@ -322,6 +346,7 @@ class _DetailMateriPageState extends State<DetailMateriPage> {
                     attachments: attachments,
                     hasVideo: item?.hasVideo ?? false,
                     youtubeUrl: item?.urlYoutube,
+                    onOpenAttachment: _openAttachmentPreview,
                     onOpenUrl: _openExternalUrl,
                   ),
                   const SizedBox(height: 20),

@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:learnpoint_mobile/core/config/api_config.dart';
+import 'package:learnpoint_mobile/core/widgets/authenticated_file_preview_page.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/models/task_model.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/services/task_api_service.dart';
 
@@ -735,6 +737,11 @@ class _DetailTugasPilganScreenState extends State<DetailTugasPilganScreen> {
         .toString();
 
     final fileName = file.split('/').last;
+    final rawUrl = (taskInfo['file_url'] ?? taskData['file_url'])?.toString();
+    final taskId = int.tryParse(widget.task.id) ?? 0;
+    final fileUrl = rawUrl != null && rawUrl.trim().isNotEmpty
+        ? ApiConfig.resolveUrl(rawUrl)
+        : (taskId > 0 ? ApiConfig.fileTugasEndpoint(taskId) : '');
 
     return Container(
       padding: const EdgeInsets.all(15),
@@ -754,67 +761,85 @@ class _DetailTugasPilganScreenState extends State<DetailTugasPilganScreen> {
 
           const SizedBox(height: 12),
 
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFE4E6),
-                    borderRadius: BorderRadius.circular(9),
-                  ),
-                  child: const Icon(
-                    Icons.picture_as_pdf_outlined,
-                    color: Color(0xFFE11D48),
-                    size: 22,
-                  ),
-                ),
-
-                const SizedBox(width: 11),
-
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Lampiran Tugas',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1E293B),
+          InkWell(
+            onTap: fileUrl.isEmpty
+                ? null
+                : () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AuthenticatedFilePreviewPage(
+                          fileName: fileName.isNotEmpty
+                              ? fileName
+                              : 'Lampiran Tugas',
+                          fileUrl: fileUrl,
                         ),
                       ),
-
-                      const SizedBox(height: 4),
-
-                      Text(
-                        fileName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
-                    ],
+                    );
+                  },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFE4E6),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: const Icon(
+                      Icons.picture_as_pdf_outlined,
+                      color: Color(0xFFE11D48),
+                      size: 22,
+                    ),
                   ),
-                ),
 
-                const SizedBox(width: 8),
+                  const SizedBox(width: 11),
 
-                const Icon(
-                  Icons.download_rounded,
-                  color: Color(0xFF64748B),
-                  size: 19,
-                ),
-              ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Lampiran Tugas',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1E293B),
+                          ),
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        Text(
+                          fileName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  const Icon(
+                    Icons.visibility_outlined,
+                    color: primary,
+                    size: 19,
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -1145,7 +1170,7 @@ class _DetailTugasPilganScreenState extends State<DetailTugasPilganScreen> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: Image.network(
-                      imageUrl,
+                      ApiConfig.publicAssetUrl(imageUrl),
                       width: double.infinity,
                       fit: BoxFit.contain,
                       errorBuilder: (_, __, ___) {

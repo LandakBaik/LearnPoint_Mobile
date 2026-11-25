@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:learnpoint_mobile/core/config/api_config.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
 
 /// Database Helper SQLite untuk caching data materi e-learning secara offline.
@@ -287,9 +288,29 @@ class MateriDatabaseHelper {
       }
 
       final savePath = p.join(materiDir.path, '${materiId}_$fileName');
+      final resolvedUrl = ApiConfig.resolveUrl(fileUrl);
 
-      final dio = Dio();
-      await dio.download(fileUrl, savePath);
+      final response = await ApiConfig.dio.download(
+        resolvedUrl,
+        savePath,
+        options: Options(
+          followRedirects: false,
+          receiveTimeout: const Duration(seconds: 60),
+        ),
+      );
+
+      final contentType =
+          response.headers.value('content-type')?.toLowerCase() ?? '';
+      if ((response.statusCode ?? 0) < 200 ||
+          (response.statusCode ?? 0) >= 300 ||
+          contentType.contains('text/html') ||
+          contentType.contains('application/json')) {
+        final file = File(savePath);
+        if (await file.exists()) {
+          await file.delete();
+        }
+        return null;
+      }
 
       final db = await database;
       await db.update(
@@ -346,6 +367,12 @@ class MateriDatabaseHelper {
 
   /// Mengecek apakah suatu materi sudah terunduh secara offline
   Future<bool> isMateriDownloaded(int materiId) async {
+    final localPath = await getLocalFilePath(materiId);
+    return localPath != null;
+  }
+
+  /// Mengambil path lokal file materi yang sudah terunduh jika masih ada di perangkat
+  Future<String?> getLocalFilePath(int materiId) async {
     final db = await database;
     final rows = await db.query(
       tableMateris,
@@ -354,15 +381,17 @@ class MateriDatabaseHelper {
       whereArgs: [materiId],
     );
 
-    if (rows.isEmpty) return false;
+    if (rows.isEmpty) return null;
     final row = rows.first;
     final isDownloaded = (row['is_downloaded'] as int? ?? 0) == 1;
     final localPath = row['local_file_path'] as String?;
 
-    if (isDownloaded && localPath != null) {
-      return await File(localPath).exists();
+    if (isDownloaded && localPath != null && localPath.isNotEmpty) {
+      if (await File(localPath).exists()) {
+        return localPath;
+      }
     }
-    return false;
+    return null;
   }
 
   /// Menghapus seluruh cache (misal saat logout).

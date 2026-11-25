@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart';
 
+import 'package:learnpoint_mobile/core/config/api_config.dart';
+import 'package:learnpoint_mobile/core/widgets/authenticated_file_preview_page.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/screens/detail_tugas_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/screens/detail_tugas_pilgan_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/models/task_model.dart';
@@ -145,38 +146,39 @@ class _TugasPageState extends State<TugasPage> {
   }
 
   // ============================================================
-  // MEMBUKA LAMPIRAN
+  // MEMBUKA LAMPIRAN (TERAUTENTIKASI DI DALAM APLIKASI)
   // ============================================================
 
-  Future<void> _openAttachment(String url) async {
-    try {
-      final uri = Uri.parse(url);
-
-      if (!uri.hasScheme) {
-        throw Exception('Alamat lampiran tidak valid.');
-      }
-
-      final opened = await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
-
-      if (!opened && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Lampiran tidak dapat dibuka.'),
-          ),
-        );
-      }
-    } catch (e) {
+  Future<void> _openAttachment(
+    Map<String, dynamic> task,
+    String url,
+  ) async {
+    final resolvedUrl = ApiConfig.resolveUrl(url);
+    if (resolvedUrl.isEmpty) {
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Terjadi kesalahan saat membuka lampiran.'),
+          content: Text('Alamat lampiran tidak valid.'),
         ),
       );
+      return;
     }
+
+    final rawLampiran = task['file_lampiran']?.toString().trim() ?? '';
+    final fileName = rawLampiran.isNotEmpty
+        ? rawLampiran.split('/').last
+        : 'Lampiran Tugas';
+
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AuthenticatedFilePreviewPage(
+          fileName: fileName,
+          fileUrl: resolvedUrl,
+        ),
+      ),
+    );
   }
 
   // ============================================================
@@ -833,7 +835,7 @@ class _TugasPageState extends State<TugasPage> {
           if (attachmentUrl != null) ...[
             const SizedBox(height: 13),
             InkWell(
-              onTap: () => _openAttachment(attachmentUrl),
+              onTap: () => _openAttachment(task, attachmentUrl),
               borderRadius: BorderRadius.circular(8),
               child: Container(
                 padding: const EdgeInsets.symmetric(
