@@ -4,7 +4,7 @@ import 'package:learnpoint_mobile/features/siswa/dashboard/screens/notifikasi_sc
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/dashboard_header_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/data/materi_service.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
-import 'package:learnpoint_mobile/features/siswa/quiz/screens/quiz_per_mapel_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/quiz/screens/quiz_per_mapel_loading_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/widgets/quiz_parallax_background_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/widgets/quiz_subject_list_section_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/widgets/quiz_top_decoration_widget.dart';
@@ -16,87 +16,63 @@ class Quiz extends StatefulWidget {
   State<Quiz> createState() => _QuizState();
 }
 
-class _QuizState extends State<Quiz> with SingleTickerProviderStateMixin {
+class _QuizState extends State<Quiz> {
   // Menyimpan perubahan posisi scroll
   final ValueNotifier<double> _scrollOffset = ValueNotifier<double>(0.0);
 
-  // Controller untuk animasi container list mapel menjulang ke atas melebihi batas layar
-  late final AnimationController _surgeUpController;
+  // Mencegah tap ganda selama transisi berlangsung
   bool _isTransitioning = false;
 
-  List<MateriModel> _subjects = subjek;
+  // Data mapel dari API (tanpa data dummy)
+  List<MateriModel> _subjects = const [];
+  bool _isLoadingSubjects = true;
+  String? _subjectsError;
 
   @override
   void initState() {
     super.initState();
-    _surgeUpController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 650),
-    );
     _loadSubjectsFromApi();
   }
 
   Future<void> _loadSubjectsFromApi() async {
+    setState(() {
+      _isLoadingSubjects = true;
+      _subjectsError = null;
+    });
     try {
       final apiSubjects = await MateriService.fetchDaftarMapelSiswa();
-      if (!mounted || apiSubjects.isEmpty) return;
+      if (!mounted) return;
       setState(() {
         _subjects = apiSubjects;
+        _isLoadingSubjects = false;
       });
     } catch (_) {
-      // Tetap gunakan fallback list `subjek` jika gagal/offline tanpa cache
+      if (!mounted) return;
+      setState(() {
+        _subjectsError =
+            'Gagal memuat daftar mata pelajaran.\nPeriksa koneksi internet kamu.';
+        _isLoadingSubjects = false;
+      });
     }
   }
 
   @override
   void dispose() {
     _scrollOffset.dispose();
-    _surgeUpController.dispose();
     super.dispose();
   }
 
   Future<void> _handleSubjectTap(MateriModel subject) async {
     if (_isTransitioning) return;
+    _isTransitioning = true;
 
-    setState(() {
-      _isTransitioning = true;
-    });
-
-    // 1. Container pembungkus list mapel menjulang ke atas melebihi batas atas layar
-    await _surgeUpController.forward(from: 0.0);
-
-    if (!mounted) return;
-
-    // 2. Pindah ke QuizPerMapel dengan durasi lambat & mulus (1150ms)
-    //    sehingga Hero planet bergerak pelan ke tengah layar
+    // Slide ke layar loading. Layar loading menutupi proses pemuatan data
+    // & aset, lalu otomatis diganti dengan QuizPerMapel setelah selesai.
     await Navigator.of(context).push(
-      PageRouteBuilder<void>(
-        transitionDuration: const Duration(milliseconds: 1150),
-        reverseTransitionDuration: const Duration(milliseconds: 800),
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            QuizPerMapel(subject: subject),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          final curved = CurvedAnimation(
-            parent: animation,
-            curve: Curves.easeInOutCubic,
-          );
-          return FadeTransition(
-            opacity: curved,
-            child: child,
-          );
-        },
-      ),
+      quizSlideRoute<void>(QuizPerMapelLoadingScreen(subject: subject)),
     );
 
-    // 3. Kembalikan container seperti semula saat kembali dari QuizPerMapel
-    if (mounted) {
-      await _surgeUpController.reverse();
-      if (mounted) {
-        setState(() {
-          _isTransitioning = false;
-        });
-      }
-    }
+    _isTransitioning = false;
   }
 
   @override
@@ -119,32 +95,16 @@ class _QuizState extends State<Quiz> with SingleTickerProviderStateMixin {
             // 2. Layer Konten Utama
             Column(
               children: [
-                AnimatedBuilder(
-                  animation: _surgeUpController,
-                  builder: (context, headerChild) {
-                    final t = Curves.easeInOutCubic.transform(
-                      _surgeUpController.value,
-                    );
-                    return Opacity(
-                      opacity: (1.0 - t * 2.0).clamp(0.0, 1.0),
-                      child: Align(
-                        alignment: Alignment.topCenter,
-                        heightFactor: (1.0 - t).clamp(0.0, 1.0),
-                        child: headerChild,
-                      ),
-                    );
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
-                    child: DashboardHeaderWidget(
-                      onNotificationTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => const NotificationScreen(),
-                          ),
-                        );
-                      },
-                    ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
+                  child: DashboardHeaderWidget(
+                    onNotificationTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const NotificationScreen(),
+                        ),
+                      );
+                    },
                   ),
                 ),
 
@@ -160,45 +120,17 @@ class _QuizState extends State<Quiz> with SingleTickerProviderStateMixin {
                     },
                     child: NestedScrollView(
                       headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                        SliverToBoxAdapter(
-                          child: AnimatedBuilder(
-                            animation: _surgeUpController,
-                            builder: (context, child) {
-                              // Saat container menjulang ke atas, dekorasi mengecil tingginya
-                              // sehingga body (container putih list mapel) terdorong naik melewati batas atas layar
-                              final t = Curves.easeInOutCubic.transform(
-                                _surgeUpController.value,
-                              );
-                              return Opacity(
-                                opacity: (1.0 - t * 1.8).clamp(0.0, 1.0),
-                                child: Align(
-                                  alignment: Alignment.topCenter,
-                                  heightFactor: (1.0 - t).clamp(0.0, 1.0),
-                                  child: child,
-                                ),
-                              );
-                            },
-                            child: const QuizTopDecorationWidget(),
-                          ),
+                        const SliverToBoxAdapter(
+                          child: QuizTopDecorationWidget(),
                         ),
                       ],
                       // Daftar mata pelajaran / kuis
-                      body: AnimatedBuilder(
-                        animation: _surgeUpController,
-                        builder: (context, child) {
-                          final t = Curves.easeInOutCubic.transform(
-                            _surgeUpController.value,
-                          );
-                          // Dorong container putih melampaui batas atas layar (-90px)
-                          return Transform.translate(
-                            offset: Offset(0, -90.0 * t),
-                            child: child,
-                          );
-                        },
-                        child: QuizSubjectListSectionWidget(
-                          subjects: _subjects,
-                          onSubjectTap: _handleSubjectTap,
-                        ),
+                      body: QuizSubjectListSectionWidget(
+                        subjects: _subjects,
+                        isLoading: _isLoadingSubjects,
+                        errorMessage: _subjectsError,
+                        onRetry: _loadSubjectsFromApi,
+                        onSubjectTap: _handleSubjectTap,
                       ),
                     ),
                   ),
