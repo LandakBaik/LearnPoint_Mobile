@@ -82,6 +82,7 @@ class ApiConfig {
   // Endpoints Siswa
   // ==========================================
   static String get siswaDashboardEndpoint => '$baseUrl/siswa/dashboard';
+  static String get siswaStatistikEndpoint => '$baseUrl/siswa/statistik';
   static String get siswaJadwalEndpoint => '$baseUrl/siswa/jadwal';
 
   // Mata Pelajaran & Materi Pembelajaran Siswa (routes/api.php: /siswa/mapel)
