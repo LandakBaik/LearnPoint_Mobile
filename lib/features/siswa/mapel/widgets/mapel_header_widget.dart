@@ -5,12 +5,14 @@ class MapelHeaderWidget extends StatelessWidget {
   final String subjectName;
   final String description;
   final String? kelasLabel;
+  final bool isLoading;
 
   const MapelHeaderWidget({
     super.key,
     this.subjectName = 'Matematika',
     this.description = '',
     this.kelasLabel,
+    this.isLoading = false,
   });
 
   List<Color> _resolveGradient(String name) {
@@ -45,6 +47,7 @@ class MapelHeaderWidget extends StatelessWidget {
 
     return Container(
       width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 152),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: gradientColors,
@@ -136,6 +139,16 @@ class MapelHeaderWidget extends StatelessWidget {
                         fontSize: 11.5,
                         fontWeight: FontWeight.w700,
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ] else if (isLoading) ...[
+                  Container(
+                    width: 82,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.22),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                   ),
                   const SizedBox(height: 12),

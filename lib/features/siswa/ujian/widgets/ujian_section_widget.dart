@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:learnpoint_mobile/features/siswa/mapel/widgets/mapel_skeleton_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/widgets/materi_error_state_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/ujian/models/ujian_model.dart';
 import 'package:learnpoint_mobile/features/siswa/ujian/screens/detail_ujian_screen.dart';
@@ -62,10 +63,7 @@ class UjianSectionWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 40),
-        child: Center(child: CircularProgressIndicator()),
-      );
+      return const DetailMapelListSkeletonWidget();
     }
 
     if (errorMessage != null) {

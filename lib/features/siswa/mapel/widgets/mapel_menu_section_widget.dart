@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:learnpoint_mobile/features/siswa/mapel/widgets/mapel_skeleton_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/data/materi_preferences_service.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/data/materi_service.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
@@ -41,6 +42,7 @@ class _MapelMenuSectionWidgetState extends State<MapelMenuSectionWidget> {
 
   int _totalTugasCount = 0;
   int _activeTugasCount = 0;
+  bool _isLoadingTugas = true;
 
   final List<String> tabs = ['Materi', 'Tugas', 'Ujian'];
 
@@ -77,8 +79,14 @@ class _MapelMenuSectionWidgetState extends State<MapelMenuSectionWidget> {
       setState(() {
         _totalTugasCount = filtered.length;
         _activeTugasCount = activeCount;
+        _isLoadingTugas = false;
       });
-    } catch (_) {}
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingTugas = false;
+      });
+    }
   }
 
   Future<void> _loadProgressStates() async {
@@ -207,6 +215,7 @@ class _MapelMenuSectionWidgetState extends State<MapelMenuSectionWidget> {
                 child: _buildStatCard(
                   value: '$completedMateri/$totalMateri',
                   label: 'Materi selesai',
+                  isLoading: isLoadingApi,
                 ),
               ),
               const SizedBox(width: 10),
@@ -214,6 +223,7 @@ class _MapelMenuSectionWidgetState extends State<MapelMenuSectionWidget> {
                 child: _buildStatCard(
                   value: '$_activeTugasCount',
                   label: 'Tugas aktif',
+                  isLoading: _isLoadingTugas,
                 ),
               ),
               const SizedBox(width: 10),
@@ -221,6 +231,7 @@ class _MapelMenuSectionWidgetState extends State<MapelMenuSectionWidget> {
                 child: _buildStatCard(
                   value: '${apiUjianList.length}',
                   label: 'Ujian',
+                  isLoading: isLoadingUjian,
                 ),
               ),
             ],
@@ -332,6 +343,7 @@ class _MapelMenuSectionWidgetState extends State<MapelMenuSectionWidget> {
   Widget _buildStatCard({
     required String value,
     required String label,
+    bool isLoading = false,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
@@ -350,14 +362,20 @@ class _MapelMenuSectionWidgetState extends State<MapelMenuSectionWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            value,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFF0F172A),
+          if (isLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 2),
+              child: ShimmerBone(width: 40, height: 18, radius: 6),
+            )
+          else
+            Text(
+              value,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF0F172A),
+              ),
             ),
-          ),
           const SizedBox(height: 3),
           Text(
             label,

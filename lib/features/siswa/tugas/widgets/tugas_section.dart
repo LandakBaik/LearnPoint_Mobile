@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:learnpoint_mobile/features/siswa/mapel/widgets/mapel_skeleton_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/models/task_model.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/screens/detail_tugas_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/screens/detail_tugas_pilgan_screen.dart';
@@ -486,12 +487,7 @@ class _TugasSectionState extends State<TugasSection> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 45),
-        child: Center(
-          child: CircularProgressIndicator(color: primary, strokeWidth: 2.5),
-        ),
-      );
+      return const DetailMapelListSkeletonWidget();
     }
 
     if (errorMessage != null) {

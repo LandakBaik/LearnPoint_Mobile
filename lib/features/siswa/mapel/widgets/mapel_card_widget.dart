@@ -8,7 +8,8 @@ class MapelCardWidget extends StatelessWidget {
   final String? imageUrl;
   final double elevation;
   final double horizontalMargin;
-  final int completedCount;
+  final int totalTugasCount;
+  final int completedTugasCount;
   final VoidCallback? ontap;
 
   const MapelCardWidget({
@@ -17,7 +18,8 @@ class MapelCardWidget extends StatelessWidget {
     this.imageUrl,
     this.elevation = 0,
     this.horizontalMargin = 20,
-    this.completedCount = 0,
+    this.totalTugasCount = 0,
+    this.completedTugasCount = 0,
     this.ontap,
   });
 
@@ -100,18 +102,17 @@ class MapelCardWidget extends StatelessWidget {
     final theme = _resolveVisualTheme(subject.materi);
 
     final totalMateri = subject.totalMateri;
-    final safeCompleted =
-        completedCount.clamp(0, totalMateri > 0 ? totalMateri : 0);
+    final safeTotalTugas = totalTugasCount > 0 ? totalTugasCount : 0;
+    final safeCompletedTugas = completedTugasCount.clamp(0, safeTotalTugas);
     final double progress =
-        totalMateri > 0 ? (safeCompleted / totalMateri) : 0.0;
+        safeTotalTugas > 0 ? (safeCompletedTugas / safeTotalTugas) : 0.0;
+    final int progressPercent = (progress * 100).round();
 
     final String guruText = subject.guru.isNotEmpty
         ? 'Guru: ${subject.guru.join(', ')}'
         : '$totalMateri Materi Pembelajaran';
 
-    final String progressLabel = safeCompleted > 0 && totalMateri > 0
-        ? '$safeCompleted dari $totalMateri materi'
-        : 'Belum dimulai';
+    final String progressLabel = '$progressPercent%';
 
     return Container(
       margin: EdgeInsets.fromLTRB(horizontalMargin, 0, horizontalMargin, 16),
@@ -256,7 +257,7 @@ class MapelCardWidget extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Progres belajar',
+                          'Progres tugas',
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12 * textScale,
                             fontWeight: FontWeight.w500,
