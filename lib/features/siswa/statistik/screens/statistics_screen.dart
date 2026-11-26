@@ -179,16 +179,235 @@ class _ComponentCard extends StatelessWidget {
   ]));
 }
 
-class _ProgressSection extends StatelessWidget {
+class _ProgressSection extends StatefulWidget {
   const _ProgressSection({required this.months});
   final List<MonthlyScoreModel> months;
+
   @override
-  Widget build(BuildContext context) => Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFEAECF0))), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    const _SectionTitle(title: 'Perkembangan Nilai'), const SizedBox(height: 4), Text('Rata-rata nilai per bulan', style: GoogleFonts.plusJakartaSans(fontSize: 12, color: const Color(0xFF667085))), const SizedBox(height: 14),
-    if (months.any((month) => month.tugas != null || month.kuis != null || month.ujian != null)) ...[
-      SizedBox(height: 175, child: CustomPaint(size: Size.infinite, painter: _ProgressPainter(months))), const SizedBox(height: 8), _Legend(),
-    ] else Center(child: Padding(padding: const EdgeInsets.symmetric(vertical: 24), child: Text('Belum ada perkembangan nilai pada periode ini.', style: GoogleFonts.plusJakartaSans(fontSize: 12, color: const Color(0xFF667085))))),
-  ]));
+  State<_ProgressSection> createState() => _ProgressSectionState();
+}
+
+class _ProgressSectionState extends State<_ProgressSection> {
+  int? _selectedIndex;
+
+  @override
+  void didUpdateWidget(covariant _ProgressSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.months != widget.months) {
+      _selectedIndex = null;
+    }
+  }
+
+  void _selectAt(double localX, double chartWidth) {
+    if (widget.months.isEmpty) return;
+    const left = _ProgressPainter.leftPadding;
+    const right = _ProgressPainter.rightPadding;
+    final plotWidth = chartWidth - left - right;
+    if (plotWidth <= 0) return;
+
+    final int index;
+    if (widget.months.length == 1) {
+      index = 0;
+    } else {
+      final ratio = ((localX - left) / plotWidth).clamp(0.0, 1.0);
+      index = (ratio * (widget.months.length - 1)).round();
+    }
+
+    if (_selectedIndex != index) {
+      setState(() {
+        _selectedIndex = index;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final months = widget.months;
+    final hasAnyData = months.any(
+      (month) => month.tugas != null || month.kuis != null || month.ujian != null,
+    );
+    final selectedMonth = _selectedIndex != null &&
+            _selectedIndex! >= 0 &&
+            _selectedIndex! < months.length
+        ? months[_selectedIndex!]
+        : null;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFEAECF0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionTitle(title: 'Perkembangan Nilai'),
+          const SizedBox(height: 4),
+          Text(
+            hasAnyData
+                ? 'Rata-rata nilai per bulan • Ketuk grafik untuk detail'
+                : 'Rata-rata nilai per bulan',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              color: const Color(0xFF667085),
+            ),
+          ),
+          const SizedBox(height: 14),
+          if (hasAnyData) ...[
+            if (selectedMonth != null) ...[
+              _SelectedMonthTooltip(
+                month: selectedMonth,
+                onClear: () => setState(() => _selectedIndex = null),
+              ),
+              const SizedBox(height: 10),
+            ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTapDown: (details) => _selectAt(
+                    details.localPosition.dx,
+                    constraints.maxWidth,
+                  ),
+                  onHorizontalDragUpdate: (details) => _selectAt(
+                    details.localPosition.dx,
+                    constraints.maxWidth,
+                  ),
+                  child: SizedBox(
+                    height: 185,
+                    width: double.infinity,
+                    child: CustomPaint(
+                      size: Size(constraints.maxWidth, 185),
+                      painter: _ProgressPainter(
+                        months,
+                        selectedIndex: _selectedIndex,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
+            const _Legend(),
+          ] else
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Text(
+                  'Belum ada perkembangan nilai pada periode ini.',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    color: const Color(0xFF667085),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SelectedMonthTooltip extends StatelessWidget {
+  const _SelectedMonthTooltip({
+    required this.month,
+    required this.onClear,
+  });
+
+  final MonthlyScoreModel month;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Text(
+            month.label.isEmpty ? 'Bulan' : month.label,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1E1B4B),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Wrap(
+              spacing: 10,
+              runSpacing: 4,
+              children: [
+                _MiniScoreBadge(
+                  label: 'Tugas',
+                  value: month.tugas,
+                  color: const Color(0xFF2563EB),
+                ),
+                _MiniScoreBadge(
+                  label: 'Kuis',
+                  value: month.kuis,
+                  color: const Color(0xFFF59E0B),
+                ),
+                _MiniScoreBadge(
+                  label: 'Ujian',
+                  value: month.ujian,
+                  color: const Color(0xFF8B5CF6),
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: onClear,
+            child: const Icon(
+              Icons.close_rounded,
+              size: 16,
+              color: Color(0xFF94A3B8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniScoreBadge extends StatelessWidget {
+  const _MiniScoreBadge({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final double? value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          '$label: ${value == null ? '-' : _score(value!)}',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF334155),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _SubjectSection extends StatelessWidget {
@@ -215,29 +434,208 @@ class _SubjectCard extends StatelessWidget {
 }
 
 class _SectionTitle extends StatelessWidget { const _SectionTitle({required this.title}); final String title; @override Widget build(BuildContext context) => Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF1E1B4B))); }
-class _Legend extends StatelessWidget { @override Widget build(BuildContext context) => const Row(mainAxisAlignment: MainAxisAlignment.center, children: [_LegendItem('Tugas', Color(0xFF2563EB)), SizedBox(width: 16), _LegendItem('Kuis', Color(0xFFF59E0B)), SizedBox(width: 16), _LegendItem('Ujian', Color(0xFF8B5CF6))]); }
+class _Legend extends StatelessWidget {
+  const _Legend();
+  @override
+  Widget build(BuildContext context) => const Row(mainAxisAlignment: MainAxisAlignment.center, children: [_LegendItem('Tugas', Color(0xFF2563EB)), SizedBox(width: 16), _LegendItem('Kuis', Color(0xFFF59E0B)), SizedBox(width: 16), _LegendItem('Ujian', Color(0xFF8B5CF6))]);
+}
 class _LegendItem extends StatelessWidget { const _LegendItem(this.label, this.color); final String label; final Color color; @override Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)), const SizedBox(width: 4), Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF667085)))]); }
 class _EmptyState extends StatelessWidget { const _EmptyState(); @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.all(24), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18)), child: const Center(child: Text('Belum ada data statistik.'))); }
 class _ErrorState extends StatelessWidget { const _ErrorState({required this.message, required this.onRetry}); final String message; final VoidCallback onRetry; @override Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.cloud_off_rounded, size: 48, color: Color(0xFF667085)), const SizedBox(height: 12), Text(message, textAlign: TextAlign.center), const SizedBox(height: 12), ElevatedButton(onPressed: onRetry, child: const Text('Coba lagi'))]))); }
 class _InlineError extends StatelessWidget { const _InlineError({required this.message, required this.onRetry}); final String message; final VoidCallback onRetry; @override Widget build(BuildContext context) => Material(color: const Color(0xFFFFF4ED), borderRadius: BorderRadius.circular(12), child: ListTile(leading: const Icon(Icons.error_outline, color: Color(0xFFD92D20)), title: Text(message, style: const TextStyle(fontSize: 12)), trailing: TextButton(onPressed: onRetry, child: const Text('Ulangi')))); }
 
 class _ProgressPainter extends CustomPainter {
-  _ProgressPainter(this.months); final List<MonthlyScoreModel> months;
-  @override void paint(Canvas canvas, Size size) {
-    const left = 25.0; const right = 8.0; const top = 8.0; const bottom = 28.0;
-    final plotWidth = size.width - left - right; final plotHeight = size.height - top - bottom;
-    final grid = Paint()..color = const Color(0xFFEAECF0)..strokeWidth = 1;
-    for (var i = 0; i <= 4; i++) { final y = top + plotHeight * i / 4; canvas.drawLine(Offset(left, y), Offset(size.width - right, y), grid); }
-    _drawSeries(canvas, size, months.map((item) => item.tugas).toList(), const Color(0xFF2563EB), left, top, plotWidth, plotHeight);
-    _drawSeries(canvas, size, months.map((item) => item.kuis).toList(), const Color(0xFFF59E0B), left, top, plotWidth, plotHeight);
-    _drawSeries(canvas, size, months.map((item) => item.ujian).toList(), const Color(0xFF8B5CF6), left, top, plotWidth, plotHeight);
-    final style = TextStyle(color: const Color(0xFF98A2B3), fontSize: 9); for (var i = 0; i < months.length; i++) { final x = months.length == 1 ? left + plotWidth / 2 : left + plotWidth * i / (months.length - 1); final text = TextPainter(text: TextSpan(text: months[i].label, style: style), textDirection: TextDirection.ltr)..layout(maxWidth: 40); text.paint(canvas, Offset(x - text.width / 2, size.height - 17)); }
+  _ProgressPainter(this.months, {this.selectedIndex});
+
+  final List<MonthlyScoreModel> months;
+  final int? selectedIndex;
+
+  static const double leftPadding = 30.0;
+  static const double rightPadding = 12.0;
+  static const double topPadding = 10.0;
+  static const double bottomPadding = 28.0;
+
+  double _xForIndex(int index, double plotWidth) {
+    if (months.length <= 1) return leftPadding + plotWidth / 2;
+    return leftPadding + plotWidth * index / (months.length - 1);
   }
-  void _drawSeries(Canvas canvas, Size size, List<double?> values, Color color, double left, double top, double width, double height) {
-    final points = <Offset>[]; for (var i = 0; i < values.length; i++) { final value = values[i]; if (value == null) continue; final x = values.length == 1 ? left + width / 2 : left + width * i / (values.length - 1); points.add(Offset(x, top + height * (1 - value.clamp(0, 100).toDouble() / 100))); }
-    if (points.isEmpty) return; final paint = Paint()..color = color..strokeWidth = 2.5..style = PaintingStyle.stroke..strokeCap = StrokeCap.round..strokeJoin = StrokeJoin.round; final path = Path()..moveTo(points.first.dx, points.first.dy); for (final point in points.skip(1)) { path.lineTo(point.dx, point.dy); } canvas.drawPath(path, paint); final dot = Paint()..color = color..style = PaintingStyle.fill; for (final point in points) { canvas.drawCircle(point, 3.5, dot); }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final plotWidth = size.width - leftPadding - rightPadding;
+    final plotHeight = size.height - topPadding - bottomPadding;
+    if (plotWidth <= 0 || plotHeight <= 0) return;
+
+    final gridPaint = Paint()
+      ..color = const Color(0xFFEAECF0)
+      ..strokeWidth = 1;
+    const axisLabelStyle = TextStyle(
+      color: Color(0xFF98A2B3),
+      fontSize: 9,
+      fontWeight: FontWeight.w600,
+    );
+
+    // Grid horizontal + label sumbu Y (100, 75, 50, 25, 0)
+    for (var i = 0; i <= 4; i++) {
+      final y = topPadding + plotHeight * i / 4;
+      canvas.drawLine(
+        Offset(leftPadding, y),
+        Offset(size.width - rightPadding, y),
+        gridPaint,
+      );
+
+      final labelValue = (100 - i * 25).toString();
+      final yText = TextPainter(
+        text: TextSpan(text: labelValue, style: axisLabelStyle),
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: leftPadding - 6);
+      yText.paint(
+        canvas,
+        Offset(leftPadding - yText.width - 6, y - yText.height / 2),
+      );
+    }
+
+    // Highlight garis vertikal untuk bulan yang dipilih
+    if (selectedIndex != null &&
+        selectedIndex! >= 0 &&
+        selectedIndex! < months.length) {
+      final selectedX = _xForIndex(selectedIndex!, plotWidth);
+      final guidePaint = Paint()
+        ..color = const Color(0xFF4F46E5).withValues(alpha: 0.22)
+        ..strokeWidth = 1.5;
+      canvas.drawLine(
+        Offset(selectedX, topPadding),
+        Offset(selectedX, topPadding + plotHeight),
+        guidePaint,
+      );
+    }
+
+    _drawSeries(
+      canvas,
+      months.map((item) => item.tugas).toList(),
+      const Color(0xFF2563EB),
+      plotWidth,
+      plotHeight,
+    );
+    _drawSeries(
+      canvas,
+      months.map((item) => item.kuis).toList(),
+      const Color(0xFFF59E0B),
+      plotWidth,
+      plotHeight,
+    );
+    _drawSeries(
+      canvas,
+      months.map((item) => item.ujian).toList(),
+      const Color(0xFF8B5CF6),
+      plotWidth,
+      plotHeight,
+    );
+
+    // Label sumbu X dengan step otomatis agar tidak bertumpukan
+    final maxVisibleLabels = (plotWidth / 44).floor().clamp(1, months.length);
+    final labelStep =
+        (months.length / maxVisibleLabels).ceil().clamp(1, months.length);
+
+    for (var i = 0; i < months.length; i++) {
+      final isSelected = i == selectedIndex;
+      final isFirstOrLast = i == 0 || i == months.length - 1;
+      if (!isSelected && i % labelStep != 0 && !isFirstOrLast) continue;
+      if (!isSelected &&
+          labelStep > 1 &&
+          i == months.length - 1 &&
+          months.length > 2 &&
+          (i - 1) % labelStep == 0) {
+        continue;
+      }
+
+      final x = _xForIndex(i, plotWidth);
+      final text = TextPainter(
+        text: TextSpan(
+          text: months[i].label,
+          style: isSelected
+              ? axisLabelStyle.copyWith(
+                  color: const Color(0xFF4F46E5),
+                  fontWeight: FontWeight.w800,
+                )
+              : axisLabelStyle,
+        ),
+        textDirection: TextDirection.ltr,
+        maxLines: 1,
+        ellipsis: '…',
+      )..layout(maxWidth: 42);
+
+      final dx = (x - text.width / 2).clamp(
+        leftPadding,
+        size.width - rightPadding - text.width,
+      );
+      text.paint(canvas, Offset(dx, size.height - 17));
+    }
   }
-  @override bool shouldRepaint(covariant _ProgressPainter oldDelegate) => oldDelegate.months != months;
+
+  void _drawSeries(
+    Canvas canvas,
+    List<double?> values,
+    Color color,
+    double plotWidth,
+    double plotHeight,
+  ) {
+    final linePaint = Paint()
+      ..color = color
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final dotPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    final haloPaint = Paint()
+      ..color = color.withValues(alpha: 0.22)
+      ..style = PaintingStyle.fill;
+
+    var currentSegment = <Offset>[];
+    final allDots = <(int, Offset)>[];
+
+    void flushSegment() {
+      if (currentSegment.length >= 2) {
+        final path = Path()
+          ..moveTo(currentSegment.first.dx, currentSegment.first.dy);
+        for (final point in currentSegment.skip(1)) {
+          path.lineTo(point.dx, point.dy);
+        }
+        canvas.drawPath(path, linePaint);
+      }
+      currentSegment = <Offset>[];
+    }
+
+    for (var i = 0; i < values.length; i++) {
+      final value = values[i];
+      if (value == null) {
+        flushSegment();
+        continue;
+      }
+      final x = _xForIndex(i, plotWidth);
+      final y =
+          topPadding + plotHeight * (1 - value.clamp(0, 100).toDouble() / 100);
+      final point = Offset(x, y);
+      currentSegment.add(point);
+      allDots.add((i, point));
+    }
+    flushSegment();
+
+    for (final (index, point) in allDots) {
+      if (index == selectedIndex) {
+        canvas.drawCircle(point, 7.5, haloPaint);
+        canvas.drawCircle(point, 4.5, dotPaint);
+      } else {
+        canvas.drawCircle(point, 3.5, dotPaint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ProgressPainter oldDelegate) =>
+      oldDelegate.months != months || oldDelegate.selectedIndex != selectedIndex;
 }
 
 String _score(double score) => score == score.roundToDouble() ? score.toStringAsFixed(0) : score.toStringAsFixed(1);
