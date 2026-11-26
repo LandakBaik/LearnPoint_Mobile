@@ -6,11 +6,21 @@ import 'package:video_player/video_player.dart';
 
 import 'package:learnpoint_mobile/features/siswa/gamification/data/gacha_service.dart';
 import 'package:learnpoint_mobile/features/siswa/gamification/models/item_model.dart';
+import 'package:learnpoint_mobile/features/siswa/gamification/screens/gacha_loading_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/config/quiz_assets.dart';
+import 'package:learnpoint_mobile/features/siswa/quiz/screens/quiz_per_mapel_loading_screen.dart';
 
 class Gacha extends StatefulWidget {
   final VoidCallback? onBackTap;
-  const Gacha({super.key, this.onBackTap});
+
+  /// Status Gacha yang sudah dimuat sebelumnya (oleh GachaLoadingScreen).
+  final GachaStatusModel? initialStatus;
+
+  const Gacha({
+    super.key,
+    this.onBackTap,
+    this.initialStatus,
+  });
 
   @override
   State<Gacha> createState() => _GachaState();
@@ -26,13 +36,41 @@ class _GachaState extends State<Gacha> {
   bool _isLoadingStatus = true;
   bool _isPulling = false;
   bool _hideOptionsForPull = false;
+  bool _isReturning = false;
 
   @override
   void initState() {
     super.initState();
     _coins = GachaService.coinsNotifier.value;
     GachaService.coinsNotifier.addListener(_onCoinsChanged);
-    _loadGachaStatus();
+    final preloaded = widget.initialStatus;
+    if (preloaded != null) {
+      _coins = preloaded.koin;
+      _pityCounter = preloaded.pityCounter;
+      _pityMax = preloaded.pityMax;
+      _harga1x = preloaded.harga1x;
+      _harga10x = preloaded.harga10x;
+      _isLoadingStatus = false;
+    } else {
+      _loadGachaStatus();
+    }
+  }
+
+  Future<void> _handleBackToQuiz() async {
+    if (_isReturning) return;
+    _isReturning = true;
+
+    if (widget.onBackTap != null) {
+      widget.onBackTap!();
+      return;
+    }
+
+    if (!mounted) return;
+    await Navigator.of(context).pushReplacement(
+      quizSlideRoute<void>(
+        const GachaLoadingScreen(isReturning: true),
+      ),
+    );
   }
 
   @override
@@ -575,54 +613,56 @@ class _GachaState extends State<Gacha> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0E0728),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // 1. Background Parallax Gacha (Tanpa efek goyang/wavy)
-          const Positioned.fill(
-            child: _GachaParallaxBackground(),
-          ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          _handleBackToQuiz();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF0E0728),
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            // 1. Background Parallax Gacha (Tanpa efek goyang/wavy)
+            const Positioned.fill(
+              child: _GachaParallaxBackground(),
+            ),
 
-          // 2. Top Bar: Back Button (kiri), Info Panduan & Koin Badge (kanan)
-          //    Ikut memudar ketika animasi gacha sedang berjalan
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: SafeArea(
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 320),
-                opacity: _hideOptionsForPull ? 0.0 : 1.0,
-                child: IgnorePointer(
-                  ignoring: _hideOptionsForPull,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Material(
-                          color: Colors.black.withValues(alpha: 0.38),
-                          shape: const CircleBorder(),
-                          child: InkWell(
-                            customBorder: const CircleBorder(),
-                            onTap: widget.onBackTap ??
-                                () {
-                                  if (Navigator.of(context).canPop()) {
-                                    Navigator.of(context).pop();
-                                  }
-                                },
-                            child: const Padding(
-                              padding: EdgeInsets.all(9),
-                              child: Icon(
-                                Icons.arrow_back_rounded,
-                                color: Colors.white,
-                                size: 22,
+            // 2. Top Bar: Back Button (kiri), Info Panduan & Koin Badge (kanan)
+            //    Ikut memudar ketika animasi gacha sedang berjalan
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 320),
+                  opacity: _hideOptionsForPull ? 0.0 : 1.0,
+                  child: IgnorePointer(
+                    ignoring: _hideOptionsForPull,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Material(
+                            color: Colors.black.withValues(alpha: 0.38),
+                            shape: const CircleBorder(),
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              onTap: _handleBackToQuiz,
+                              child: const Padding(
+                                padding: EdgeInsets.all(9),
+                                child: Icon(
+                                  Icons.arrow_back_rounded,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
                               ),
                             ),
                           ),
-                        ),
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -789,7 +829,8 @@ class _GachaState extends State<Gacha> {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 
   /// Tombol Gacha (1x atau 10x) yang dibungkus langsung dengan aset `gacha op.gif`.
@@ -974,13 +1015,12 @@ class _GachaParallaxBackgroundState extends State<_GachaParallaxBackground>
       end: 2.0,
     ).animate(_twinkleWaveController);
 
-    // 3. Animasi looping gacha_lightpath (total siklus 14 detik):
-    //    - Muncul dari tengah ke pinggir, lalu TAMPIL LAMA
-    //    - Setelah sekian waktu menghilang perlahan, lalu muncul lagi
+    // 3. Animasi gacha_lightpath dijalankan sekali saja ketika membuka screen Gacha:
+    //    Muncul perlahan dari tengah melebar ke pinggir (3.1 detik), lalu tetap tampil penuh.
     _lightPathLoopController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 14),
-    )..repeat();
+      duration: const Duration(milliseconds: 3100),
+    )..forward();
   }
 
   @override
@@ -1119,15 +1159,11 @@ class _GachaParallaxBackgroundState extends State<_GachaParallaxBackground>
     return AnimatedBuilder(
       animation: _lightPathLoopController,
       builder: (context, child) {
-        final cycle = _lightPathLoopController.value;
+        final progress = _lightPathLoopController.value;
 
-        // Siklus 14 detik:
-        // • 0.00 -> 0.22 (~3.1 detik): Muncul perlahan dari tengah (0.5) melebar penuh ke pinggir.
-        // • 0.22 -> 0.72 (~7.0 detik): TAMPIL PENUH LAMA (stay visible).
-        // • 0.72 -> 0.88 (~2.2 detik): Menghilang perlahan dari tengah ke pinggir.
-        // • 0.88 -> 1.00 (~1.7 detik): Jeda menghilang sebentar sebelum muncul lagi dari tengah.
-        if (cycle >= 0.88) {
-          return const SizedBox.shrink();
+        // Setelah animasi masuk selesai (progress >= 1.0), lightpath tetap tampil penuh tanpa ShaderMask
+        if (progress >= 1.0) {
+          return child!;
         }
 
         final stops = <double>[];
@@ -1138,26 +1174,11 @@ class _GachaParallaxBackgroundState extends State<_GachaParallaxBackground>
           final x = i / (stopCount - 1);
           final distFromCenter = (x - 0.5).abs(); // 0.0 di tengah, 0.5 di pinggir
 
-          double alpha;
-          if (cycle < 0.22) {
-            // Fase 1: Muncul dari tengah melebar ke pinggir
-            final pIn = cycle / 0.22;
-            final waveFront = (pIn * 0.90) - 0.12;
-            final raw =
-                ((waveFront - distFromCenter) / transitionWidth).clamp(0.0, 1.0);
-            alpha = raw * raw * (3.0 - 2.0 * raw);
-          } else if (cycle < 0.72) {
-            // Fase 2: Tampil penuh dalam waktu lama
-            alpha = 1.0;
-          } else {
-            // Fase 3: Menghilang perlahan dari tengah melebar ke pinggir
-            final pOut = (cycle - 0.72) / (0.88 - 0.72);
-            final fadeFront = (pOut * 0.90) - 0.12;
-            final rawFade =
-                ((fadeFront - distFromCenter) / transitionWidth).clamp(0.0, 1.0);
-            final smoothFade = rawFade * rawFade * (3.0 - 2.0 * rawFade);
-            alpha = (1.0 - smoothFade).clamp(0.0, 1.0);
-          }
+          // Muncul perlahan dari tengah melebar ke pinggir sekali saja saat membuka screen
+          final waveFront = (progress * 0.90) - 0.12;
+          final raw =
+              ((waveFront - distFromCenter) / transitionWidth).clamp(0.0, 1.0);
+          final alpha = raw * raw * (3.0 - 2.0 * raw);
 
           stops.add(x);
           colors.add(Colors.white.withValues(alpha: alpha));

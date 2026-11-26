@@ -103,6 +103,8 @@ class ApiConfig {
 
   // Kuis Petualangan & Power Siswa
   static String get siswaKuisEndpoint => '$baseUrl/siswa/kuis';
+  static String get siswaKuisLeaderboardEndpoint =>
+      '$baseUrl/siswa/kuis/leaderboard';
   static String get siswaKuisPanduanEndpoint => '$baseUrl/siswa/kuis/panduan';
   static String siswaKuisDetailEndpoint(int quizId) =>
       '$baseUrl/siswa/kuis/$quizId';
