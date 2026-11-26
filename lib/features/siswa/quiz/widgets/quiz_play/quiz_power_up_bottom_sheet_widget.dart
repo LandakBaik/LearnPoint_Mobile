@@ -6,22 +6,28 @@ class QuizPowerUpBottomSheetWidget extends StatelessWidget {
   final int power5050Remaining;
   final int powerExtraTimeRemaining;
   final int powerDoublePointsRemaining;
+  final int powerPiratesCompassRemaining;
   final bool is5050UsedOnQuestion;
   final bool isDoublePointsActive;
+  final bool isPiratesCompassUsedOnQuestion;
   final VoidCallback onUse5050;
   final VoidCallback onUseExtraTime;
   final VoidCallback onUseDoublePoints;
+  final VoidCallback onUsePiratesCompass;
 
   const QuizPowerUpBottomSheetWidget({
     super.key,
     required this.power5050Remaining,
     required this.powerExtraTimeRemaining,
     required this.powerDoublePointsRemaining,
+    required this.powerPiratesCompassRemaining,
     required this.is5050UsedOnQuestion,
     required this.isDoublePointsActive,
+    required this.isPiratesCompassUsedOnQuestion,
     required this.onUse5050,
     required this.onUseExtraTime,
     required this.onUseDoublePoints,
+    required this.onUsePiratesCompass,
   });
 
   @override
@@ -99,6 +105,16 @@ class QuizPowerUpBottomSheetWidget extends StatelessWidget {
             remaining: powerExtraTimeRemaining,
             alreadyUsedOnQuestion: false,
             onTap: onUseExtraTime,
+          ),
+          const SizedBox(height: 10),
+          _buildPowerOptionTile(
+            icon: Icons.explore_rounded,
+            badgeColor: const Color(0xFF6EE7B7),
+            title: 'Pirates Compass',
+            subtitle: 'Tunjuk 1 Opsi Salah',
+            remaining: powerPiratesCompassRemaining,
+            alreadyUsedOnQuestion: isPiratesCompassUsedOnQuestion,
+            onTap: onUsePiratesCompass,
           ),
           const SizedBox(height: 10),
           _buildPowerOptionTile(

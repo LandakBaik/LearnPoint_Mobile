@@ -69,13 +69,18 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
   int _power5050Remaining = 1;
   int _powerExtraTimeRemaining = 1;
   int _powerDoublePointsRemaining = 1;
+  int _powerPiratesCompassRemaining = 1;
   Set<int> _eliminatedOptions = {};
   bool _isDoublePointsActive = false;
+  bool _isPiratesCompassUsedOnQuestion = false;
+  String? _currentHintText;
+  Map<int, Map<String, dynamic>> _questionStates = {};
 
   int get _totalPowersRemaining =>
       _power5050Remaining +
       _powerExtraTimeRemaining +
-      _powerDoublePointsRemaining;
+      _powerDoublePointsRemaining +
+      _powerPiratesCompassRemaining;
 
   @override
   void initState() {
@@ -128,8 +133,10 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
             _questions = fetchedQuestions;
             if (powersData != null) {
               _syncPowersFromApi(powersData.powers);
+              _questionStates = powersData.questionStates;
             }
           });
+          _applyQuestionStateForCurrentQuestion();
         }
       } on QuizApiException catch (e) {
         if (mounted) {
@@ -164,8 +171,88 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
     _power5050Remaining = countFor('remove_wrong_answer');
     _powerDoublePointsRemaining =
         countFor('two_x_score') + countFor('double_side_knife');
-    _powerExtraTimeRemaining =
-        countFor('second_chance') + countFor('lucky_clover');
+    _powerExtraTimeRemaining = countFor('second_chance');
+    _powerPiratesCompassRemaining = countFor('pirates_compass');
+  }
+
+  /// Menerapkan efek eliminasi & hint dari payload `powers/use` maupun `question_states`
+  void _applyEffectPayload(
+    Map<String, dynamic> rawEffect, {
+    bool showCompassToast = false,
+  }) {
+    if (_questions.isEmpty || _currentIndex >= _questions.length) return;
+    final currentQ = _questions[_currentIndex];
+
+    // Normalisasi struktur payload (langsung atau nested di dalam 'effect' / 'pirates_compass')
+    final effect = rawEffect['effect'] is Map<String, dynamic>
+        ? rawEffect['effect'] as Map<String, dynamic>
+        : (rawEffect['pirates_compass'] is Map<String, dynamic>
+            ? rawEffect['pirates_compass'] as Map<String, dynamic>
+            : rawEffect);
+
+    final rawEliminated = effect['eliminated_options'];
+    final newIndices = <int>{};
+    final eliminatedKeys = <String>{};
+    if (rawEliminated is List) {
+      for (final key in rawEliminated) {
+        final cleanKey = key.toString().trim().toLowerCase();
+        if (cleanKey.isEmpty) continue;
+        eliminatedKeys.add(cleanKey);
+        final idx = currentQ.indexForKey(cleanKey);
+        if (idx >= 0) newIndices.add(idx);
+      }
+    }
+
+    final rawHint = (effect['hint_text'] ?? '').toString().trim();
+
+    if (!mounted) return;
+    setState(() {
+      if (newIndices.isNotEmpty) {
+        _eliminatedOptions = {..._eliminatedOptions, ...newIndices};
+      }
+      // Reset pilihan jika siswa sebelumnya sudah memilih opsi yang dieliminasi
+      if (_selectedOptionIndex != null &&
+          _eliminatedOptions.contains(_selectedOptionIndex)) {
+        _selectedOptionIndex = null;
+        _isAnswerLocked = false;
+      }
+      if (currentQ.id != null) {
+        final soalKey = currentQ.id.toString();
+        final savedKey = _submittedAnswers[soalKey]?.trim().toLowerCase();
+        if (savedKey != null && eliminatedKeys.contains(savedKey)) {
+          _submittedAnswers.remove(soalKey);
+        }
+      }
+      if (rawHint.isNotEmpty) {
+        _currentHintText = rawHint;
+        _isPiratesCompassUsedOnQuestion = true;
+      }
+    });
+
+    if (showCompassToast && newIndices.isNotEmpty && mounted) {
+      final sortedIndices = newIndices.toList()..sort();
+      final labels =
+          sortedIndices.map((i) => String.fromCharCode(65 + i)).join(', ');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Kompas menunjuk Pilihan $labels sebagai jawaban yang salah',
+          ),
+          backgroundColor: const Color(0xFF0F766E),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  void _applyQuestionStateForCurrentQuestion() {
+    if (_questions.isEmpty || _currentIndex >= _questions.length) return;
+    final soalId = _questions[_currentIndex].id;
+    if (soalId == null) return;
+    final state = _questionStates[soalId];
+    if (state != null) {
+      _applyEffectPayload(state);
+    }
   }
 
   @override
@@ -282,7 +369,10 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
           _isAnswerLocked = false;
           _eliminatedOptions = {};
           _isDoublePointsActive = false;
+          _isPiratesCompassUsedOnQuestion = false;
+          _currentHintText = null;
         });
+        _applyQuestionStateForCurrentQuestion();
         _startQuestionTimer();
       } else {
         _finishAndShowResultModal();
@@ -301,19 +391,11 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
           soalId: currentQ.id!,
           powerKode: 'remove_wrong_answer',
         );
-        final rawEliminated = effect['eliminated_options'];
-        final indices = <int>{};
-        if (rawEliminated is List) {
-          for (final key in rawEliminated) {
-            final idx = currentQ.indexForKey(key.toString());
-            if (idx >= 0) indices.add(idx);
-          }
-        }
         if (mounted) {
           setState(() {
             _power5050Remaining--;
-            _eliminatedOptions = indices;
           });
+          _applyEffectPayload(effect);
         }
         return;
       } catch (_) {}
@@ -328,6 +410,74 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
       _power5050Remaining--;
       _eliminatedOptions = wrongIndices.take(2).toSet();
     });
+  }
+
+  Future<void> _usePowerPiratesCompass() async {
+    if (_powerPiratesCompassRemaining <= 0 || _isPiratesCompassUsedOnQuestion) {
+      return;
+    }
+
+    final currentQ = _questions[_currentIndex];
+    if (widget.quizId != null && currentQ.id != null) {
+      try {
+        final effect = await QuizApiService.usePower(
+          quizId: widget.quizId!,
+          soalId: currentQ.id!,
+          powerKode: 'pirates_compass',
+        );
+        if (mounted) {
+          setState(() {
+            _powerPiratesCompassRemaining--;
+            _isPiratesCompassUsedOnQuestion = true;
+          });
+          _applyEffectPayload(effect, showCompassToast: true);
+        }
+        return;
+      } on QuizApiException catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.message)),
+          );
+        }
+        return;
+      } catch (_) {}
+    }
+
+    final wrongIndices = List<int>.generate(currentQ.options.length, (i) => i)
+        .where(
+          (i) => i != currentQ.correctIndex && !_eliminatedOptions.contains(i),
+        )
+        .toList()
+      ..shuffle();
+
+    if (wrongIndices.isEmpty) return;
+    final pickedIdx = wrongIndices.first;
+    final displayLetter = String.fromCharCode(65 + pickedIdx);
+    final wrongText = currentQ.options[pickedIdx];
+
+    setState(() {
+      _powerPiratesCompassRemaining--;
+      _isPiratesCompassUsedOnQuestion = true;
+      _eliminatedOptions = {..._eliminatedOptions, pickedIdx};
+      if (_selectedOptionIndex == pickedIdx) {
+        _selectedOptionIndex = null;
+        _isAnswerLocked = false;
+      }
+      _currentHintText =
+          'Kompas Bajak Laut menunjuk 1 jawaban yang salah: "$wrongText".';
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Kompas menunjuk Pilihan $displayLetter sebagai jawaban yang salah',
+          ),
+          backgroundColor: const Color(0xFF0F766E),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   void _usePowerExtraTime() {
@@ -371,8 +521,10 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
           power5050Remaining: _power5050Remaining,
           powerExtraTimeRemaining: _powerExtraTimeRemaining,
           powerDoublePointsRemaining: _powerDoublePointsRemaining,
+          powerPiratesCompassRemaining: _powerPiratesCompassRemaining,
           is5050UsedOnQuestion: _eliminatedOptions.isNotEmpty,
           isDoublePointsActive: _isDoublePointsActive,
+          isPiratesCompassUsedOnQuestion: _isPiratesCompassUsedOnQuestion,
           onUse5050: () {
             Navigator.of(ctx).pop();
             _usePower5050();
@@ -384,6 +536,10 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
           onUseDoublePoints: () {
             Navigator.of(ctx).pop();
             _usePowerDoublePoints();
+          },
+          onUsePiratesCompass: () {
+            Navigator.of(ctx).pop();
+            _usePowerPiratesCompass();
           },
         );
       },
@@ -445,8 +601,11 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
               _power5050Remaining = 1;
               _powerExtraTimeRemaining = 1;
               _powerDoublePointsRemaining = 1;
+              _powerPiratesCompassRemaining = 1;
               _eliminatedOptions = {};
               _isDoublePointsActive = false;
+              _isPiratesCompassUsedOnQuestion = false;
+              _currentHintText = null;
             });
             _startQuestionTimer();
           },
@@ -598,6 +757,12 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
                         questionText: currentQuestion.question,
                       ),
 
+                      if (_currentHintText != null &&
+                          _currentHintText!.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        _buildPiratesCompassHintCard(_currentHintText!),
+                      ],
+
                       const SizedBox(height: 16),
 
                       // 5. Pilihan Jawaban A, B, C, D
@@ -624,6 +789,71 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPiratesCompassHintCard(String hintText) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F3D36),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: const Color(0xFF34D399),
+          width: 1.8,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0xFF0A0E17),
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF10B981).withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.explore_rounded,
+              color: Color(0xFF6EE7B7),
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Petunjuk Pirates Compass',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF6EE7B7),
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  hintText,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

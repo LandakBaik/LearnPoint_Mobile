@@ -122,8 +122,8 @@ class ItemModel {
         return '2x Score';
       case 'second_chance':
         return 'Second Chance';
-      case 'lucky_clover':
-        return 'Lucky Clover';
+      case 'pirates_compass':
+        return 'Pirates Compass';
       case 'remove_wrong_answer':
         return 'Remove Wrong Answer';
       default:
@@ -139,7 +139,7 @@ class ItemModel {
         return 'amber';
       case 'second_chance':
         return 'cyan';
-      case 'lucky_clover':
+      case 'pirates_compass':
         return 'emerald';
       case 'remove_wrong_answer':
         return 'purple';
@@ -156,8 +156,8 @@ class ItemModel {
         return 'Benar dapat 2x poin tanpa penalti salah.';
       case 'second_chance':
         return 'Menahan 1x pilihan salah dan mengizinkan pilih ulang.';
-      case 'lucky_clover':
-        return 'Menampilkan teks petunjuk (hint) pada soal.';
+      case 'pirates_compass':
+        return 'Tunjuk 1 Opsi Salah pada soal yang sedang dikerjakan.';
       case 'remove_wrong_answer':
         return 'Mengeliminasi hingga 2 opsi jawaban yang salah.';
       default:
@@ -186,11 +186,11 @@ class ItemModel {
         lowerIcon.contains('rotate')) {
       return Icons.shield_rounded;
     }
-    if (lowerKode == 'lucky_clover' ||
-        lowerIcon.contains('clover') ||
-        lowerIcon.contains('leaf') ||
+    if (lowerKode == 'pirates_compass' ||
+        lowerIcon.contains('compass') ||
+        lowerIcon.contains('explore') ||
         lowerIcon.contains('lightbulb')) {
-      return Icons.eco_rounded;
+      return Icons.explore_rounded;
     }
     if (lowerKode == 'remove_wrong_answer' ||
         lowerIcon.contains('eraser') ||
@@ -681,14 +681,14 @@ final List<ItemModel> item = [
   ),
   ItemModel(
     id: 4,
-    kode: 'lucky_clover',
-    name: 'Lucky Clover',
-    tagline: 'Petunjuk Rahasia Soal',
-    desc: 'Menampilkan teks petunjuk (hint) pada soal.',
+    kode: 'pirates_compass',
+    name: 'Pirates Compass',
+    tagline: 'Tunjuk 1 Opsi Salah',
+    desc: 'Tunjuk 1 Opsi Salah pada soal yang sedang dikerjakan.',
     tipeEfek: 'hint',
     rarity: 'rare',
     temaWarna: 'emerald',
-    icon: Icons.eco_rounded,
+    icon: Icons.explore_rounded,
     color: const Color(0xFF10B981),
     qty: 0,
   ),
