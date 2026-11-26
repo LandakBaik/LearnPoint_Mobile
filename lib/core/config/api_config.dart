@@ -66,6 +66,8 @@ class ApiConfig {
   // Endpoints Notifikasi Interaktif
   // ==========================================
   static String get notifikasiEndpoint => '$baseUrl/notifikasi';
+  static String get notifikasiCountsEndpoint => '$baseUrl/notifikasi/counts';
+  static String get notifikasiPreviewEndpoint => '$baseUrl/notifikasi/preview';
   static String notifikasiToggleEndpoint(int notifikasiId) =>
       '$baseUrl/notifikasi/$notifikasiId/toggle';
   static String notifikasiReadEndpoint(int notifikasiId) =>
@@ -77,6 +79,7 @@ class ApiConfig {
   static String notifikasiDeleteEndpoint(int notifikasiId) =>
       '$baseUrl/notifikasi/$notifikasiId';
   static String get notifikasiClearAllEndpoint => '$baseUrl/notifikasi';
+  static String get notifikasiClearReadEndpoint => '$baseUrl/notifikasi/read';
 
   // ==========================================
   // Endpoints Siswa

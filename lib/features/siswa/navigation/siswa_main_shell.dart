@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'package:learnpoint_mobile/core/widgets/bottom_nav_bar.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/screens/siswa_dashboard_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/dashboard/providers/notification_provider.dart';
 import 'package:learnpoint_mobile/features/siswa/mapel/screens/mapel_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/providers/profile_provider.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/screens/quiz_screen.dart';
@@ -16,7 +17,8 @@ class BottomNavSiswa extends StatefulWidget {
   State<BottomNavSiswa> createState() => _BottomNavSiswaState();
 }
 
-class _BottomNavSiswaState extends State<BottomNavSiswa> {
+class _BottomNavSiswaState extends State<BottomNavSiswa>
+    with WidgetsBindingObserver {
   late int _currentIndex;
 
   @override
@@ -26,7 +28,22 @@ class _BottomNavSiswaState extends State<BottomNavSiswa> {
     Future.microtask(() {
       if (!mounted) return;
       context.read<ProfileProvider>().ensureLoaded(forceRefresh: true);
+      context.read<NotificationProvider>().refreshUnreadCount();
     });
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      context.read<NotificationProvider>().refreshUnreadCount();
+    }
   }
 
   final List<Widget> _pages = [

@@ -1,120 +1,119 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/models/notification_model.dart';
+import 'package:learnpoint_mobile/features/siswa/dashboard/services/notification_service.dart';
 
-/// Shared state (Provider) untuk daftar notifikasi dan jumlah yang belum dibaca.
+/// State inbox, badge, dan sinkronisasi aksi notifikasi dengan API Laravel.
 class NotificationProvider extends ChangeNotifier {
-  final List<NotificationModel> _notifications = [
-    const NotificationModel(
-      id: 'n1',
-      title: 'Tugas baru',
-      message:
-          'Pak Budi memberikan tugas Persamaan Linear. Kumpulkan sebelum besok pukul 23.59.',
-      time: '10 menit yang lalu',
-      icon: Icons.assignment_outlined,
-      color: Color(0xFF2563EB),
-      backgroundColor: Color(0xFFDBEAFE),
-    ),
-    const NotificationModel(
-      id: 'n2',
-      title: 'Materi pembelajaran tersedia',
-      message:
-          'Materi Struktur Sel untuk mata pelajaran IPA Terpadu sudah dapat dipelajari.',
-      time: '1 jam yang lalu',
-      icon: Icons.menu_book_rounded,
-      color: Color(0xFF16A34A),
-      backgroundColor: Color(0xFFDCFCE7),
-    ),
-    const NotificationModel(
-      id: 'n3',
-      title: 'Pengingat jadwal',
-      message:
-          'Kelas Workshop Mobile Application dimulai hari ini pukul 09.00 WIB.',
-      time: '3 jam yang lalu',
-      icon: Icons.event_available_outlined,
-      color: Color(0xFF9333EA),
-      backgroundColor: Color(0xFFF3E8FF),
-    ),
-    const NotificationModel(
-      id: 'n4',
-      title: 'Nilai kuis sudah keluar',
-      message:
-          'Kamu mendapatkan nilai 90 untuk Kuis Sistem Organisasi Kehidupan. Pertahankan!',
-      time: 'Kemarin',
-      icon: Icons.emoji_events_outlined,
-      color: Color(0xFFD97706),
-      backgroundColor: Color(0xFFFEF3C7),
-      isRead: true,
-    ),
-    const NotificationModel(
-      id: 'n5',
-      title: 'Pengumuman sekolah',
-      message:
-          'Jangan lupa membawa kartu pelajar untuk kegiatan sekolah minggu ini.',
-      time: '2 hari yang lalu',
-      icon: Icons.campaign_outlined,
-      color: Color(0xFF0891B2),
-      backgroundColor: Color(0xFFCFFAFE),
-      isRead: true,
-    ),
-    const NotificationModel(
-      id: 'n6',
-      title: 'Pengumuman sekolah',
-      message: 'Ada Lomba Lari Minggu depan.',
-      time: '2 jam yang lalu',
-      icon: Icons.campaign_outlined,
-      color: Color(0xFF0891B2),
-      backgroundColor: Color(0xFFCFFAFE),
-      isRead: true,
-    ),
-    const NotificationModel(
-      id: 'n7',
-      title: 'Materi pembelajaran tersedia',
-      message:
-          'Materi Pemberontakan PKI untuk mata pelajaran Sejarah Terpadu sudah dapat dipelajari.',
-      time: '59 menit yang lalu',
-      icon: Icons.menu_book_rounded,
-      color: Color(0xFF16A34A),
-      backgroundColor: Color(0xFFDCFCE7),
-    ),
-  ];
+  NotificationProvider({NotificationService? service})
+      : _service = service ?? NotificationService();
+
+  final NotificationService _service;
+  final List<NotificationModel> _notifications = [];
+  int _unreadCount = 0;
+  int _currentPage = 0;
+  int _lastPage = 1;
+  bool _isLoading = false;
+  bool _isLoadingMore = false;
+  String? _error;
 
   List<NotificationModel> get notifications => List.unmodifiable(_notifications);
-
-  int get unreadCount => _notifications.where((item) => !item.isRead).length;
-
+  int get unreadCount => _unreadCount;
   bool get hasUnread => unreadCount > 0;
+  bool get isLoading => _isLoading;
+  bool get isLoadingMore => _isLoadingMore;
+  bool get hasMore => _currentPage < _lastPage;
+  String? get error => _error;
 
-  void markAsRead(String id) {
+  Future<void> load({bool refresh = false}) async {
+    if (_isLoading || (!refresh && _currentPage > 0)) return;
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final result = await _service.fetch(page: 1);
+      _notifications
+        ..clear()
+        ..addAll(result.items);
+      _currentPage = result.currentPage;
+      _lastPage = result.lastPage;
+      _unreadCount = result.unreadCount;
+    } catch (e) {
+      _error = _friendlyError(e);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> refresh() => load(refresh: true);
+
+  Future<void> loadMore() async {
+    if (_isLoading || _isLoadingMore || !hasMore) return;
+    _isLoadingMore = true;
+    notifyListeners();
+    try {
+      final result = await _service.fetch(page: _currentPage + 1);
+      _notifications.addAll(result.items);
+      _currentPage = result.currentPage;
+      _lastPage = result.lastPage;
+      _unreadCount = result.unreadCount;
+    } catch (e) {
+      _error = _friendlyError(e);
+    } finally {
+      _isLoadingMore = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> refreshUnreadCount() async {
+    try {
+      _unreadCount = await _service.fetchUnreadCount();
+      notifyListeners();
+    } catch (_) {
+      // Badge lama tetap ditampilkan ketika perangkat sedang offline.
+    }
+  }
+
+  Future<void> markAsRead(String id) async {
     final index = _notifications.indexWhere((item) => item.id == id);
-    if (index == -1 || _notifications[index].isRead) return;
-
-    _notifications[index] = _notifications[index].copyWith(isRead: true);
+    if (index < 0 || _notifications[index].isRead) return;
+    final previous = _notifications[index];
+    _notifications[index] = previous.copyWith(isRead: true);
+    _unreadCount = (_unreadCount - 1).clamp(0, _unreadCount) as int;
     notifyListeners();
-  }
-
-  void markAllAsRead() {
-    bool changed = false;
-    for (int i = 0; i < _notifications.length; i++) {
-      if (!_notifications[i].isRead) {
-        _notifications[i] = _notifications[i].copyWith(isRead: true);
-        changed = true;
-      }
-    }
-    if (changed) {
+    try {
+      _notifications[index] = await _service.markAsRead(id);
+      await refreshUnreadCount();
+    } catch (e) {
+      _notifications[index] = previous;
+      _unreadCount++;
+      _error = _friendlyError(e);
       notifyListeners();
     }
   }
 
-  void addNotification(NotificationModel notification) {
-    _notifications.insert(0, notification);
+  Future<void> markAllAsRead() async {
+    if (!hasUnread) return;
+    final before = List<NotificationModel>.from(_notifications);
+    final previousUnread = _unreadCount;
+    for (var i = 0; i < _notifications.length; i++) {
+      _notifications[i] = _notifications[i].copyWith(isRead: true);
+    }
+    _unreadCount = 0;
     notifyListeners();
-  }
-
-  void removeNotification(String id) {
-    final previousLength = _notifications.length;
-    _notifications.removeWhere((item) => item.id == id);
-    if (_notifications.length != previousLength) {
+    try {
+      await _service.markAllAsRead();
+    } catch (e) {
+      _notifications
+        ..clear()
+        ..addAll(before);
+      _unreadCount = previousUnread;
+      _error = _friendlyError(e);
       notifyListeners();
     }
   }
+
+  String _friendlyError(Object error) => error is NotificationException
+      ? error.message
+      : 'Gagal memuat notifikasi. Silakan coba lagi.';
 }

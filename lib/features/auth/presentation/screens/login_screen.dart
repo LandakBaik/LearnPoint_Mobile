@@ -7,6 +7,7 @@ import 'package:learnpoint_mobile/features/auth/data/auth_service.dart';
 import 'package:learnpoint_mobile/core/services/storage_service.dart';
 import 'package:learnpoint_mobile/features/siswa/navigation/siswa_main_shell.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/providers/profile_provider.dart';
+import 'package:learnpoint_mobile/features/siswa/dashboard/providers/notification_provider.dart';
 import 'package:learnpoint_mobile/core/widgets/inverted_top_curve_clipper.dart';
 
 class Login extends StatefulWidget {
@@ -79,6 +80,7 @@ class _LoginState extends State<Login> {
         final user = result.user;
         if (user != null) {
           context.read<ProfileProvider>().seedFromUser(user);
+          context.read<NotificationProvider>().refreshUnreadCount();
         }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
