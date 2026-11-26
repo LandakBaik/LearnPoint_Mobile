@@ -1,13 +1,13 @@
-
 import 'package:flutter/material.dart';
 
-import 'package:learnpoint_mobile/features/siswa/quiz/screens/quiz_per_mapel_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/screens/notifikasi_screen.dart';
-import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/dashboard_header_widget.dart';
+import 'package:learnpoint_mobile/features/siswa/materi/data/materi_service.dart';
+import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
+import 'package:learnpoint_mobile/features/siswa/quiz/screens/quiz_per_mapel_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/widgets/quiz_parallax_background_widget.dart';
-import 'package:learnpoint_mobile/features/siswa/quiz/widgets/quiz_top_decoration_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/widgets/quiz_subject_list_section_widget.dart';
+import 'package:learnpoint_mobile/features/siswa/quiz/widgets/quiz_top_decoration_widget.dart';
 
 class Quiz extends StatefulWidget {
   const Quiz({super.key});
@@ -24,6 +24,8 @@ class _QuizState extends State<Quiz> with SingleTickerProviderStateMixin {
   late final AnimationController _surgeUpController;
   bool _isTransitioning = false;
 
+  List<MateriModel> _subjects = subjek;
+
   @override
   void initState() {
     super.initState();
@@ -31,6 +33,19 @@ class _QuizState extends State<Quiz> with SingleTickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 650),
     );
+    _loadSubjectsFromApi();
+  }
+
+  Future<void> _loadSubjectsFromApi() async {
+    try {
+      final apiSubjects = await MateriService.fetchDaftarMapelSiswa();
+      if (!mounted || apiSubjects.isEmpty) return;
+      setState(() {
+        _subjects = apiSubjects;
+      });
+    } catch (_) {
+      // Tetap gunakan fallback list `subjek` jika gagal/offline tanpa cache
+    }
   }
 
   @override
@@ -181,7 +196,7 @@ class _QuizState extends State<Quiz> with SingleTickerProviderStateMixin {
                           );
                         },
                         child: QuizSubjectListSectionWidget(
-                          subjects: subjek,
+                          subjects: _subjects,
                           onSubjectTap: _handleSubjectTap,
                         ),
                       ),

@@ -14,19 +14,96 @@ enum QuizVisualType {
 }
 
 class QuizPlayQuestionModel {
+  final int? id;
   final String question;
   final List<String> options;
+  /// Key asli untuk setiap opsi (misal `['a', 'b', 'c', 'd']`), digunakan saat submit ke backend
+  final List<String> optionKeys;
+  /// Index jawaban benar jika diketahui di client (untuk mode lokal / offline).
+  /// Jika berasal dari endpoint `siswaKerjakan`, bernilai `-1` karena dikoreksi di server saat submit.
   final int correctIndex;
   final QuizVisualType visualType;
   final int rewardGems;
+  final String? savedAnswerKey;
+  final String? imageUrl;
 
   const QuizPlayQuestionModel({
+    this.id,
     required this.question,
     required this.options,
-    required this.correctIndex,
-    required this.visualType,
+    this.optionKeys = const ['a', 'b', 'c', 'd'],
+    this.correctIndex = -1,
+    this.visualType = QuizVisualType.cube3d,
     this.rewardGems = 5,
+    this.savedAnswerKey,
+    this.imageUrl,
   });
+
+  String keyAt(int index) {
+    if (index >= 0 && index < optionKeys.length) {
+      return optionKeys[index];
+    }
+    return String.fromCharCode(97 + index); // 'a', 'b', 'c', 'd'
+  }
+
+  int indexForKey(String key) {
+    final clean = key.trim().toLowerCase();
+    return optionKeys.indexWhere((k) => k.toLowerCase() == clean);
+  }
+
+  /// Factory untuk mengubah item `soals` dari `GET /api/siswa/kuis/{quiz}/kerjakan`
+  factory QuizPlayQuestionModel.fromApiJson(
+    Map<String, dynamic> json, {
+    int index = 0,
+  }) {
+    final keys = <String>[];
+    final opts = <String>[];
+
+    final rawPilihan = json['pilihan'];
+    if (rawPilihan is Map) {
+      for (final entry in rawPilihan.entries) {
+        final k = entry.key.toString().trim().toLowerCase();
+        final v = (entry.value ?? '').toString().trim();
+        if (v.isNotEmpty || keys.length < 4) {
+          keys.add(k);
+          opts.add(v);
+        }
+      }
+    } else if (rawPilihan is List) {
+      for (int i = 0; i < rawPilihan.length; i++) {
+        keys.add(String.fromCharCode(97 + i));
+        opts.add((rawPilihan[i] ?? '').toString());
+      }
+    }
+
+    if (opts.isEmpty) {
+      keys.addAll(['a', 'b', 'c', 'd']);
+      opts.addAll(['Pilihan A', 'Pilihan B', 'Pilihan C', 'Pilihan D']);
+    }
+
+    int resolvedCorrectIndex = -1;
+    final rawKunci = json['kunci_jawaban']?.toString().trim().toLowerCase();
+    if (rawKunci != null && rawKunci.isNotEmpty) {
+      resolvedCorrectIndex = keys.indexWhere((k) => k == rawKunci);
+    }
+
+    final bobot = double.tryParse((json['bobot'] ?? 10).toString()) ?? 10.0;
+    final visuals = QuizVisualType.values;
+
+    return QuizPlayQuestionModel(
+      id: json['id'] is int
+          ? json['id'] as int
+          : int.tryParse((json['id'] ?? '').toString()),
+      question: (json['pertanyaan'] ?? 'Pertanyaan Kuis').toString(),
+      options: opts,
+      optionKeys: keys,
+      correctIndex: resolvedCorrectIndex,
+      visualType: visuals[index % visuals.length],
+      rewardGems: bobot.round().clamp(1, 100),
+      savedAnswerKey: json['saved_answer']?.toString().trim().toLowerCase(),
+      imageUrl: json['gambar_url']?.toString(),
+    );
+  }
 }
 
 final List<QuizPlayQuestionModel> defaultQuizPlayQuestions = [

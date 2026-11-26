@@ -1,14 +1,15 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 
-import 'package:learnpoint_mobile/features/siswa/quiz/config/quiz_assets.dart';
-import 'package:learnpoint_mobile/features/siswa/quiz/screens/quiz_level_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
+import 'package:learnpoint_mobile/features/siswa/quiz/config/quiz_assets.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/models/quiz_per_mapel_model.dart';
+import 'package:learnpoint_mobile/features/siswa/quiz/screens/quiz_level_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/quiz/services/quiz_api_service.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/widgets/quiz_back_header_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/widgets/quiz_per_mapel/quiz_evaporating_hand_decoration_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/widgets/quiz_per_mapel/quiz_per_mapel_background_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/widgets/quiz_per_mapel/quiz_theme_list_section_widget.dart';
-import 'package:audioplayers/audioplayers.dart';
 
 class QuizPerMapel extends StatefulWidget {
   final MateriModel? subject;
@@ -25,12 +26,29 @@ class _QuizPerMapelState extends State<QuizPerMapel>
   late final AudioPlayer _bgmPlayer;
   bool _isMuted = false;
 
+  List<QuizPerMapelM> _themes = quizMapel;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _bgmPlayer = AudioPlayer();
     _initBgm();
+    _loadQuizzesFromApi();
+  }
+
+  Future<void> _loadQuizzesFromApi() async {
+    try {
+      final quizzes = await QuizApiService.fetchQuizzes(
+        mapelId: widget.subject?.id,
+      );
+      if (!mounted || quizzes.isEmpty) return;
+      setState(() {
+        _themes = quizzes;
+      });
+    } catch (_) {
+      // Tetap gunakan fallback `quizMapel` jika belum ada kuis di server atau offline
+    }
   }
 
   Future<void> _initBgm() async {
@@ -137,7 +155,7 @@ class _QuizPerMapelState extends State<QuizPerMapel>
                   child: QuizThemeListSectionWidget(
                     subject: widget.subject,
                     subjectTitle: subjectTitle,
-                    themes: quizMapel,
+                    themes: _themes,
                     onThemeTap: (item) async {
                       await _bgmPlayer.pause();
                       if (!context.mounted) return;
