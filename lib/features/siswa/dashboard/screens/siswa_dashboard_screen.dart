@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import 'package:learnpoint_mobile/features/siswa/dashboard/providers/notification_provider.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/providers/profile_provider.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/models/task_model.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/screens/akun_screen.dart';
@@ -29,6 +30,8 @@ class SiswaDashboardScreen extends StatefulWidget {
 }
 
 class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
+  final GlobalKey<MateriDashboardWidgetState> _materiWidgetKey =
+      GlobalKey<MateriDashboardWidgetState>();
   LastReadMateri? _lastReadMateri;
 
   // DATA TUGAS DARI API
@@ -49,6 +52,31 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
     _loadLastReadMateri();
     _loadDashboardTasks();
     _loadActiveBanner();
+  }
+
+  Future<void> _handleRefresh() async {
+    await Future.wait([
+      _refreshProviders(),
+      _loadLastReadMateri(),
+      _loadDashboardTasks(),
+      _loadActiveBanner(),
+      if (_materiWidgetKey.currentState != null)
+        _materiWidgetKey.currentState!.refresh(),
+    ]);
+  }
+
+  Future<void> _refreshProviders() async {
+    try {
+      await context.read<ProfileProvider>().fetchProfile();
+    } on ProviderNotFoundException {
+      // Abaikan jika provider tidak tersedia pada tree widget.
+    }
+    if (!mounted) return;
+    try {
+      await context.read<NotificationProvider>().refreshUnreadCount();
+    } on ProviderNotFoundException {
+      // Abaikan jika provider tidak tersedia pada tree widget.
+    }
   }
 
   Future<void> _loadActiveBanner() async {
@@ -303,8 +331,12 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F7FB),
-      body: SingleChildScrollView(
-        child: Column(
+      body: RefreshIndicator(
+        color: const Color(0xFF4F46E5),
+        onRefresh: _handleRefresh,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // 1. Header & Hero Area
@@ -390,7 +422,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
             // 3. Section: Materi Baru Minggu Ini
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: const MateriDashboardWidget(),
+              child: MateriDashboardWidget(key: _materiWidgetKey),
             ),
 
             const SizedBox(height: 24),
@@ -404,6 +436,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
             const SizedBox(height: 30),
           ],
         ),
+      ),
       ),
     );
   }

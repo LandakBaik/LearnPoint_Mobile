@@ -148,6 +148,8 @@ class MapelDetailModel {
   final int? tingkatan;
   final String? semester;
   final String? tahunAjaran;
+  final double? rataRataNilaiTugas;
+  final int jumlahTugasDinilai;
   final List<MateriItemModel> materis;
 
   const MapelDetailModel({
@@ -157,6 +159,8 @@ class MapelDetailModel {
     this.tingkatan,
     this.semester,
     this.tahunAjaran,
+    this.rataRataNilaiTugas,
+    this.jumlahTugasDinilai = 0,
     this.materis = const [],
   });
 
@@ -188,6 +192,10 @@ class MapelDetailModel {
         : const <String, dynamic>{};
     final rawMateris =
         data['materis'] is List ? data['materis'] as List : const [];
+    final statistikTugas = data['statistik_tugas'] is Map<String, dynamic>
+        ? data['statistik_tugas'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+    final rawRataRata = statistikTugas['rata_rata_nilai_tugas'];
 
     return MapelDetailModel(
       id: mapel['id'] is int
@@ -200,6 +208,15 @@ class MapelDetailModel {
           : int.tryParse((mapel['tingkatan'] ?? '').toString()),
       semester: mapel['semester']?.toString(),
       tahunAjaran: mapel['tahun_ajaran']?.toString(),
+      rataRataNilaiTugas: rawRataRata == null
+          ? null
+          : double.tryParse(rawRataRata.toString()),
+      jumlahTugasDinilai: statistikTugas['jumlah_tugas_dinilai'] is int
+          ? statistikTugas['jumlah_tugas_dinilai'] as int
+          : int.tryParse(
+                  (statistikTugas['jumlah_tugas_dinilai'] ?? '0').toString(),
+                ) ??
+              0,
       materis: rawMateris
           .whereType<Map<String, dynamic>>()
           .map(MateriItemModel.fromJson)

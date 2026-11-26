@@ -10,10 +10,11 @@ class MateriDashboardWidget extends StatefulWidget {
   const MateriDashboardWidget({super.key});
 
   @override
-  State<MateriDashboardWidget> createState() => _MateriDashboardWidgetState();
+  State<MateriDashboardWidget> createState() => MateriDashboardWidgetState();
 }
 
-class _MateriDashboardWidgetState extends State<MateriDashboardWidget> {
+class MateriDashboardWidgetState extends State<MateriDashboardWidget> {
+  Future<void> refresh() => _loadMateri();
   int _currentMateriIndex = 0;
 
   List<_DashboardMateri> _materiList = [];

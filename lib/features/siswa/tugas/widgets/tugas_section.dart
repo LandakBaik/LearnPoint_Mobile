@@ -14,10 +14,11 @@ class TugasSection extends StatefulWidget {
   const TugasSection({super.key, this.mapelId, this.subjectName = ''});
 
   @override
-  State<TugasSection> createState() => _TugasSectionState();
+  State<TugasSection> createState() => TugasSectionState();
 }
 
-class _TugasSectionState extends State<TugasSection> {
+class TugasSectionState extends State<TugasSection> {
+  Future<void> refresh() => _loadTasks();
   List<Map<String, dynamic>> tasks = [];
 
   bool isLoading = true;

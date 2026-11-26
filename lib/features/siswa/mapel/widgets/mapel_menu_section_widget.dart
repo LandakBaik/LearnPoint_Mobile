@@ -24,10 +24,23 @@ class MapelMenuSectionWidget extends StatefulWidget {
   });
 
   @override
-  State<MapelMenuSectionWidget> createState() => _MapelMenuSectionWidgetState();
+  State<MapelMenuSectionWidget> createState() => MapelMenuSectionWidgetState();
 }
 
-class _MapelMenuSectionWidgetState extends State<MapelMenuSectionWidget> {
+class MapelMenuSectionWidgetState extends State<MapelMenuSectionWidget> {
+  final GlobalKey<TugasSectionState> _tugasSectionKey =
+      GlobalKey<TugasSectionState>();
+
+  Future<void> refresh() async {
+    await Future.wait([
+      _loadProgressStates(),
+      _loadMateriFromApi(),
+      _loadUjianFromApi(),
+      _loadTugasCountFromApi(),
+      if (_tugasSectionKey.currentState != null)
+        _tugasSectionKey.currentState!.refresh(),
+    ]);
+  }
   int selectedIndex = 0;
   Set<String> completedKeys = {};
   Set<String> bookmarkedKeys = {};
@@ -395,6 +408,7 @@ class _MapelMenuSectionWidgetState extends State<MapelMenuSectionWidget> {
   Widget _buildSelectedTabContent() {
     if (selectedIndex == 1) {
       return TugasSection(
+        key: _tugasSectionKey,
         mapelId: widget.mapelId,
         subjectName: widget.subjectName,
       );

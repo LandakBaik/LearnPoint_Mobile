@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
+import 'package:learnpoint_mobile/features/siswa/dashboard/providers/notification_provider.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/screens/notifikasi_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/dashboard_header_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/mapel/widgets/mapel_header_widget.dart';
@@ -22,7 +24,25 @@ class DetailMapelScreen extends StatefulWidget {
 }
 
 class _DetailMapelScreenState extends State<DetailMapelScreen> {
+  final GlobalKey<MapelMenuSectionWidgetState> _menuSectionKey =
+      GlobalKey<MapelMenuSectionWidgetState>();
   MapelDetailModel? _mapelDetail;
+
+  Future<void> _handleRefresh() async {
+    await Future.wait([
+      if (_menuSectionKey.currentState != null)
+        _menuSectionKey.currentState!.refresh(),
+      _refreshNotifications(),
+    ]);
+  }
+
+  Future<void> _refreshNotifications() async {
+    try {
+      await context.read<NotificationProvider>().refreshUnreadCount();
+    } on ProviderNotFoundException {
+      // Abaikan jika provider tidak tersedia pada tree widget.
+    }
+  }
 
   String? get _kelasLabel {
     final namaKelas = _mapelDetail?.namaKelas?.trim();
@@ -63,8 +83,12 @@ class _DetailMapelScreenState extends State<DetailMapelScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F7FB),
-      body: SingleChildScrollView(
-        child: Column(
+      body: RefreshIndicator(
+        color: const Color(0xFF7B4AE2),
+        onRefresh: _handleRefresh,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
           children: [
             Stack(
               clipBehavior: Clip.none,
@@ -89,7 +113,7 @@ class _DetailMapelScreenState extends State<DetailMapelScreen> {
                   child: SafeArea(
                     bottom: false,
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 96),
+                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 128),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -145,18 +169,22 @@ class _DetailMapelScreenState extends State<DetailMapelScreen> {
                 Positioned(
                   left: 20,
                   right: 20,
-                  bottom: -68,
+                  bottom: -88,
                   child: MapelHeaderWidget(
                     subjectName: subjectName,
                     description: _subtitleDescription,
                     kelasLabel: _kelasLabel,
+                    rataRataNilaiTugas: _mapelDetail?.rataRataNilaiTugas,
+                    jumlahTugasDinilai:
+                        _mapelDetail?.jumlahTugasDinilai ?? 0,
                     isLoading: _mapelDetail == null,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 84),
+            const SizedBox(height: 108),
             MapelMenuSectionWidget(
+              key: _menuSectionKey,
               mapelId: widget.subject?.id,
               subjectName: subjectName,
               onMapelLoaded: (detail) {
@@ -167,6 +195,7 @@ class _DetailMapelScreenState extends State<DetailMapelScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

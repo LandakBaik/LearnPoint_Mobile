@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import 'package:learnpoint_mobile/features/siswa/dashboard/providers/notification_provider.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/screens/notifikasi_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/dashboard_header_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/mapel/screens/detail_mapel_screen.dart';
@@ -45,6 +46,27 @@ class _MapelScreenState extends State<MapelScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleRefresh() async {
+    await Future.wait([
+      _loadDaftarMapel(),
+      _refreshHeaderProviders(),
+    ]);
+  }
+
+  Future<void> _refreshHeaderProviders() async {
+    try {
+      await context.read<ProfileProvider>().fetchProfile();
+    } on ProviderNotFoundException {
+      // Abaikan jika provider tidak tersedia pada tree widget.
+    }
+    if (!mounted) return;
+    try {
+      await context.read<NotificationProvider>().refreshUnreadCount();
+    } on ProviderNotFoundException {
+      // Abaikan jika provider tidak tersedia pada tree widget.
+    }
   }
 
   Future<void> _loadDaftarMapel() async {
@@ -235,7 +257,8 @@ class _MapelScreenState extends State<MapelScreen> {
           const SizedBox(height: 36),
           Expanded(
             child: RefreshIndicator(
-              onRefresh: _loadDaftarMapel,
+              color: const Color(0xFF7B4AE2),
+              onRefresh: _handleRefresh,
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final horizontalPadding =
