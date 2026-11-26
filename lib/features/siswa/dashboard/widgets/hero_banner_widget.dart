@@ -7,6 +7,7 @@ import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/dashboard_hea
 class HeroBannerWidget extends StatelessWidget {
   final StudentProfileModel profile;
   final BannerItemModel? activeBanner;
+  final bool isBannerLoading;
   final VoidCallback? onNotificationTap;
   final VoidCallback? onProfileTap;
   final VoidCallback? onBannerTap;
@@ -19,6 +20,7 @@ class HeroBannerWidget extends StatelessWidget {
     super.key,
     required this.profile,
     this.activeBanner,
+    this.isBannerLoading = false,
     this.onNotificationTap,
     this.onProfileTap,
     this.onBannerTap,
@@ -29,17 +31,18 @@ class HeroBannerWidget extends StatelessWidget {
   });
 
   Widget _buildBannerBackground() {
-    final defaultAssetFallback = Image.asset(
-      'assets/images/hero-banner/space-hero.gif',
-      fit: BoxFit.cover,
-      gaplessPlayback: true,
-      errorBuilder: (_, _, _) => CustomPaint(
-        painter: SpaceFallbackPainter(),
-      ),
-    );
-
     if (activeBanner != null) {
+      final defaultAssetFallback = Image.asset(
+        'assets/images/hero-banner/space-hero.gif',
+        fit: BoxFit.cover,
+        gaplessPlayback: true,
+        errorBuilder: (_, _, _) => CustomPaint(
+          painter: SpaceFallbackPainter(),
+        ),
+      );
+
       return BannerMediaView(
+        key: ValueKey('banner_${activeBanner!.kode}'),
         banner: activeBanner!,
         defaultWidget: Container(
           decoration: const BoxDecoration(
@@ -58,8 +61,22 @@ class HeroBannerWidget extends StatelessWidget {
       );
     }
 
-    // Fallback awal sebelum status gacha selesai dimuat
-    return defaultAssetFallback;
+    if (isBannerLoading) {
+      return const _BannerShimmerBackground(
+        key: ValueKey('banner_shimmer'),
+      );
+    }
+
+    // Fallback jika gagal memuat / offline setelah proses fetch selesai
+    return Image.asset(
+      'assets/images/hero-banner/space-hero.gif',
+      key: const ValueKey('banner_fallback'),
+      fit: BoxFit.cover,
+      gaplessPlayback: true,
+      errorBuilder: (_, _, _) => CustomPaint(
+        painter: SpaceFallbackPainter(),
+      ),
+    );
   }
 
   @override
@@ -85,8 +102,21 @@ class HeroBannerWidget extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // Background sesuai active_banner dari API (GIF atau Gradient Default)
-                _buildBannerBackground(),
+                // Background sesuai active_banner dari API (Shimmer saat loading, GIF/Gradient saat siap)
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 350),
+                  layoutBuilder: (currentChild, previousChildren) {
+                    return Stack(
+                      fit: StackFit.expand,
+                      alignment: Alignment.center,
+                      children: [
+                        ...previousChildren,
+                        if (currentChild != null) currentChild,
+                      ],
+                    );
+                  },
+                  child: _buildBannerBackground(),
+                ),
                 // Gradient overlay to enhance text readability on bright banners
                 Container(
                   decoration: BoxDecoration(
@@ -413,4 +443,58 @@ class SpaceFallbackPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _BannerShimmerBackground extends StatefulWidget {
+  const _BannerShimmerBackground({super.key});
+
+  @override
+  State<_BannerShimmerBackground> createState() =>
+      _BannerShimmerBackgroundState();
+}
+
+class _BannerShimmerBackgroundState extends State<_BannerShimmerBackground>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1300),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final slide = -1.5 + (3.0 * _controller.value);
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment(slide - 1.0, -0.35),
+              end: Alignment(slide + 1.0, 0.35),
+              colors: const [
+                Color(0xFF0B1030),
+                Color(0xFF172154),
+                Color(0xFF283980),
+                Color(0xFF172154),
+                Color(0xFF0B1030),
+              ],
+              stops: const [0.0, 0.35, 0.5, 0.65, 1.0],
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
