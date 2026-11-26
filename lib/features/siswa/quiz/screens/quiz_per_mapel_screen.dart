@@ -14,7 +14,11 @@ import 'package:learnpoint_mobile/features/siswa/quiz/widgets/quiz_per_mapel/qui
 class QuizPerMapel extends StatefulWidget {
   final MateriModel? subject;
 
-  const QuizPerMapel({super.key, this.subject});
+  /// Daftar kuis yang sudah dimuat sebelumnya (oleh QuizPerMapelLoadingScreen).
+  /// Jika diisi, halaman tidak perlu memanggil API lagi.
+  final List<QuizPerMapelM>? initialThemes;
+
+  const QuizPerMapel({super.key, this.subject, this.initialThemes});
 
   @override
   State<QuizPerMapel> createState() => _QuizPerMapelState();
@@ -34,7 +38,12 @@ class _QuizPerMapelState extends State<QuizPerMapel>
     WidgetsBinding.instance.addObserver(this);
     _bgmPlayer = AudioPlayer();
     _initBgm();
-    _loadQuizzesFromApi();
+    final preloaded = widget.initialThemes;
+    if (preloaded != null && preloaded.isNotEmpty) {
+      _themes = preloaded;
+    } else {
+      _loadQuizzesFromApi();
+    }
   }
 
   Future<void> _loadQuizzesFromApi() async {
