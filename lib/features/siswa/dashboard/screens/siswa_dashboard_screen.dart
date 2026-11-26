@@ -34,6 +34,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
   List<Map<String, dynamic>> _taskList = [];
   bool _isLoadingTasks = true;
   String? _taskError;
+  bool _isBannerLoading = GachaService.activeBannerNotifier.value == null;
 
   @override
   void initState() {
@@ -48,10 +49,17 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
   }
 
   Future<void> _loadActiveBanner() async {
+    if (GachaService.activeBannerNotifier.value == null && mounted) {
+      setState(() => _isBannerLoading = true);
+    }
     try {
       await GachaService.fetchGachaStatus();
     } catch (_) {
       // Fallback ke banner default/lokal jika offline
+    } finally {
+      if (mounted && _isBannerLoading) {
+        setState(() => _isBannerLoading = false);
+      }
     }
   }
 
@@ -321,6 +329,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
                 return HeroBannerWidget(
                   profile: context.watch<ProfileProvider>().currentProfile,
                   activeBanner: activeBanner,
+                  isBannerLoading: _isBannerLoading,
                   onNotificationTap: _openNotifications,
                   onProfileTap: _openProfile, 
                   onBannerTap: () {
