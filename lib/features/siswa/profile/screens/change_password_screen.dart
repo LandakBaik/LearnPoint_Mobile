@@ -95,9 +95,7 @@ class _ChangepassState extends State<Changepass> {
 
   @override
   Widget build(BuildContext context) {
-    // Mediaquery untuk scaling font dan spacing dinamis
-    final mediaQuery = MediaQuery.of(context);
-    final screenWidth = mediaQuery.size.width;
+    final screenWidth = MediaQuery.sizeOf(context).width;
     final textScale = (screenWidth / 390).clamp(0.85, 1.15);
 
     return Scaffold(

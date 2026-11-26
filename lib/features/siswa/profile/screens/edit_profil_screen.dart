@@ -165,8 +165,9 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final isTablet = mediaQuery.size.width > 600;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final topPadding = MediaQuery.paddingOf(context).top;
+    final isTablet = screenWidth > 600;
 
     return Scaffold(
       backgroundColor: const Color(0xFF4338CA),
@@ -194,7 +195,7 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
                 ),
                 padding: EdgeInsets.fromLTRB(
                   isTablet ? 28.0 : 18.0,
-                  mediaQuery.padding.top + 14.0,
+                  topPadding + 14.0,
                   isTablet ? 28.0 : 18.0,
                   24.0,
                 ),

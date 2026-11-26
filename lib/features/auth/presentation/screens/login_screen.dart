@@ -284,7 +284,9 @@ class _LoginState extends State<Login> {
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final viewPaddingBottom = MediaQuery.viewPaddingOf(context).bottom;
+    final cardWidth = screenWidth.clamp(0.0, 720.0);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
@@ -298,116 +300,114 @@ class _LoginState extends State<Login> {
         backgroundColor: _blueGradientStart,
         body: SafeArea(
           bottom: false,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final cardWidth = constraints.maxWidth.clamp(0.0, 720.0);
-
-              return Center(
-                child: SizedBox(
-                  width: cardWidth,
-                  child: SingleChildScrollView(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight,
-                      ),
-                      child: IntrinsicHeight(
-                        child: Column(
-                          children: [
-                            // Top Section / Header
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 20,
-                              ),
-                              child: Column(
+          child: Center(
+            child: SizedBox(
+              width: cardWidth,
+              child: CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Column(
+                      children: [
+                        // Top Section / Header
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 20,
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.settings_outlined,
-                                          color: Colors.white,
-                                          size: 22,
-                                        ),
-                                        tooltip: 'Pengaturan API URL',
-                                        onPressed: _showServerSettings,
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Container(
-                                    width: 68,
-                                    height: 68,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.2,
-                                      ),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.school_outlined,
-                                      size: 34,
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.settings_outlined,
                                       color: Colors.white,
+                                      size: 22,
                                     ),
-                                  ),
-                                  const SizedBox(height: 14),
-                                  const Text(
-                                    'LearnPoint',
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  const Text(
-                                    'Login to continue',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 14),
-                                  const Text(
-                                    'Aplikasi E-Learning resmi untuk mendukung\nproses pembelajaran digital siswa-siswi SMPN\n14 Jember.',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      height: 1.4,
-                                      color: Colors.white70,
-                                    ),
+                                    tooltip: 'Pengaturan API URL',
+                                    onPressed: _showServerSettings,
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
                                   ),
                                 ],
                               ),
-                            ),
-                            const SizedBox(height: 10),
+                              const SizedBox(height: 16),
+                              Container(
+                                width: 68,
+                                height: 68,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.school_outlined,
+                                  size: 34,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              const Text(
+                                'LearnPoint',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              const Text(
+                                'Login to continue',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              const Text(
+                                'Aplikasi E-Learning resmi untuk mendukung\nproses pembelajaran digital siswa-siswi SMPN\n14 Jember.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  height: 1.4,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 10),
 
-                            // Form Section (Card White)
-                            Expanded(
-                              child: ClipPath(
-                                clipper: InvertedTopCurveClipper(),
-                                child: Container(
-                                  width: double.infinity,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.only(
-                                      topLeft: Radius.circular(32),
-                                      topRight: Radius.circular(32),
+                        // Form Section (Card White) - ClipPath dipisah ke strip
+                        // dekoratif berukuran tetap agar tidak di-clip ulang tiap frame keyboard.
+                        Stack(
+                          children: [
+                            const Positioned.fill(
+                              top: 30,
+                              child: ColoredBox(color: Colors.white),
+                            ),
+                            Column(
+                              children: [
+                                RepaintBoundary(
+                                  child: ClipPath(
+                                    clipper: const InvertedTopCurveClipper(),
+                                    child: Container(
+                                      height: 32,
+                                      width: double.infinity,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.only(
+                                          topLeft: Radius.circular(32),
+                                          topRight: Radius.circular(32),
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                  padding:
-                                      const EdgeInsets.fromLTRB(
-                                        24,
-                                        32,
-                                        24,
-                                        24,
-                                      ).copyWith(
-                                        bottom:
-                                            24 + mediaQuery.viewPadding.bottom,
-                                      ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                  ),
                                   child: Form(
                                     key: _formKey,
                                     child: Column(
@@ -526,7 +526,6 @@ class _LoginState extends State<Login> {
                                                   ),
                                           ),
                                         ),
-
                                         const SizedBox(height: 28),
                                         const Divider(color: Color(0xFFE5E7EB)),
                                         const SizedBox(height: 20),
@@ -546,7 +545,8 @@ class _LoginState extends State<Login> {
                                                   text: 'Belum memiliki akun? ',
                                                 ),
                                                 TextSpan(
-                                                  text: 'Hubungi Administrator Sekolah / Tata Usaha.',
+                                                  text:
+                                                      'Hubungi Administrator Sekolah / Tata Usaha.',
                                                   style: TextStyle(
                                                     color: Color(0xFF1E293B),
                                                     fontWeight: FontWeight.w600,
@@ -557,31 +557,41 @@ class _LoginState extends State<Login> {
                                             textAlign: TextAlign.center,
                                           ),
                                         ),
-
-                                        const Spacer(),
-                                        const SizedBox(height: 24),
-                                        const Text(
-                                          '© 2024 LearnPoint • SMPN 14 Jember. All rights reserved.',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: _mutedGrey,
-                                          ),
-                                        ),
                                       ],
                                     ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ),
                           ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Container(
+                      color: Colors.white,
+                      alignment: Alignment.bottomCenter,
+                      padding: EdgeInsets.fromLTRB(
+                        24,
+                        24,
+                        24,
+                        24 + viewPaddingBottom,
+                      ),
+                      child: const Text(
+                        '© 2024 LearnPoint • SMPN 14 Jember. All rights reserved.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: _mutedGrey,
                         ),
                       ),
                     ),
                   ),
-                ),
-              );
-            },
+                ],
+              ),
+            ),
           ),
         ),
       ),

@@ -33,18 +33,14 @@ class _AkunScreenState extends State<AkunScreen> {
 
   Future<void> _openEditProfile() async {
     await Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (context) => const EditProfilScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const EditProfilScreen()),
     );
   }
 
   Future<void> _openChangePassword() async {
-    await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (context) => const Changepass(),
-      ),
-    );
+    await Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (context) => const Changepass()));
   }
 
   @override
@@ -54,15 +50,16 @@ class _AkunScreenState extends State<AkunScreen> {
     final isLoading = profileProvider.isLoading;
     final errorMessage = profileProvider.errorMessage;
 
-    final mediaQuery = MediaQuery.of(context);
-    final isTablet = mediaQuery.size.width > 600;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final topPadding = MediaQuery.paddingOf(context).top;
+    final isTablet = screenWidth > 600;
     final isGuru = currentProfile.isGuru;
     final isActive = currentProfile.isActive;
     final statusLabel = isGuru
         ? (isActive ? 'Guru Aktif' : 'Nonaktif')
         : (currentProfile.isSiswa
-            ? (isActive ? 'Siswa Aktif' : 'Nonaktif')
-            : (isActive ? 'Aktif' : 'Nonaktif'));
+              ? (isActive ? 'Siswa Aktif' : 'Nonaktif')
+              : (isActive ? 'Aktif' : 'Nonaktif'));
 
     return Scaffold(
       backgroundColor: const Color(0xFF4338CA),
@@ -86,15 +83,12 @@ class _AkunScreenState extends State<AkunScreen> {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [
-                        Color(0xFF3730A3),
-                        Color(0xFF4338CA),
-                      ],
+                      colors: [Color(0xFF3730A3), Color(0xFF4338CA)],
                     ),
                   ),
                   padding: EdgeInsets.fromLTRB(
                     isTablet ? 32.0 : 20.0,
-                    mediaQuery.padding.top + 14.0,
+                    topPadding + 14.0,
                     isTablet ? 32.0 : 20.0,
                     28.0,
                   ),
@@ -177,10 +171,7 @@ class _AkunScreenState extends State<AkunScreen> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: Colors.white,
-                          border: Border.all(
-                            color: Colors.white,
-                            width: 4,
-                          ),
+                          border: Border.all(color: Colors.white, width: 4),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.22),
@@ -245,7 +236,9 @@ class _AkunScreenState extends State<AkunScreen> {
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 6),
+                              horizontal: 14,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(16),
@@ -266,12 +259,15 @@ class _AkunScreenState extends State<AkunScreen> {
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 6),
+                              horizontal: 14,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
-                              color: (isActive
-                                      ? const Color(0xFF10B981)
-                                      : const Color(0xFFEF4444))
-                                  .withValues(alpha: 0.28),
+                              color:
+                                  (isActive
+                                          ? const Color(0xFF10B981)
+                                          : const Color(0xFFEF4444))
+                                      .withValues(alpha: 0.28),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: isActive
@@ -488,14 +484,18 @@ class _AkunScreenState extends State<AkunScreen> {
                                 actionWidget: currentProfile.parentPhone != '-'
                                     ? InkWell(
                                         onTap: () {
-                                          Clipboard.setData(ClipboardData(
-                                              text:
-                                                  currentProfile.parentPhone));
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
+                                          Clipboard.setData(
+                                            ClipboardData(
+                                              text: currentProfile.parentPhone,
+                                            ),
+                                          );
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
                                             SnackBar(
                                               content: Text(
-                                                  'Nomor HP ${currentProfile.parentPhone} berhasil disalin'),
+                                                'Nomor HP ${currentProfile.parentPhone} berhasil disalin',
+                                              ),
                                               behavior:
                                                   SnackBarBehavior.floating,
                                             ),
@@ -504,11 +504,14 @@ class _AkunScreenState extends State<AkunScreen> {
                                         borderRadius: BorderRadius.circular(10),
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(
-                                              horizontal: 12, vertical: 6),
+                                            horizontal: 12,
+                                            vertical: 6,
+                                          ),
                                           decoration: BoxDecoration(
                                             color: const Color(0xFFDCFCE7),
-                                            borderRadius:
-                                                BorderRadius.circular(10),
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
                                             border: Border.all(
                                               color: const Color(0xFFA7F3D0),
                                               width: 1,
@@ -577,8 +580,7 @@ class _AkunScreenState extends State<AkunScreen> {
                                   _buildInfoRow(
                                     icon: Icons.menu_book_outlined,
                                     label: 'Mata Pelajaran Diampu',
-                                    value: currentProfile
-                                            .mapelDiampu.isNotEmpty
+                                    value: currentProfile.mapelDiampu.isNotEmpty
                                         ? currentProfile.mapelDiampu.join(', ')
                                         : '-',
                                     isMultiLine: true,
@@ -631,8 +633,9 @@ class _AkunScreenState extends State<AkunScreen> {
                                 foregroundColor: Colors.white,
                                 elevation: 1,
                                 minimumSize: const Size(double.infinity, 50),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
@@ -671,9 +674,13 @@ class _AkunScreenState extends State<AkunScreen> {
                                       color: Color(0xFF4338CA),
                                       width: 1.5,
                                     ),
-                                    minimumSize: const Size(double.infinity, 48),
+                                    minimumSize: const Size(
+                                      double.infinity,
+                                      48,
+                                    ),
                                     padding: const EdgeInsets.symmetric(
-                                        vertical: 13),
+                                      vertical: 13,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14),
                                     ),
@@ -699,9 +706,13 @@ class _AkunScreenState extends State<AkunScreen> {
                                     backgroundColor: const Color(0xFF4338CA),
                                     foregroundColor: Colors.white,
                                     elevation: 1,
-                                    minimumSize: const Size(double.infinity, 50),
+                                    minimumSize: const Size(
+                                      double.infinity,
+                                      50,
+                                    ),
                                     padding: const EdgeInsets.symmetric(
-                                        vertical: 14),
+                                      vertical: 14,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14),
                                     ),
@@ -829,10 +840,7 @@ class _AkunScreenState extends State<AkunScreen> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF6366F1),
-            Color(0xFF4338CA),
-          ],
+          colors: [Color(0xFF6366F1), Color(0xFF4338CA)],
         ),
       ),
       alignment: Alignment.center,
@@ -862,11 +870,7 @@ class _AkunScreenState extends State<AkunScreen> {
             color: iconBgColor,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(
-            icon,
-            size: 18,
-            color: iconColor,
-          ),
+          child: Icon(icon, size: 18, color: iconColor),
         ),
         const SizedBox(width: 10),
         Text(
@@ -888,10 +892,7 @@ class _AkunScreenState extends State<AkunScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFFE2E8F0),
-          width: 1,
-        ),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
         boxShadow: const [
           BoxShadow(
             color: Color(0x080F172A),
@@ -911,11 +912,7 @@ class _AkunScreenState extends State<AkunScreen> {
   Widget _buildDivider() {
     return const Padding(
       padding: EdgeInsets.symmetric(vertical: 12),
-      child: Divider(
-        height: 1,
-        thickness: 0.9,
-        color: Color(0xFFF1F5F9),
-      ),
+      child: Divider(height: 1, thickness: 0.9, color: Color(0xFFF1F5F9)),
     );
   }
 
@@ -929,8 +926,9 @@ class _AkunScreenState extends State<AkunScreen> {
     Widget? actionWidget,
   }) {
     return Row(
-      crossAxisAlignment:
-          isMultiLine ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+      crossAxisAlignment: isMultiLine
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.center,
       children: [
         Container(
           width: 42,
@@ -938,17 +936,10 @@ class _AkunScreenState extends State<AkunScreen> {
           decoration: BoxDecoration(
             color: const Color(0xFFF8FAFC),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: const Color(0xFFE2E8F0),
-              width: 1,
-            ),
+            border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
           ),
           alignment: Alignment.center,
-          child: Icon(
-            icon,
-            size: 20,
-            color: const Color(0xFF6366F1),
-          ),
+          child: Icon(icon, size: 20, color: const Color(0xFF6366F1)),
         ),
         const SizedBox(width: 14),
         Expanded(
@@ -1034,10 +1025,7 @@ class _AkunScreenState extends State<AkunScreen> {
         ),
         content: const Text(
           'Apakah kamu yakin ingin keluar dari akun LearnPoint ini?',
-          style: TextStyle(
-            fontSize: 14,
-            color: Color(0xFF64748B),
-          ),
+          style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
         ),
         actionsPadding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
         actions: [

@@ -57,6 +57,7 @@ class _BottomNavSiswaState extends State<BottomNavSiswa>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: BottomNav(
         currentIndex: _currentIndex,
@@ -74,10 +75,7 @@ class _BottomNavSiswaState extends State<BottomNavSiswa>
             icon: Icon(Icons.menu_book_rounded),
             label: 'Mapel',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.quiz),
-            label: 'Quiz',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.quiz), label: 'Quiz'),
           BottomNavigationBarItem(
             icon: Icon(Icons.insights_rounded),
             label: 'Statistik',
