@@ -6,6 +6,7 @@ import 'package:learnpoint_mobile/features/siswa/dashboard/screens/siswa_dashboa
 import 'package:learnpoint_mobile/features/siswa/mapel/screens/mapel_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/providers/profile_provider.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/screens/quiz_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/statistik/screens/statistics_screen.dart';
 
 class BottomNavSiswa extends StatefulWidget {
   final int initialIndex;
@@ -21,7 +22,7 @@ class _BottomNavSiswaState extends State<BottomNavSiswa> {
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex.clamp(0, 2);
+    _currentIndex = widget.initialIndex.clamp(0, 3);
     Future.microtask(() {
       if (!mounted) return;
       context.read<ProfileProvider>().ensureLoaded(forceRefresh: true);
@@ -33,6 +34,7 @@ class _BottomNavSiswaState extends State<BottomNavSiswa> {
     const MapelScreen(),
     // const UjianScreen(),
     const Quiz(),
+    const StatisticsScreen(),
   ];
 
   @override
@@ -58,6 +60,10 @@ class _BottomNavSiswaState extends State<BottomNavSiswa> {
           BottomNavigationBarItem(
             icon: Icon(Icons.quiz),
             label: 'Quiz',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.insights_rounded),
+            label: 'Statistik',
           ),
         ],
       ),

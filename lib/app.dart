@@ -4,6 +4,7 @@ import 'package:learnpoint_mobile/core/theme/app_theme.dart';
 import 'package:learnpoint_mobile/features/auth/presentation/screens/login_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/providers/notification_provider.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/providers/profile_provider.dart';
+import 'package:learnpoint_mobile/features/siswa/statistik/providers/statistics_provider.dart';
 
 class LearnPointApp extends StatelessWidget {
   const LearnPointApp({super.key});
@@ -14,6 +15,7 @@ class LearnPointApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
+        ChangeNotifierProvider(create: (_) => StatisticsProvider()),
       ],
       child: MaterialApp(
         title: 'LearnPoint SMP',

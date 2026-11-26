@@ -24,9 +24,11 @@ class GachaService {
   static int? _cachedQuizIdForPowers;
   static bool _isCacheLoaded = false;
 
-  /// State reaktif agar saldo koin, banner aktif, koleksi banner, dan stok power
+  /// State reaktif agar saldo koin, pity counter, banner aktif, koleksi banner, dan stok power
   /// otomatis tersinkronisasi antara Gacha, Inventory, dan Dashboard Siswa.
   static final ValueNotifier<int> coinsNotifier = ValueNotifier<int>(0);
+  static final ValueNotifier<int> pityCounterNotifier = ValueNotifier<int>(0);
+  static final ValueNotifier<int> pityMaxNotifier = ValueNotifier<int>(30);
   static final ValueNotifier<BannerItemModel?> activeBannerNotifier =
       ValueNotifier<BannerItemModel?>(null);
   static final ValueNotifier<List<BannerItemModel>> bannersNotifier =
@@ -46,6 +48,8 @@ class GachaService {
     final status = GachaStatusModel.fromJson(data);
 
     coinsNotifier.value = status.koin;
+    pityCounterNotifier.value = status.pityCounter;
+    pityMaxNotifier.value = status.pityMax;
     if (status.activeBanner != null) {
       activeBannerNotifier.value = status.activeBanner;
     }
@@ -95,9 +99,7 @@ class GachaService {
     int? targetQuizId = quizId ?? _cachedQuizIdForPowers;
 
     // Jika belum tahu quizId yang valid di database, cari dari GET /api/siswa/kuis
-    if (targetQuizId == null) {
-      targetQuizId = await _resolveAnyValidQuizId();
-    }
+    targetQuizId ??= await _resolveAnyValidQuizId();
 
     // Kumpulkan kandidat quizId untuk dicoba (targetQuizId dari API kuis, lalu fallback ID 1)
     final candidateIds = <int>{
@@ -223,8 +225,10 @@ class GachaService {
     final data = _extractDataMap(body);
     final result = GachaPullResponseModel.fromJson(data);
 
-    // Sinkronkan sisa koin terbaru
+    // Sinkronkan sisa koin dan pity counter terbaru
     coinsNotifier.value = result.sisaKoin;
+    pityCounterNotifier.value = result.pityCounter;
+    pityMaxNotifier.value = result.pityMax;
 
     // Perbarui stok power dan status unlock banner berdasarkan hasil pull
     final updatedPowers = List<ItemModel>.from(powersNotifier.value);
@@ -346,6 +350,13 @@ class GachaService {
           isOwned: resolvedQty > 0,
           desc: inc.desc.isNotEmpty ? inc.desc : (prev?.desc ?? ''),
           tagline: inc.tagline.isNotEmpty ? inc.tagline : (prev?.tagline ?? ''),
+          detailEfek: inc.detailEfek.isNotEmpty
+              ? inc.detailEfek
+              : (prev?.detailEfek ?? ''),
+          tipeEfek: inc.tipeEfek.isNotEmpty
+              ? inc.tipeEfek
+              : (prev?.tipeEfek ?? ''),
+          rarity: inc.rarity.isNotEmpty ? inc.rarity : (prev?.rarity ?? 'rare'),
         );
       }
     }

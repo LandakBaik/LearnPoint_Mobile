@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:learnpoint_mobile/features/siswa/gamification/screens/gacha_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/gamification/screens/gacha_loading_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/gamification/screens/inventory_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/quiz/screens/quiz_leaderboard_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/quiz/screens/quiz_per_mapel_loading_screen.dart';
 
 class QuizTopDecorationWidget extends StatelessWidget {
   const QuizTopDecorationWidget({super.key});
@@ -25,14 +27,11 @@ class QuizTopDecorationWidget extends StatelessWidget {
             children: [
               // 1. Menu Inventory (Bentuk Lingkaran)
               _buildCircleMenuButton(
-                color: const Color.fromARGB(255, 225, 23, 23),
+                color: const Color(0xFF4F46E5),
                 icon: Icons.inventory_2_rounded,
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const Inventory(),
-                    ),
+                  Navigator.of(context).push(
+                    quizSlideRoute<void>(const Inventory()),
                   );
                 },
               ),
@@ -43,22 +42,23 @@ class QuizTopDecorationWidget extends StatelessWidget {
                 color: Colors.amber,
                 icon: Icons.auto_awesome_rounded,
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const Gacha(),
-                    ),
+                  Navigator.of(context).push(
+                    quizSlideRoute<void>(const GachaLoadingScreen()),
                   );
                 },
               ),
               const SizedBox(width: 12),
 
-              // 3. Menu Ketiga (Bentuk Lingkaran)
+              // 3. Menu Leaderboard (Bentuk Lingkaran)
               _buildCircleMenuButton(
                 color: Colors.white,
-                icon: Icons.circle,
-                iconColor: const Color(0xFF1E293B),
-                onTap: () {},
+                icon: Icons.emoji_events_rounded,
+                iconColor: const Color(0xFF2563EB),
+                onTap: () {
+                  Navigator.of(context).push(
+                    quizSlideRoute<void>(const QuizLeaderboardScreen()),
+                  );
+                },
               ),
             ],
           ),

@@ -150,6 +150,7 @@ class _DetailMapelScreenState extends State<DetailMapelScreen> {
                     subjectName: subjectName,
                     description: _subtitleDescription,
                     kelasLabel: _kelasLabel,
+                    isLoading: _mapelDetail == null,
                   ),
                 ),
               ],

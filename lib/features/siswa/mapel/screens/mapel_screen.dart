@@ -6,13 +6,13 @@ import 'package:learnpoint_mobile/features/siswa/dashboard/screens/notifikasi_sc
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/dashboard_header_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/mapel/screens/detail_mapel_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/mapel/widgets/mapel_card_widget.dart';
-import 'package:learnpoint_mobile/features/siswa/materi/data/materi_database_helper.dart';
-import 'package:learnpoint_mobile/features/siswa/materi/data/materi_preferences_service.dart';
+import 'package:learnpoint_mobile/features/siswa/mapel/widgets/mapel_skeleton_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/data/materi_service.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/widgets/materi_error_state_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/models/student_profile_model.dart';
 import 'package:learnpoint_mobile/features/siswa/profile/providers/profile_provider.dart';
+import 'package:learnpoint_mobile/features/siswa/tugas/services/task_api_service.dart';
 
 class MapelScreen extends StatefulWidget {
   final VoidCallback? onBackTap;
@@ -24,7 +24,7 @@ class MapelScreen extends StatefulWidget {
 
 class _MapelScreenState extends State<MapelScreen> {
   List<MateriModel> _daftarMapel = [];
-  Map<int, int> _completedPerMapel = {};
+  Map<int, ({int total, int completed})> _tugasProgressPerMapel = {};
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -71,40 +71,133 @@ class _MapelScreenState extends State<MapelScreen> {
   }
 
   Future<void> _loadProgressPerMapel(List<MateriModel> mapels) async {
-    final completedKeys =
-        (await MateriPreferencesService.getCompletedKeys()).toSet();
-    final Map<int, int> counts = {};
+    try {
+      final tasks = await TaskApiService.getTasks();
+      if (!mounted) return;
 
-    for (final mapel in mapels) {
-      final mapelId = mapel.id;
-      if (mapelId == null) continue;
-      final cachedDetail =
-          await MateriDatabaseHelper.instance.getCachedDetailMapel(mapelId);
-      if (cachedDetail == null) continue;
+      final Map<int, ({int total, int completed})> counts = {};
 
-      int count = 0;
-      for (final m in cachedDetail.materis) {
-        final keyById = MateriPreferencesService.resolveKey(
-          id: m.id,
-          subject: mapel.materi,
-          title: m.judul,
-        );
-        final keyByTitle = MateriPreferencesService.resolveKey(
-          subject: mapel.materi,
-          title: m.judul,
-        );
-        if (completedKeys.contains(keyById) ||
-            completedKeys.contains(keyByTitle)) {
-          count++;
+      for (final mapel in mapels) {
+        final mapelId = mapel.id;
+        if (mapelId == null) continue;
+
+        final mapelName = mapel.materi.trim().toLowerCase();
+        int total = 0;
+        int completed = 0;
+
+        for (final task in tasks) {
+          final taskMapelId = _getTaskMapelId(task);
+          final taskMapelName = _getTaskMapelName(task).toLowerCase();
+
+          final bool belongsToMapel = taskMapelId != null
+              ? taskMapelId == mapelId
+              : (mapelName.isNotEmpty && taskMapelName == mapelName);
+
+          if (!belongsToMapel) continue;
+
+          total++;
+          if (_isTaskSubmitted(task)) {
+            completed++;
+          }
         }
+
+        counts[mapelId] = (total: total, completed: completed);
       }
-      counts[mapelId] = count;
+
+      setState(() {
+        _tugasProgressPerMapel = counts;
+      });
+    } catch (_) {
+      // Abaikan kegagalan memuat tugas agar daftar mapel tetap tampil.
+    }
+  }
+
+  int? _parseMapelId(dynamic value) {
+    if (value == null) return null;
+    if (value is Map) {
+      value = value['id'] ?? value['mapel_id'] ?? value['mata_pelajaran_id'];
+    }
+    return int.tryParse(value.toString());
+  }
+
+  int? _getTaskMapelId(Map<String, dynamic> task) {
+    for (final key in [
+      'mapel_id',
+      'mata_pelajaran_id',
+      'id_mapel',
+      'id_mata_pelajaran',
+      'subject_id',
+    ]) {
+      final value = task[key];
+      if (value != null && value.toString().trim().isNotEmpty) {
+        return _parseMapelId(value);
+      }
     }
 
-    if (!mounted) return;
-    setState(() {
-      _completedPerMapel = counts;
-    });
+    for (final key in ['mapel', 'mata_pelajaran', 'mataPelajaran', 'subject']) {
+      final relation = task[key];
+      if (relation is Map) {
+        final id =
+            relation['id'] ??
+            relation['mapel_id'] ??
+            relation['mata_pelajaran_id'];
+        if (id != null) {
+          return _parseMapelId(id);
+        }
+      }
+    }
+
+    return null;
+  }
+
+  String _getTaskMapelName(Map<String, dynamic> task) {
+    for (final key in [
+      'nama_mapel',
+      'mapel_nama',
+      'nama_mata_pelajaran',
+      'subject_name',
+    ]) {
+      final value = task[key];
+      if (value != null && value.toString().trim().isNotEmpty) {
+        return value.toString().trim();
+      }
+    }
+
+    for (final key in ['mapel', 'mata_pelajaran', 'mataPelajaran', 'subject']) {
+      final relation = task[key];
+      if (relation is String && relation.trim().isNotEmpty) {
+        return relation.trim();
+      }
+      if (relation is Map) {
+        final name =
+            relation['nama'] ??
+            relation['nama_mapel'] ??
+            relation['name'] ??
+            relation['judul'];
+        if (name != null && name.toString().trim().isNotEmpty) {
+          return name.toString().trim();
+        }
+      }
+    }
+
+    return '';
+  }
+
+  bool _isTaskSubmitted(Map<String, dynamic> task) {
+    final submitted = task['is_submitted'];
+    if (submitted == true ||
+        submitted == 1 ||
+        submitted == '1' ||
+        submitted?.toString().toLowerCase() == 'true') {
+      return true;
+    }
+
+    final submission = task['submission'];
+    if (submission is Map && submission.isNotEmpty) {
+      return true;
+    }
+
+    return false;
   }
 
   List<MateriModel> get _filteredMapel {
@@ -170,9 +263,8 @@ class _MapelScreenState extends State<MapelScreen> {
                         ),
                       ),
                       if (_isLoading)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 64),
-                          child: Center(child: CircularProgressIndicator()),
+                        MapelSkeletonListWidget(
+                          horizontalMargin: horizontalPadding,
                         )
                       else if (_errorMessage != null)
                         MateriErrorStateWidget(
@@ -212,13 +304,15 @@ class _MapelScreenState extends State<MapelScreen> {
                         )
                       else
                         ...filtered.map((sub) {
-                          final completedCount = sub.id != null
-                              ? (_completedPerMapel[sub.id!] ?? 0)
-                              : 0;
+                          final tugasProgress = sub.id != null
+                              ? (_tugasProgressPerMapel[sub.id!] ??
+                                  (total: 0, completed: 0))
+                              : (total: 0, completed: 0);
                           return MapelCardWidget(
                             subject: sub,
                             horizontalMargin: horizontalPadding,
-                            completedCount: completedCount,
+                            totalTugasCount: tugasProgress.total,
+                            completedTugasCount: tugasProgress.completed,
                             ontap: () async {
                               await Navigator.push(
                                 context,

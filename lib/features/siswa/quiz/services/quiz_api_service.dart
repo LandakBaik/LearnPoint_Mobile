@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 
 import 'package:learnpoint_mobile/core/config/api_config.dart';
 import 'package:learnpoint_mobile/core/services/storage_service.dart';
+import 'package:learnpoint_mobile/features/siswa/quiz/models/leaderboard_entry_model.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/models/quiz_level_model.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/models/quiz_per_mapel_model.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/models/quiz_question_model.dart';
@@ -127,6 +128,27 @@ class QuizApiService {
       }
     }
     return results;
+  }
+
+  /// GET /api/siswa/kuis/leaderboard?mapel_id={mapelId}
+  /// Mengambil data Leaderboard Kuis untuk satu tingkatan siswa pada periode akademik aktif.
+  static Future<QuizLeaderboardResponseModel> fetchLeaderboard({
+    int? mapelId,
+  }) async {
+    final queryParams = <String, dynamic>{};
+    if (mapelId != null && mapelId > 0) {
+      queryParams['mapel_id'] = mapelId;
+    }
+
+    final body = await _get(
+      '/siswa/kuis/leaderboard',
+      queryParameters: queryParams,
+    );
+    final data = body['data'];
+    if (data is Map<String, dynamic>) {
+      return QuizLeaderboardResponseModel.fromJson(data);
+    }
+    throw const QuizApiException('Format data leaderboard kuis tidak valid.');
   }
 
   /// GET /api/siswa/kuis/{quizId}

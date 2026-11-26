@@ -82,6 +82,7 @@ class ApiConfig {
   // Endpoints Siswa
   // ==========================================
   static String get siswaDashboardEndpoint => '$baseUrl/siswa/dashboard';
+  static String get siswaStatistikEndpoint => '$baseUrl/siswa/statistik';
   static String get siswaJadwalEndpoint => '$baseUrl/siswa/jadwal';
 
   // Mata Pelajaran & Materi Pembelajaran Siswa (routes/api.php: /siswa/mapel)
@@ -102,6 +103,8 @@ class ApiConfig {
 
   // Kuis Petualangan & Power Siswa
   static String get siswaKuisEndpoint => '$baseUrl/siswa/kuis';
+  static String get siswaKuisLeaderboardEndpoint =>
+      '$baseUrl/siswa/kuis/leaderboard';
   static String get siswaKuisPanduanEndpoint => '$baseUrl/siswa/kuis/panduan';
   static String siswaKuisDetailEndpoint(int quizId) =>
       '$baseUrl/siswa/kuis/$quizId';
