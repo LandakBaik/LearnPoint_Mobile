@@ -343,6 +343,9 @@ class _MapelScreenState extends State<MapelScreen> {
     String studentName,
     double textScale,
   ) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final horizontalPadding = screenWidth < 360 ? 14.0 : 20.0;
+
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -406,14 +409,19 @@ class _MapelScreenState extends State<MapelScreen> {
           ),
         ),
         Positioned(
-          left: 20,
-          right: 20,
+          left: horizontalPadding,
+          right: horizontalPadding,
           bottom: -26,
           child: Container(
             height: 52,
+            alignment: Alignment.center,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFFE2E8F0).withValues(alpha: 0.9),
+                width: 1,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: const Color(0xFF1E1B4B).withValues(alpha: 0.08),
@@ -424,6 +432,8 @@ class _MapelScreenState extends State<MapelScreen> {
             ),
             child: TextField(
               controller: _searchController,
+              textAlignVertical: TextAlignVertical.center,
+              cursorColor: const Color(0xFF7B4AE2),
               onChanged: (value) {
                 setState(() {
                   _searchQuery = value;
@@ -433,18 +443,25 @@ class _MapelScreenState extends State<MapelScreen> {
                 fontSize: 14 * textScale,
                 fontWeight: FontWeight.w600,
                 color: const Color(0xFF0F172A),
+                height: 1.2,
               ),
               decoration: InputDecoration(
+                isDense: true,
                 hintText: 'Cari mata pelajaran atau guru...',
                 hintStyle: GoogleFonts.plusJakartaSans(
                   fontSize: 13.5 * textScale,
                   fontWeight: FontWeight.w500,
                   color: const Color(0xFF94A3B8),
+                  height: 1.2,
                 ),
                 prefixIcon: const Icon(
                   Icons.search_rounded,
                   color: Color(0xFF7B4AE2),
                   size: 22,
+                ),
+                prefixIconConstraints: const BoxConstraints(
+                  minWidth: 48,
+                  minHeight: 52,
                 ),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
@@ -454,6 +471,11 @@ class _MapelScreenState extends State<MapelScreen> {
                             _searchQuery = '';
                           });
                         },
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 48,
+                          minHeight: 52,
+                        ),
                         icon: const Icon(
                           Icons.close_rounded,
                           color: Color(0xFF94A3B8),
@@ -461,10 +483,13 @@ class _MapelScreenState extends State<MapelScreen> {
                         ),
                       )
                     : null,
+                suffixIconConstraints: const BoxConstraints(
+                  minWidth: 48,
+                  minHeight: 52,
+                ),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 15,
                 ),
               ),
             ),
