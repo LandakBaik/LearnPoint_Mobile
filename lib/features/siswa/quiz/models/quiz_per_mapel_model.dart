@@ -4,6 +4,7 @@ import 'package:learnpoint_mobile/features/siswa/quiz/config/quiz_assets.dart';
 
 class QuizPerMapelM {
   final int? id;
+  final int? mapelId;
   final String title;
   final String subtitle;
   final Color color;
@@ -13,15 +14,24 @@ class QuizPerMapelM {
   final int assetIndex;
   // Fallback ID scene string ('chess', 'chess1', 'chess2', 'void_ruin', 'ribbon1')
   final String levelSceneTheme;
+  final int totalSoal;
+  final bool isCompleted;
+  final double? nilai;
+  final int? bintang;
 
   QuizPerMapelM({
     this.id,
+    this.mapelId,
     required this.title,
     required this.subtitle,
     required this.color,
     this.menuImageAsset,
     this.assetIndex = 0,
     this.levelSceneTheme = 'chess',
+    this.totalSoal = 0,
+    this.isCompleted = false,
+    this.nilai,
+    this.bintang,
   });
 
   /// Mengambil `QuizScenePreset` berdasarkan `planetGroup` dari mapel yang sedang dibuka
@@ -30,7 +40,7 @@ class QuizPerMapelM {
     return planetGroup.sceneAt(assetIndex);
   }
 
-  /// Factory untuk mengubah JSON dari endpoint GET /api/siswa/quizzes Laravel
+  /// Factory untuk mengubah JSON dari endpoint GET /api/siswa/kuis Laravel
   /// menjadi objek `QuizPerMapelM` lengkap dengan `assetIndex` (`quizzes.asset`).
   factory QuizPerMapelM.fromJson(
     Map<String, dynamic> json, {
@@ -60,16 +70,37 @@ class QuizPerMapelM {
     final planetGroup = QuizAssets.planetGroupAt(mapelAssetIdx);
     final scenePreset = planetGroup.sceneAt(resolvedAssetIndex);
 
+    final resultMap = json['result'] is Map<String, dynamic>
+        ? json['result'] as Map<String, dynamic>
+        : null;
+
+    final rawDeskripsi = json['deskripsi']?.toString().trim();
+    final totalSoal = int.tryParse((json['total_soal'] ?? 0).toString()) ?? 0;
+    final subtitleText = (rawDeskripsi != null && rawDeskripsi.isNotEmpty)
+        ? rawDeskripsi
+        : (totalSoal > 0 ? '$totalSoal Soal Petualangan' : 'Selesaikan misi petualangan');
+
     return QuizPerMapelM(
       id: json['id'] is int
           ? json['id'] as int
           : int.tryParse((json['id'] ?? '').toString()),
+      mapelId: json['mapel_id'] is int
+          ? json['mapel_id'] as int
+          : int.tryParse((json['mapel_id'] ?? '').toString()),
       title: (json['judul'] ?? 'Kuis Petualangan').toString(),
-      subtitle: (json['deskripsi'] ?? 'Selesaikan misi petualangan').toString(),
+      subtitle: subtitleText,
       color: palette[fallbackIndex % palette.length],
       menuImageAsset: planetGroup.menuShardAsset,
       assetIndex: resolvedAssetIndex,
       levelSceneTheme: scenePreset.id,
+      totalSoal: totalSoal,
+      isCompleted: json['is_completed'] == true || json['is_completed'] == 1,
+      nilai: resultMap != null
+          ? double.tryParse((resultMap['nilai'] ?? '').toString())
+          : null,
+      bintang: resultMap != null
+          ? int.tryParse((resultMap['bintang'] ?? '').toString())
+          : null,
     );
   }
 }

@@ -15,7 +15,20 @@ class QuizLevelNodeItemWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool unlocked = node.isUnlocked;
+    final bool unlocked = node.isUnlocked && node.hasQuestions;
+    final bool completed = node.isCompleted && node.hasQuestions;
+
+    final Color bgColor = completed
+        ? const Color(0xFF064E3B).withValues(alpha: 0.85)
+        : (unlocked
+              ? const Color(0xFF062530).withValues(alpha: 0.78)
+              : const Color(0xFF0F172A).withValues(alpha: 0.62));
+
+    final Color borderColor = completed
+        ? const Color(0xFF34D399).withValues(alpha: 0.90)
+        : (unlocked
+              ? const Color(0xFF67E8F9).withValues(alpha: 0.88)
+              : Colors.white.withValues(alpha: 0.25));
 
     return GestureDetector(
       onTap: onTap,
@@ -23,21 +36,19 @@ class QuizLevelNodeItemWidget extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: unlocked
-              ? const Color(0xFF062530).withValues(alpha: 0.72)
-              : const Color(0xFF0F172A).withValues(alpha: 0.55),
+          color: bgColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: unlocked
-                ? const Color(0xFF67E8F9).withValues(alpha: 0.85)
-                : Colors.white.withValues(alpha: 0.25),
-            width: 1.4,
+            color: borderColor,
+            width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: unlocked
-                  ? const Color(0xFF22D3EE).withValues(alpha: 0.30)
-                  : Colors.black.withValues(alpha: 0.25),
+              color: completed
+                  ? const Color(0xFF10B981).withValues(alpha: 0.35)
+                  : (unlocked
+                        ? const Color(0xFF22D3EE).withValues(alpha: 0.30)
+                        : Colors.black.withValues(alpha: 0.25)),
               blurRadius: 10,
               offset: const Offset(0, 3),
             ),
@@ -53,6 +64,13 @@ class QuizLevelNodeItemWidget extends StatelessWidget {
                 color: Colors.white.withValues(alpha: 0.65),
               ),
               const SizedBox(width: 5),
+            ] else if (completed) ...[
+              const Icon(
+                Icons.check_circle_rounded,
+                size: 14,
+                color: Color(0xFF34D399),
+              ),
+              const SizedBox(width: 5),
             ],
             Text(
               node.title,
@@ -63,7 +81,7 @@ class QuizLevelNodeItemWidget extends StatelessWidget {
                 letterSpacing: 0.5,
                 color: unlocked
                     ? Colors.white
-                    : Colors.white.withValues(alpha: 0.65),
+                    : Colors.white.withValues(alpha: 0.62),
                 shadows: [
                   Shadow(
                     color: unlocked

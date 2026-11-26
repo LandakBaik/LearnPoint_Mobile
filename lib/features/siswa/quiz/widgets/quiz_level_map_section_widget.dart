@@ -6,11 +6,19 @@ import 'package:learnpoint_mobile/features/siswa/quiz/widgets/quiz_back_header_w
 import 'package:learnpoint_mobile/features/siswa/quiz/widgets/quiz_level_node_item_widget.dart';
 
 class QuizLevelMapSectionWidget extends StatefulWidget {
+  static const int maxLevelsPerDifficulty = 5;
+
   final String themeTitle;
   final Color themeColor;
   final QuizScenePreset? scenePreset;
   final String sceneTheme;
   final List<QuizLevelNodeModel> levels;
+  final String currentDifficulty;
+  final List<String> activeDifficulties;
+  final String? nextDifficulty;
+  final bool isNextDifficultyUnlocked;
+  final ValueChanged<String>? onSelectDifficulty;
+  final VoidCallback? onNextDifficultyTap;
   final ValueChanged<QuizLevelNodeModel>? onLevelTap;
 
   const QuizLevelMapSectionWidget({
@@ -20,6 +28,12 @@ class QuizLevelMapSectionWidget extends StatefulWidget {
     this.scenePreset,
     this.sceneTheme = 'chess',
     required this.levels,
+    this.currentDifficulty = 'Mudah',
+    this.activeDifficulties = const ['Mudah', 'Sedang', 'Sulit'],
+    this.nextDifficulty,
+    this.isNextDifficultyUnlocked = false,
+    this.onSelectDifficulty,
+    this.onNextDifficultyTap,
     this.onLevelTap,
   });
 
@@ -65,21 +79,43 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
   }
 
   QuizLevelNodeModel _levelForOrder(int levelOrder) {
-    final targetIndex = (levelOrder - 1).clamp(0, widget.levels.length - 1);
+    final targetIndex = (levelOrder - 1).clamp(
+      0,
+      QuizLevelMapSectionWidget.maxLevelsPerDifficulty - 1,
+    );
     if (widget.levels.isNotEmpty && targetIndex < widget.levels.length) {
       return widget.levels[targetIndex];
     }
-    return QuizLevelNodeModel(
-      levelNumber: levelOrder,
-      title: 'Level $levelOrder',
-      isUnlocked: levelOrder <= 5,
+    return QuizLevelNodeModel.lockedEmpty(
+      arc: widget.currentDifficulty,
+      levelNum: levelOrder,
     );
+  }
+
+  Color _difficultyBadgeColor(String diff) {
+    switch (diff.toLowerCase()) {
+      case 'sedang':
+        return const Color(0xFFD97706);
+      case 'sulit':
+        return const Color(0xFFDC2626);
+      default:
+        return const Color(0xFF059669);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final preset = _activePreset;
     final activeLayers = preset.layersBackToFront;
+    // Hanya tampilkan tombol node untuk Level 1 s/d Level 5
+    final levelButtonLayers = activeLayers
+        .where(
+          (spec) =>
+              spec.levelOrder >= 1 &&
+              spec.levelOrder <=
+                  QuizLevelMapSectionWidget.maxLevelsPerDifficulty,
+        )
+        .toList();
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -132,7 +168,7 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
                 },
               ),
 
-              // 3. Layer Scrollable Transparan (Menangkap gesture scroll & menaruh tombol teks level)
+              // 3. Layer Scrollable Transparan (Menangkap gesture scroll & menaruh 5 tombol level)
               SingleChildScrollView(
                 controller: _scrollController,
                 physics: const BouncingScrollPhysics(
@@ -153,7 +189,7 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
                       return Stack(
                         clipBehavior: Clip.none,
                         children: [
-                          for (final spec in activeLayers)
+                          for (final spec in levelButtonLayers)
                             _buildLevelTextButton(
                               spec: spec,
                               viewportWidth: viewportWidth,
@@ -169,19 +205,185 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
                 ),
               ),
 
-              // 4. Header Atas (Tombol Kembali & Nama Tema Quiz)
+              // 4. Header Atas (Tombol Kembali, Nama Tema Quiz, & Pilihan Difficulty)
               Positioned(
                 top: 8,
                 left: 0,
                 right: 0,
-                child: QuizBackHeaderWidget(
-                  title: widget.themeTitle,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    QuizBackHeaderWidget(
+                      title: widget.themeTitle,
+                      trailing: _buildCurrentDifficultyBadge(),
+                    ),
+                    if (widget.activeDifficulties.length > 1)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+                        child: _buildDifficultyTabs(),
+                      ),
+                  ],
                 ),
               ),
+
+              // 5. Tombol "Difficulty Lanjutan" di Bagian Bawah
+              if (widget.nextDifficulty != null)
+                Positioned(
+                  left: 20,
+                  right: 20,
+                  bottom: 24,
+                  child: _buildNextDifficultyButton(),
+                ),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildCurrentDifficultyBadge() {
+    final badgeColor = _difficultyBadgeColor(widget.currentDifficulty);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+      decoration: BoxDecoration(
+        color: badgeColor.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.45),
+          width: 1.2,
+        ),
+      ),
+      child: Text(
+        'Difficulty: ${widget.currentDifficulty}',
+        style: const TextStyle(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w800,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDifficultyTabs() {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A).withValues(alpha: 0.62),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.20),
+          width: 1.2,
+        ),
+      ),
+      child: Row(
+        children: widget.activeDifficulties.map((diff) {
+          final isSelected =
+              diff.toLowerCase() == widget.currentDifficulty.toLowerCase();
+          final activeColor = _difficultyBadgeColor(diff);
+
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => widget.onSelectDifficulty?.call(diff),
+              behavior: HitTestBehavior.opaque,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 7),
+                decoration: BoxDecoration(
+                  color: isSelected ? activeColor : Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  diff,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                    color: isSelected
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.72),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildNextDifficultyButton() {
+    final nextDiff = widget.nextDifficulty!;
+    final unlocked = widget.isNextDifficultyUnlocked;
+    final nextColor = _difficultyBadgeColor(nextDiff);
+
+    return SafeArea(
+      top: false,
+      child: Center(
+        child: GestureDetector(
+          onTap: widget.onNextDifficultyTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: unlocked
+                    ? [
+                        nextColor,
+                        nextColor.withValues(alpha: 0.85),
+                      ]
+                    : [
+                        const Color(0xFF1E293B).withValues(alpha: 0.90),
+                        const Color(0xFF0F172A).withValues(alpha: 0.90),
+                      ],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: unlocked
+                    ? Colors.white.withValues(alpha: 0.75)
+                    : Colors.white.withValues(alpha: 0.28),
+                width: 1.6,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: unlocked
+                      ? nextColor.withValues(alpha: 0.45)
+                      : Colors.black.withValues(alpha: 0.35),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  unlocked
+                      ? Icons.rocket_launch_rounded
+                      : Icons.lock_outline_rounded,
+                  size: 17,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Difficulty Lanjutan: $nextDiff',
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 17,
+                  color: Colors.white,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
