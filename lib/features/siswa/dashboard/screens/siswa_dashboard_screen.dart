@@ -11,6 +11,7 @@ import 'package:learnpoint_mobile/features/siswa/tugas/screens/detail_tugas_pilg
 import 'package:learnpoint_mobile/features/siswa/mapel/screens/mapel_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/screens/notifikasi_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/screens/tugas_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/tugas/widgets/task_card_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/hero_banner_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/gamification/data/gacha_service.dart';
 import 'package:learnpoint_mobile/features/siswa/gamification/models/item_model.dart';
@@ -27,7 +28,6 @@ class SiswaDashboardScreen extends StatefulWidget {
 }
 
 class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
-  int _currentTaskIndex = 0;
   LastReadMateri? _lastReadMateri;
 
   // DATA TUGAS DARI API
@@ -39,10 +39,12 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
   @override
   void initState() {
     super.initState();
+
     Future.microtask(() {
       if (!mounted) return;
       context.read<ProfileProvider>().ensureLoaded();
     });
+
     _loadLastReadMateri();
     _loadDashboardTasks();
     _loadActiveBanner();
@@ -52,6 +54,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
     if (GachaService.activeBannerNotifier.value == null && mounted) {
       setState(() => _isBannerLoading = true);
     }
+
     try {
       await GachaService.fetchGachaStatus();
     } catch (_) {
@@ -65,6 +68,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
 
   Future<void> _loadLastReadMateri() async {
     final data = await MateriPreferencesService.getLastRead();
+
     if (!mounted) return;
 
     setState(() {
@@ -125,7 +129,6 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
           };
         }).toList();
 
-        _currentTaskIndex = 0;
         _isLoadingTasks = false;
       });
     } catch (e) {
@@ -139,21 +142,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
   }
 
   Map<String, Color> _getSubjectColors(String subject) {
-    final value = subject.toLowerCase();
-
-    if (value.contains('matematika')) {
-      return {'bg': const Color(0xFFE0E7FF), 'text': const Color(0xFF3730A3)};
-    }
-
-    if (value.contains('inggris')) {
-      return {'bg': const Color(0xFFDCFCE7), 'text': const Color(0xFF166534)};
-    }
-
-    if (value.contains('ipa')) {
-      return {'bg': const Color(0xFFCCFBF1), 'text': const Color(0xFF0F5F57)};
-    }
-
-    return {'bg': const Color(0xFFF3E8FF), 'text': const Color(0xFF7E22CE)};
+    return {'bg': const Color(0xFFE0E7FF), 'text': const Color(0xFF3730A3)};
   }
 
   String _getTaskRemaining(String deadline) {
@@ -202,7 +191,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
         '${localDate.year}, $hour:$minute WIB';
   }
 
-  // Fungsi _loadDashboardTasks() // 
+  // Fungsi _loadDashboardTasks()
 
   void _showNotice(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -225,11 +214,8 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
   }
 
   void _openProfile() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const AkunScreen(),
-      ),
-    );
+    Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => const AkunScreen()));
   }
 
   void _openTaskDetail(Map<String, dynamic> taskMap) {
@@ -331,7 +317,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
                   activeBanner: activeBanner,
                   isBannerLoading: _isBannerLoading,
                   onNotificationTap: _openNotifications,
-                  onProfileTap: _openProfile, 
+                  onProfileTap: _openProfile,
                   onBannerTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
@@ -344,6 +330,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
                   onContinueTap: () async {
                     if (_lastReadMateri != null) {
                       MateriItemModel? itemModel;
+
                       if (_lastReadMateri!.id != null) {
                         itemModel = MateriItemModel(
                           id: _lastReadMateri!.id!,
@@ -367,13 +354,15 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
                         ),
                       );
                     } else {
-                      // Jika belum ada materi yang pernah dibaca, arahkan ke daftar mapel
+                      // Jika belum ada materi yang pernah dibaca,
+                      // arahkan ke daftar mapel
                       await Navigator.of(context).push(
                         MaterialPageRoute<void>(
                           builder: (_) => const MapelScreen(),
                         ),
                       );
                     }
+
                     _loadLastReadMateri();
                   },
                 );
@@ -385,7 +374,18 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
             // 2. Section: Tugas Terbaru
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _buildTugasTerbaruSection(),
+              child: TaskCardWidget(
+                tasks: _taskList,
+                isLoading: _isLoadingTasks,
+                error: _taskError,
+                onRetry: _loadDashboardTasks,
+                onSeeAll: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const TugasPage()),
+                  );
+                },
+                onTapTask: _openTaskDetail,
+              ),
             ),
 
             const SizedBox(height: 24),
@@ -408,506 +408,6 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
           ],
         ),
       ),
-    );
-  }
-
-// --- WIDGET: TUGAS TERBARU SECTION ---
-  Widget _buildTugasTerbaruSection() {
-    // 1. Kondisi loading
-    if (_isLoadingTasks) {
-      return const Padding(
-        padding: EdgeInsets.all(30),
-        child: Center(
-          child: CircularProgressIndicator(color: Color(0xFF4F46E5)),
-        ),
-      );
-    }
-
-    // 2. Kondisi jika API mengalami error
-    if (_taskError != null) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          children: [
-            const Icon(
-              Icons.error_outline_rounded,
-              size: 40,
-              color: Colors.redAccent,
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              'Gagal memuat tugas',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _taskError!,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 11, color: Colors.grey),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: _loadDashboardTasks,
-              child: const Text('Coba Lagi'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // 3. Kondisi jika tidak ada tugas
-
-    if (_taskList.isEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // HEADER TUGAS
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Tugas Terbaru',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1E1B4B),
-                ),
-              ),
-              InkWell(
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => const TugasPage()),
-                  );
-                },
-                child: Text(
-                  'Lihat Semua ›',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: const Color(0xFF4F46E5),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // EMPTY STATE CARD
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: const Color(0xFFE8E7F5)),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF4F46E5).withOpacity(0.045),
-                  blurRadius: 16,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                // ILUSTRASI
-                Container(
-                  width: 76,
-                  height: 76,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEEEAFE),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Icon(
-                    Icons.assignment_turned_in_rounded,
-                    size: 38,
-                    color: Color(0xFF6255E8),
-                  ),
-                ),
-
-                const SizedBox(width: 14),
-
-                // TEKS
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Yeay, tugasmu kosong!',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF1E1B4B),
-                        ),
-                      ),
-
-                      const SizedBox(height: 5),
-
-                      Text(
-                        'Belum ada tugas baru untuk dikerjakan. '
-                        'Nikmati waktu belajarmu!',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          height: 1.5,
-                          color: const Color(0xFF64748B),
-                        ),
-                      ),
-
-                      const SizedBox(height: 7),
-
-                      Text(
-                        'Semangat belajar ✨',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF6255E8),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
-    }
-
-    // 4. Ambil tugas jika data tersedia
-    final safeIndex = _currentTaskIndex < _taskList.length
-        ? _currentTaskIndex
-        : 0;
-
-    final currentTask = _taskList[safeIndex];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 36),
-
-        // HEADER
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Tugas Terbaru',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF1E1B4B),
-                letterSpacing: -0.3,
-              ),
-            ),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE5E7EB),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    '${safeIndex + 1} / ${_taskList.length}',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFF374151),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                InkWell(
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const TugasPage(),
-                      ),
-                    );
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Text(
-                      'Lihat Semua ›',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: const Color(0xFF4F46E5),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 12),
-
-        // CARD TUGAS
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Subject & Remaining Badges
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Flexible(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: currentTask['subjectBg'] as Color,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.menu_book_rounded,
-                            size: 14,
-                            color: currentTask['subjectColor'] as Color,
-                          ),
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              currentTask['subject'] as String,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.plusJakartaSans(
-                                color: currentTask['subjectColor'] as Color,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: currentTask['remainingBg'] as Color,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.warning_amber_rounded,
-                          size: 14,
-                          color: currentTask['remainingColor'] as Color,
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          currentTask['remaining'] as String,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: currentTask['remainingColor'] as Color,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              // Title
-              Text(
-                currentTask['title'] as String,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1E1B4B),
-                  height: 1.35,
-                ),
-              ),
-
-              const SizedBox(height: 6),
-
-              // Deadline
-              Row(
-                children: [
-                  const Icon(
-                    Icons.calendar_today_outlined,
-                    size: 14,
-                    color: Color(0xFF5B6275),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      currentTask['deadline'] as String,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: const Color(0xFF5B6275),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 14),
-              const Divider(color: Color(0xFFE5E7EB), height: 1),
-              const SizedBox(height: 14),
-
-                  const SizedBox(height: 10),
-
-              // Progress & Kerjakan Button
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Flexible(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.list_alt_rounded,
-                          size: 16,
-                          color: Color(0xFF5B6275),
-                        ),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            currentTask['progressText'] as String,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.plusJakartaSans(
-                              color: const Color(0xFF5B6275),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton.icon(
-                    onPressed: () => _openTaskDetail(currentTask),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4F46E5),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 10,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(22),
-                      ),
-                      textStyle: GoogleFonts.plusJakartaSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    label: const Icon(Icons.arrow_forward_rounded, size: 18),
-                    icon: const Text('Kerjakan'),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 14),
-
-              // Pagination Indicators and Prev/Next buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Dot indicators
-                  Row(
-                    children: List.generate(_taskList.length, (index) {
-                      final isActive = index == safeIndex;
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        margin: const EdgeInsets.only(right: 6),
-                        width: isActive ? 20 : 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: isActive
-                              ? const Color(0xFF4F46E5)
-                              : const Color(0xFFD1D5DB),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      );
-                    }),
-                  ),
-                  // Arrows
-                  Row(
-                    children: [
-                      InkWell(
-                        onTap: () {
-                          if (_currentTaskIndex > 0) {
-                            setState(() => _currentTaskIndex--);
-                          }
-                        },
-                        borderRadius: BorderRadius.circular(22),
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFE5E7EB),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.chevron_left_rounded,
-                            color: Color(0xFF1E1B4B),
-                            size: 22,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      InkWell(
-                        onTap: () {
-                          if (_currentTaskIndex < _taskList.length - 1) {
-                            setState(() => _currentTaskIndex++);
-                          }
-                        },
-                        borderRadius: BorderRadius.circular(22),
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF4F46E5),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.chevron_right_rounded,
-                            color: Colors.white,
-                            size: 22,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 
@@ -946,9 +446,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
             InkWell(
               onTap: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const MapelScreen(),
-                  ),
+                  MaterialPageRoute<void>(builder: (_) => const MapelScreen()),
                 );
               },
               child: Padding(
@@ -1001,6 +499,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
                         ),
                       ),
                     ),
+
                     // Badge: IPA Biologi (Top-Left)
                     Positioned(
                       left: 12,
@@ -1024,6 +523,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
                         ),
                       ),
                     ),
+
                     // Badge: 15 Menit (Bottom-Right)
                     Positioned(
                       right: 12,
@@ -1192,7 +692,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Schedule image with fallback to center preview icon and texts
+              // Schedule image with fallback
               Image.asset(
                 'assets/images/jadwal.png',
                 fit: BoxFit.cover,
@@ -1294,6 +794,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
 // --- CUSTOM PAINTER: LUNGS BIOLOGY ICON ---
 class _LungsIconPainter extends CustomPainter {
   final Color color;
+
   _LungsIconPainter({required this.color});
 
   @override
@@ -1321,6 +822,7 @@ class _LungsIconPainter extends CustomPainter {
       ..cubicTo(5, 13, 5, 16, 5, 18)
       ..cubicTo(5, 19.5, 7, 20.5, 10, 19)
       ..cubicTo(11, 18, 12, 15, 12, 13);
+
     canvas.drawPath(leftPath, paint);
 
     // Right Lung branch & lobe
@@ -1330,6 +832,7 @@ class _LungsIconPainter extends CustomPainter {
       ..cubicTo(19, 13, 19, 16, 19, 18)
       ..cubicTo(19, 19.5, 17, 20.5, 14, 19)
       ..cubicTo(13, 18, 12, 15, 12, 13);
+
     canvas.drawPath(rightPath, paint);
 
     canvas.restore();
