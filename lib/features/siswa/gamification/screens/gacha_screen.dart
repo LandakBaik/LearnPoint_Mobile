@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lottie/lottie.dart';
+import 'package:video_player/video_player.dart';
 
 import 'package:learnpoint_mobile/features/siswa/gamification/data/gacha_service.dart';
 import 'package:learnpoint_mobile/features/siswa/gamification/models/item_model.dart';
@@ -747,14 +749,14 @@ class _GachaState extends State<Gacha> {
                 child: IgnorePointer(
                   ignoring: _hideOptionsForPull,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            // Tombol Gacha 1x dibungkus `gacha op.gif`
+                            // Tombol Gacha 1x dibungkus portal Lottie
                             Expanded(
                               child: _buildGachaOpButton(
                                 pullCountLabel: '1x',
@@ -764,8 +766,8 @@ class _GachaState extends State<Gacha> {
                                 onTap: () => _performGacha(1),
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            // Tombol Gacha 10x dibungkus `gacha op.gif`
+                            const SizedBox(width: 8),
+                            // Tombol Gacha 10x dibungkus portal Lottie
                             Expanded(
                               child: _buildGachaOpButton(
                                 pullCountLabel: '10x',
@@ -800,8 +802,8 @@ class _GachaState extends State<Gacha> {
     required VoidCallback onTap,
     bool isMultiPull = false,
   }) {
-    final double orbSize = isMultiPull ? 174 : 140;
-    final double glowSize = isMultiPull ? 128 : 102;
+    final double orbSize = isMultiPull ? 210 : 172;
+    final double glowSize = isMultiPull ? 156 : 126;
 
     return GestureDetector(
       onTap: _isPulling ? null : onTap,
@@ -833,19 +835,24 @@ class _GachaState extends State<Gacha> {
                   ),
                 ),
 
-                // Aset pembungkus tombol: `gacha op.gif`
+                // Aset pembungkus tombol: animasi Lottie `gacha_portal.json`
                 // Untuk 10x diputar 90 derajat (quarterTurns: 1)
                 Positioned.fill(
                   child: RotatedBox(
                     quarterTurns: isMultiPull ? 1 : 0,
-                    child: Image.asset(
-                      QuizAssets.gachaOpOrb,
+                    child: Lottie.asset(
+                      QuizAssets.gachaPortalLottie,
+                      repeat: true,
                       fit: BoxFit.contain,
+                      errorBuilder: (_, _, _) => Image.asset(
+                        QuizAssets.gachaOpOrb,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
                 ),
 
-                // Teks & Harga Koin di Tengah Lubang Orb `gacha op.gif`
+                // Teks & Harga Koin di Tengah Portal
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -853,7 +860,7 @@ class _GachaState extends State<Gacha> {
                       pullCountLabel,
                       style: GoogleFonts.plusJakartaSans(
                         color: Colors.white,
-                        fontSize: isMultiPull ? 26 : 22,
+                        fontSize: isMultiPull ? 30 : 25,
                         fontWeight: FontWeight.w900,
                         height: 1.0,
                         shadows: [
@@ -873,16 +880,16 @@ class _GachaState extends State<Gacha> {
                       subtitleLabel.toUpperCase(),
                       style: GoogleFonts.plusJakartaSans(
                         color: const Color(0xFFFDE68A),
-                        fontSize: isMultiPull ? 10.5 : 9.5,
+                        fontSize: isMultiPull ? 11.5 : 10.5,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.8,
                       ),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2.5,
+                        horizontal: 9,
+                        vertical: 3,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.65),
@@ -897,7 +904,7 @@ class _GachaState extends State<Gacha> {
                         children: [
                           const Icon(
                             Icons.star_rounded,
-                            size: 11,
+                            size: 12,
                             color: Color(0xFFFBBF24),
                           ),
                           const SizedBox(width: 3),
@@ -905,7 +912,7 @@ class _GachaState extends State<Gacha> {
                             cost,
                             style: GoogleFonts.plusJakartaSans(
                               color: Colors.white,
-                              fontSize: isMultiPull ? 12 : 11,
+                              fontSize: isMultiPull ? 13 : 12,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -1178,8 +1185,8 @@ class _GachaParallaxBackgroundState extends State<_GachaParallaxBackground>
   }
 }
 
-/// Overlay untuk memutar `gacha_pull.gif` tepat di tengah layar (tanpa efek meteor jatuh tambahan),
-/// lalu menyambung & menahan (extend) cahaya putih di akhir animasi GIF sebelum menampilkan hasil item.
+/// Overlay untuk memutar video `animasi_bintang_gacha.mp4` tepat di tengah layar (~11 detik),
+/// lalu menyambung & menahan (extend) cahaya putih di akhir animasi sebelum menampilkan hasil item.
 class _GachaPullAnimationOverlay extends StatefulWidget {
   const _GachaPullAnimationOverlay();
 
@@ -1190,12 +1197,16 @@ class _GachaPullAnimationOverlay extends StatefulWidget {
 
 class _GachaPullAnimationOverlayState extends State<_GachaPullAnimationOverlay>
     with SingleTickerProviderStateMixin {
-  // Durasi asli gacha_pull.gif adalah 4660ms (56 frame).
-  // Pada ~4170ms - 4660ms, GIF menampilkan cahaya putih terang yang memenuhi layar.
-  // Kita extend cahaya putih tersebut hingga 5350ms sebelum menutup overlay & membuka dialog item.
-  static const int _totalOverlayDurationMs = 5350;
+  // Durasi total overlay animasi gacha (~11 detik = 11000ms).
+  // Menjelang akhir video (~10350ms), kita munculkan cahaya putih lembut
+  // sebelum menutup overlay & membuka dialog hasil item.
+  static const int _totalOverlayDurationMs = 11000;
+  static const int _whiteFlashStartMs = 10350;
 
+  late final VideoPlayerController _videoController;
   late final AnimationController _whiteExtendController;
+  bool _videoReady = false;
+  bool _videoError = false;
   Timer? _whiteFlashStartTimer;
   Timer? _autoCloseTimer;
 
@@ -1203,22 +1214,45 @@ class _GachaPullAnimationOverlayState extends State<_GachaPullAnimationOverlay>
   void initState() {
     super.initState();
 
-    // Controller untuk menyambung dan menahan cahaya putih dari akhir GIF (mulai di t = 4200ms)
     _whiteExtendController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 350),
+      duration: const Duration(milliseconds: 450),
     );
 
-    _whiteFlashStartTimer = Timer(const Duration(milliseconds: 4200), () {
-      if (mounted) {
-        _whiteExtendController.forward();
-      }
-    });
+    _videoController = VideoPlayerController.asset(QuizAssets.gachaPullVideo);
+    _initVideo();
+
+    _whiteFlashStartTimer = Timer(
+      const Duration(milliseconds: _whiteFlashStartMs),
+      () {
+        if (mounted) {
+          _whiteExtendController.forward();
+        }
+      },
+    );
 
     _autoCloseTimer = Timer(
       const Duration(milliseconds: _totalOverlayDurationMs),
       _closeOverlay,
     );
+  }
+
+  Future<void> _initVideo() async {
+    try {
+      await _videoController.initialize();
+      if (!mounted) return;
+      await _videoController.setLooping(false);
+      await _videoController.play();
+      if (!mounted) return;
+      setState(() {
+        _videoReady = true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _videoError = true;
+      });
+    }
   }
 
   void _closeOverlay() {
@@ -1233,6 +1267,7 @@ class _GachaPullAnimationOverlayState extends State<_GachaPullAnimationOverlay>
   void dispose() {
     _whiteFlashStartTimer?.cancel();
     _autoCloseTimer?.cancel();
+    _videoController.dispose();
     _whiteExtendController.dispose();
     super.dispose();
   }
@@ -1240,24 +1275,35 @@ class _GachaPullAnimationOverlayState extends State<_GachaPullAnimationOverlay>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.black,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // 1. Animasi `gacha_pull.gif` tampil utuh tepat di tengah layar tanpa gerakan meteor jatuh buatan
-          Center(
-            child: Image.asset(
-              QuizAssets.gachaPullEffect,
-              width: double.infinity,
-              height: double.infinity,
-              fit: BoxFit.fill,
-              alignment: Alignment.center,
-              gaplessPlayback: true,
+          // 1. Video animasi `animasi_bintang_gacha.mp4` tampil penuh di tengah layar
+          if (_videoReady)
+            SizedBox.expand(
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _videoController.value.size.width,
+                  height: _videoController.value.size.height,
+                  child: VideoPlayer(_videoController),
+                ),
+              ),
+            )
+          else if (_videoError)
+            Center(
+              child: Image.asset(
+                QuizAssets.gachaPullEffect,
+                width: double.infinity,
+                height: double.infinity,
+                fit: BoxFit.fill,
+                alignment: Alignment.center,
+                gaplessPlayback: true,
+              ),
             ),
-          ),
 
-          // 2. Extend cahaya putih di akhir GIF (~4200ms -> 5350ms) agar layar tetap terang putih sebentar
-          //    dan mencegah GIF mengulang kembali ke frame 0 sebelum dialog hasil item muncul
+          // 2. Extend cahaya putih menjelang akhir video (~10.35s -> 11s)
           AnimatedBuilder(
             animation: _whiteExtendController,
             builder: (context, _) {

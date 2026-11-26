@@ -5,6 +5,7 @@ import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart
 import 'package:learnpoint_mobile/features/siswa/quiz/config/quiz_assets.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/models/quiz_per_mapel_model.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/screens/quiz_level_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/quiz/screens/quiz_per_mapel_loading_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/services/quiz_api_service.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/widgets/quiz_back_header_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/quiz/widgets/quiz_per_mapel/quiz_evaporating_hand_decoration_widget.dart';
@@ -29,8 +30,30 @@ class _QuizPerMapelState extends State<QuizPerMapel>
   static const double _defaultBgmVolume = 0.4;
   late final AudioPlayer _bgmPlayer;
   bool _isMuted = false;
+  bool _isReturning = false;
 
   List<QuizPerMapelM> _themes = quizMapel;
+
+  Future<void> _handleBackToQuiz() async {
+    if (_isReturning) return;
+    _isReturning = true;
+
+    try {
+      await _bgmPlayer.stop();
+    } catch (_) {}
+
+    if (!mounted) return;
+    final currentSubject = widget.subject ?? subjek.first;
+
+    await Navigator.of(context).pushReplacement(
+      quizSlideRoute<void>(
+        QuizPerMapelLoadingScreen(
+          subject: currentSubject,
+          isReturning: true,
+        ),
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -109,86 +132,95 @@ class _QuizPerMapelState extends State<QuizPerMapel>
     final planetGroup =
         widget.subject?.planetGroup ?? QuizAssets.planetGroupAt(0);
 
-    return Scaffold(
-      backgroundColor: planetGroup.radialBgColor,
-      body: Stack(
-        children: [
-          // 1. Layer Background: Satu warna sesuai planetGroup.radialBgColor
-          //    + efek kabut gelap bergelombang di atas dan bawah layar
-          Positioned.fill(
-            child: QuizPerMapelBackgroundWidget(
-              baseColor: planetGroup.radialBgColor,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          _handleBackToQuiz();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: planetGroup.radialBgColor,
+        body: Stack(
+          children: [
+            // 1. Layer Background: Satu warna sesuai planetGroup.radialBgColor
+            //    + efek kabut gelap bergelombang di atas dan bawah layar
+            Positioned.fill(
+              child: QuizPerMapelBackgroundWidget(
+                baseColor: planetGroup.radialBgColor,
+              ),
             ),
-          ),
 
-          // 2. Layer Hiasan handDecorAsset sesuai planetGroup
-          Positioned.fill(
-            child: QuizEvaporatingHandDecorationWidget(
-              imageAsset: planetGroup.handDecorAsset,
+            // 2. Layer Hiasan handDecorAsset sesuai planetGroup
+            Positioned.fill(
+              child: QuizEvaporatingHandDecorationWidget(
+                imageAsset: planetGroup.handDecorAsset,
+              ),
             ),
-          ),
 
-          // 3. Layer Konten Utama
-          SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header Atas: Tombol Back, Judul Mapel & Tombol Musik
-                Padding(
-                  padding: const EdgeInsets.only(top: 8, bottom: 4),
-                  child: QuizBackHeaderWidget(
-                    title: subjectTitle,
-                    trailing: InkWell(
-                      onTap: _toggleMute,
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.18),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          _isMuted
-                              ? Icons.volume_off_rounded
-                              : Icons.volume_up_rounded,
-                          color: Colors.white,
-                          size: 20,
+            // 3. Layer Konten Utama
+            SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header Atas: Tombol Back, Judul Mapel & Tombol Musik
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8, bottom: 4),
+                    child: QuizBackHeaderWidget(
+                      title: subjectTitle,
+                      onBackTap: _handleBackToQuiz,
+                      trailing: InkWell(
+                        onTap: _toggleMute,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            _isMuted
+                                ? Icons.volume_off_rounded
+                                : Icons.volume_up_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
 
-                // Area Radial Menu (Planet + Ring Bergelombang + Pilihan Tema)
-                Expanded(
-                  child: QuizThemeListSectionWidget(
-                    subject: widget.subject,
-                    subjectTitle: subjectTitle,
-                    themes: _themes,
-                    onThemeTap: (item) async {
-                      await _bgmPlayer.pause();
-                      if (!context.mounted) return;
-                      final scenePreset = item.resolveScenePreset(planetGroup);
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => QuizLevel(
-                            themeItem: item,
-                            scenePreset: scenePreset,
-                            sceneThemeOverride: scenePreset.id,
+                  // Area Radial Menu (Planet + Ring Bergelombang + Pilihan Tema)
+                  Expanded(
+                    child: QuizThemeListSectionWidget(
+                      subject: widget.subject,
+                      subjectTitle: subjectTitle,
+                      themes: _themes,
+                      onThemeTap: (item) async {
+                        await _bgmPlayer.pause();
+                        if (!context.mounted) return;
+                        final scenePreset = item.resolveScenePreset(planetGroup);
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => QuizLevel(
+                              themeItem: item,
+                              scenePreset: scenePreset,
+                              sceneThemeOverride: scenePreset.id,
+                            ),
                           ),
-                        ),
-                      );
-                      if (mounted && !_isMuted) {
-                        await _bgmPlayer.resume();
-                      }
-                    },
+                        );
+                        if (mounted && !_isMuted) {
+                          await _bgmPlayer.resume();
+                        }
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

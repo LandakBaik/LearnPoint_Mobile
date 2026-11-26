@@ -164,66 +164,63 @@ class _QuizLevelState extends State<QuizLevel> {
 
     return Scaffold(
       backgroundColor: activePreset.fallbackBgColor,
-      body: SafeArea(
-        bottom: false,
-        child: QuizLevelMapSectionWidget(
-          themeTitle: themeTitle,
-          themeColor: themeColor,
-          scenePreset: activePreset,
-          sceneTheme: activePreset.id,
-          levels: currentLevels,
-          currentDifficulty: _selectedDifficulty,
-          activeDifficulties: _mapData.activeDifficulties,
-          nextDifficulty: nextDifficulty,
-          isNextDifficultyUnlocked: isNextUnlocked,
-          onSelectDifficulty: _handleSelectDifficulty,
-          onNextDifficultyTap: _handleNextDifficultyTap,
-          onLevelTap: (levelNode) async {
-            // 1. Jika level pada difficulty ini belum diinput soal oleh guru -> terkunci
-            if (!levelNode.hasQuestions) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${levelNode.title} ($_selectedDifficulty) terkunci karena belum diinput soal oleh guru.',
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 2),
+      body: QuizLevelMapSectionWidget(
+        themeTitle: themeTitle,
+        themeColor: themeColor,
+        scenePreset: activePreset,
+        sceneTheme: activePreset.id,
+        levels: currentLevels,
+        currentDifficulty: _selectedDifficulty,
+        activeDifficulties: _mapData.activeDifficulties,
+        nextDifficulty: nextDifficulty,
+        isNextDifficultyUnlocked: isNextUnlocked,
+        onSelectDifficulty: _handleSelectDifficulty,
+        onNextDifficultyTap: _handleNextDifficultyTap,
+        onLevelTap: (levelNode) async {
+          // 1. Jika level pada difficulty ini belum diinput soal oleh guru -> terkunci
+          if (!levelNode.hasQuestions) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${levelNode.title} ($_selectedDifficulty) terkunci karena belum diinput soal oleh guru.',
                 ),
-              );
-              return;
-            }
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+            return;
+          }
 
-            // 2. Jika level sudah ada soal tapi belum terbuka karena level sebelumnya belum selesai
-            if (!levelNode.isUnlocked) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${levelNode.title} ($_selectedDifficulty) masih terkunci! Selesaikan level sebelumnya dulu.',
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 2),
+          // 2. Jika level sudah ada soal tapi belum terbuka karena level sebelumnya belum selesai
+          if (!levelNode.isUnlocked) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${levelNode.title} ($_selectedDifficulty) masih terkunci! Selesaikan level sebelumnya dulu.',
                 ),
-              );
-              return;
-            }
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+            return;
+          }
 
-            // 3. Jika level sudah selesai dikerjakan
-            if (quizId != null && levelNode.isCompleted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${levelNode.title} ($_selectedDifficulty) sudah selesai dikerjakan (Skor: ${levelNode.skorLevel}%, ★${levelNode.bintang}).',
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 2),
+          // 3. Jika level sudah selesai dikerjakan
+          if (quizId != null && levelNode.isCompleted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${levelNode.title} ($_selectedDifficulty) sudah selesai dikerjakan (Skor: ${levelNode.skorLevel}%, ★${levelNode.bintang}).',
                 ),
-              );
-              return;
-            }
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+            return;
+          }
 
-            await _openLevelToPlay(levelNode);
-          },
-        ),
+          await _openLevelToPlay(levelNode);
+        },
       ),
     );
   }

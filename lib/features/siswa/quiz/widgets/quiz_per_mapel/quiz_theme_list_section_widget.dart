@@ -34,9 +34,10 @@ class _QuizThemeListSectionWidgetState extends State<QuizThemeListSectionWidget>
   static const int _itemsPerPage = 6;
   int _currentPage = 0;
 
-  // State untuk animasi pedang menancap & cahaya membesar sebelum pindah halaman
+  // State untuk animasi pedang menancap & layar gelap loading sebelum pindah halaman
   late final AnimationController _stabTransitionController;
   int? _stabbingSlotIndex;
+  String? _stabbingThemeTitle;
 
   @override
   void initState() {
@@ -88,23 +89,36 @@ class _QuizThemeListSectionWidgetState extends State<QuizThemeListSectionWidget>
 
     setState(() {
       _stabbingSlotIndex = slotIndex;
+      _stabbingThemeTitle = item.title;
     });
 
-    // Jalankan animasi pedang menancap -> cahaya semakin terang memenuhi layar
-    await _stabTransitionController.forward(from: 0.0);
-
-    if (!mounted) return;
-
-    // Ambil QuizPlanetAssetGroup dari mapel (`mapels.asset` -> `planetGroups[index]`),
-    // lalu ambil QuizScenePreset dari kuis (`quizzes.asset` -> `planetGroup.scenes[index]`).
     final planetGroup =
         widget.subject?.planetGroup ?? QuizAssets.planetGroupAt(0);
     final scenePreset = item.resolveScenePreset(planetGroup);
 
-    // Pindah ke halaman QuizLevel dengan transisi fade halus dari layar bercahaya
+    // Jalankan animasi pedang menancap -> layar menjadi gelap & langsung jadi layar loading
+    // sambil melakukan precache gambar background QuizLevel
+    await Future.wait([
+      _stabTransitionController.forward(from: 0.0),
+      Future<void>(() async {
+        if (!mounted) return;
+        try {
+          await precacheImage(AssetImage(scenePreset.baseSkyAsset), context);
+          for (final layer in scenePreset.layersBackToFront) {
+            if (!mounted) return;
+            await precacheImage(AssetImage(layer.assetPath), context);
+          }
+        } catch (_) {}
+      }),
+    ]);
+
+    if (!mounted) return;
+
+    // Pindah ke halaman QuizLevel tanpa animasi slide (fade halus dari layar loading gelap)
     await Navigator.of(context).push(
       PageRouteBuilder<void>(
-        transitionDuration: const Duration(milliseconds: 500),
+        transitionDuration: const Duration(milliseconds: 350),
+        reverseTransitionDuration: const Duration(milliseconds: 300),
         pageBuilder: (context, animation, secondaryAnimation) =>
             QuizLevel(
               themeItem: item,
@@ -120,11 +134,12 @@ class _QuizThemeListSectionWidgetState extends State<QuizThemeListSectionWidget>
       ),
     );
 
-    // Reset posisi pedang & cahaya saat user menekan tombol Back dari QuizLevel
+    // Reset posisi pedang & layar gelap saat user menekan tombol Back dari QuizLevel
     if (mounted) {
       _stabTransitionController.reset();
       setState(() {
         _stabbingSlotIndex = null;
+        _stabbingThemeTitle = null;
       });
     }
   }
@@ -246,11 +261,12 @@ class _QuizThemeListSectionWidgetState extends State<QuizThemeListSectionWidget>
                     ),
                   ),
 
-                // 5. Overlay Cahaya Membesar dari Titik Pedang Menancap hingga Memenuhi Layar
+                // 5. Overlay Gelap dari Titik Pedang Menancap yang Langsung Menjadi Layar Loading
                 if (_stabbingSlotIndex != null)
                   Positioned.fill(
                     child: QuizSwordStabLightOverlayWidget(
                       progress: stabProgress,
+                      loadingTitle: _stabbingThemeTitle,
                       center:
                           QuizRadialMenuItemsLayerWidget.calculateStabImpactOffset(
                         slotIndex: _stabbingSlotIndex!,

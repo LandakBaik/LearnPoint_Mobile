@@ -108,7 +108,11 @@ class QuizAssets {
   static const String gachaGroundStarsLight =
       '$_gachaDir/gacha_groundstars_light.png';
   static const String gachaOpOrb = '$_gachaDir/gacha op.gif';
+  /// Animasi Lottie (.json) pembungkus tombol gacha 1x & 10x.
+  static const String gachaPortalLottie = '$_gachaDir/gacha_portal.json';
   static const String gachaPullEffect = '$_gachaDir/gacha_pull.gif';
+  /// Video animasi gacha pull (.mp4) berdurasi ~11 detik.
+  static const String gachaPullVideo = '$_gachaDir/animasi_bintang_gacha.mp4';
 
   // ===========================================================================
   // 3. PATH DIREKTORI PLANET

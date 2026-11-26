@@ -121,8 +121,13 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
       builder: (context, constraints) {
         final viewportWidth = constraints.maxWidth;
         final viewportHeight = constraints.maxHeight;
-        // Tinggi asli gambar sesuai proporsi preset agar TIDAK GEPENG
-        final nativeImageHeight = viewportWidth * preset.imageAspectRatio;
+        // Pastikan tinggi gambar selalu melampaui penuh tinggi layar + ruang geser parallax/entrance
+        // sehingga ujung atas layer background menempel penuh sampai batas paling atas HP tanpa celah kosong.
+        final rawImageHeight = viewportWidth * preset.imageAspectRatio;
+        final minFullCoverageHeight = viewportHeight + 360.0;
+        final nativeImageHeight = rawImageHeight < minFullCoverageHeight
+            ? minFullCoverageHeight
+            : rawImageHeight;
         // Ruang scroll untuk menggerakkan layer belakang
         final scrollableHeight = viewportHeight + 320.0;
 
@@ -131,15 +136,11 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // 1. Layer Dasar Langit (FIXED, proporsi asli tidak gepeng)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: nativeImageHeight,
+              // 1. Layer Dasar Langit (FIXED, memenuhi seluruh layar sampai batas paling atas HP)
+              Positioned.fill(
                 child: Image.asset(
                   preset.baseSkyAsset,
-                  fit: BoxFit.fitWidth,
+                  fit: BoxFit.cover,
                   alignment: Alignment.bottomCenter,
                 ),
               ),
@@ -207,22 +208,28 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
 
               // 4. Header Atas (Tombol Kembali, Nama Tema Quiz, & Pilihan Difficulty)
               Positioned(
-                top: 8,
+                top: 0,
                 left: 0,
                 right: 0,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    QuizBackHeaderWidget(
-                      title: widget.themeTitle,
-                      trailing: _buildCurrentDifficultyBadge(),
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        QuizBackHeaderWidget(
+                          title: widget.themeTitle,
+                          trailing: _buildCurrentDifficultyBadge(),
+                        ),
+                        if (widget.activeDifficulties.length > 1)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+                            child: _buildDifficultyTabs(),
+                          ),
+                      ],
                     ),
-                    if (widget.activeDifficulties.length > 1)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
-                        child: _buildDifficultyTabs(),
-                      ),
-                  ],
+                  ),
                 ),
               ),
 
@@ -414,7 +421,7 @@ class _QuizLevelMapSectionWidgetState extends State<QuizLevelMapSectionWidget>
           offset: Offset(0, entranceDy + scrollDy),
           child: Image.asset(
             spec.assetPath,
-            fit: BoxFit.fitWidth,
+            fit: BoxFit.cover,
             alignment: Alignment.bottomCenter,
           ),
         ),
