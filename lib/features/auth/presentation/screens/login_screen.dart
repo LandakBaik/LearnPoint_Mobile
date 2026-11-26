@@ -164,13 +164,20 @@ class _LoginState extends State<Login> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
               ),
             ),
             const SizedBox(height: 10),
             const Text(
               '• Emulator: http://10.0.2.2:8000/api\n• HP Fisik: http://<IP_KOMPUTER>:8000/api\n• Web/Desktop: http://127.0.0.1:8000/api',
-              style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8), height: 1.4),
+              style: TextStyle(
+                fontSize: 11,
+                color: Color(0xFF94A3B8),
+                height: 1.4,
+              ),
             ),
           ],
         ),
@@ -193,7 +200,9 @@ class _LoginState extends State<Login> {
             style: ElevatedButton.styleFrom(
               backgroundColor: _bluePrimary,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             onPressed: () {
               final newUrl = urlController.text.trim();
@@ -311,17 +320,8 @@ class _LoginState extends State<Login> {
                               child: Column(
                                 children: [
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment: MainAxisAlignment.end,
                                     children: [
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.arrow_back,
-                                          color: Colors.white,
-                                        ),
-                                        onPressed: () {},
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                      ),
                                       IconButton(
                                         icon: const Icon(
                                           Icons.settings_outlined,
@@ -524,94 +524,38 @@ class _LoginState extends State<Login> {
                                                   ),
                                           ),
                                         ),
-                                        const SizedBox(height: 24),
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Divider(
-                                                color: Colors.grey.shade200,
-                                              ),
-                                            ),
-                                            const Padding(
-                                              padding: EdgeInsets.symmetric(
-                                                horizontal: 12,
-                                              ),
-                                              child: Text(
-                                                'or continue with',
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  color: _mutedGrey,
-                                                ),
-                                              ),
-                                            ),
-                                            Expanded(
-                                              child: Divider(
-                                                color: Colors.grey.shade200,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+
+                                        const SizedBox(height: 28),
+                                        const Divider(color: Color(0xFFE5E7EB)),
                                         const SizedBox(height: 20),
-                                        SizedBox(
-                                          width: double.infinity,
-                                          height: 48,
-                                          child: OutlinedButton(
-                                            onPressed: _isLoading
-                                                ? null
-                                                : () {
-                                                    ScaffoldMessenger.of(
-                                                      context,
-                                                    ).showSnackBar(
-                                                      const SnackBar(
-                                                        content: Text(
-                                                          'Login Google belum tersedia.',
-                                                        ),
-                                                        behavior:
-                                                            SnackBarBehavior
-                                                                .floating,
-                                                      ),
-                                                    );
-                                                  },
-                                            style: OutlinedButton.styleFrom(
-                                              side: BorderSide(
-                                                color: Colors.grey.shade200,
+                                        const Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 4,
+                                          ),
+                                          child: Text.rich(
+                                            TextSpan(
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                height: 1.6,
+                                                color: Color(0xFF64748B),
                                               ),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(24),
-                                              ),
-                                            ),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
                                               children: [
-                                                Image.asset(
-                                                  'assets/images/google_logo.png',
-                                                  height: 18,
-                                                  width: 18,
-                                                  errorBuilder:
-                                                      (
-                                                        context,
-                                                        error,
-                                                        stackTrace,
-                                                      ) => const Icon(
-                                                        Icons.g_mobiledata,
-                                                        size: 22,
-                                                      ),
+                                                TextSpan(
+                                                  text: 'Belum memiliki akun? ',
                                                 ),
-                                                const SizedBox(width: 8),
-                                                const Text(
-                                                  'Continue with Google',
+                                                TextSpan(
+                                                  text: 'Hubungi Administrator Sekolah / Tata Usaha.',
                                                   style: TextStyle(
-                                                    fontSize: 13,
+                                                    color: Color(0xFF1E293B),
                                                     fontWeight: FontWeight.w600,
-                                                    color: Color(0xFF334155),
                                                   ),
                                                 ),
                                               ],
                                             ),
+                                            textAlign: TextAlign.center,
                                           ),
                                         ),
+
                                         const Spacer(),
                                         const SizedBox(height: 24),
                                         const Text(

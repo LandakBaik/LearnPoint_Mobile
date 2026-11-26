@@ -13,6 +13,7 @@ import 'package:learnpoint_mobile/features/siswa/dashboard/screens/notifikasi_sc
 import 'package:learnpoint_mobile/features/siswa/tugas/screens/tugas_screen.dart';
 import 'package:learnpoint_mobile/features/siswa/tugas/widgets/task_card_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/hero_banner_widget.dart';
+import 'package:learnpoint_mobile/features/siswa/dashboard/widgets/materi_dashboard_widget.dart';
 import 'package:learnpoint_mobile/features/siswa/gamification/data/gacha_service.dart';
 import 'package:learnpoint_mobile/features/siswa/gamification/models/item_model.dart';
 import 'package:learnpoint_mobile/features/siswa/gamification/screens/inventory_screen.dart';
@@ -191,8 +192,6 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
         '${localDate.year}, $hour:$minute WIB';
   }
 
-  // Fungsi _loadDashboardTasks()
-
   void _showNotice(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -308,7 +307,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 1. Header & Hero Area with GIF Background and Floating Banner
+            // 1. Header & Hero Area
             ValueListenableBuilder<BannerItemModel?>(
               valueListenable: GachaService.activeBannerNotifier,
               builder: (context, activeBanner, _) {
@@ -354,8 +353,6 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
                         ),
                       );
                     } else {
-                      // Jika belum ada materi yang pernah dibaca,
-                      // arahkan ke daftar mapel
                       await Navigator.of(context).push(
                         MaterialPageRoute<void>(
                           builder: (_) => const MapelScreen(),
@@ -393,12 +390,12 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
             // 3. Section: Materi Baru Minggu Ini
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _buildMateriBaruSection(),
+              child: const MateriDashboardWidget(),
             ),
 
             const SizedBox(height: 24),
 
-            // 4. Section: Jadwal Pelajaran Kelas VIII-A
+            // 4. Section: Jadwal Pelajaran
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: _buildJadwalPelajaranSection(),
@@ -408,229 +405,6 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  // --- WIDGET: MATERI BARU MINGGU INI SECTION ---
-  Widget _buildMateriBaruSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Materi Baru Minggu Ini',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF1E1B4B),
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Diunggah guru untuk bahan ujian',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: const Color(0xFF5B6275),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            InkWell(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => const MapelScreen()),
-                );
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Text(
-                  'Lihat Semua ›',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: const Color(0xFF4F46E5),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 12),
-
-        // Materi Card
-        Container(
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Illustration Header Area
-              Container(
-                height: 150,
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFFDBEAFE), Color(0xFFCCFBF1)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Stack(
-                  children: [
-                    // Center icon: Lungs biology illustration
-                    Center(
-                      child: CustomPaint(
-                        size: const Size(64, 64),
-                        painter: _LungsIconPainter(
-                          color: const Color(0xFF0F5F57),
-                        ),
-                      ),
-                    ),
-
-                    // Badge: IPA Biologi (Top-Left)
-                    Positioned(
-                      left: 12,
-                      top: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          'IPA Biologi',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: const Color(0xFF0F5F57),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // Badge: 15 Menit (Bottom-Right)
-                    Positioned(
-                      right: 12,
-                      bottom: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1E1B4B),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '15 Menit',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Materi Details & Button
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEEF2FF),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'Video & PDF Rangkuman',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: const Color(0xFF3730A3),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Sistem Pernapasan Manusia',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF1E1B4B),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Bu Siti, S.Pd',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: const Color(0xFF5B6275),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 44,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => const DetailMateriPage(
-                                title: 'Sistem Pernapasan Manusia',
-                                subject: 'IPA Biologi',
-                                duration: '15 Menit',
-                              ),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFEEF2FF),
-                          foregroundColor: const Color(0xFF4F46E5),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(22),
-                          ),
-                          textStyle: GoogleFonts.plusJakartaSans(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        child: const Text('Pelajari Materi'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 
@@ -759,8 +533,9 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
                     ),
                     const SizedBox(width: 8),
                     ElevatedButton.icon(
-                      onPressed: () =>
-                          _showNotice('Mengunduh jadwal pelajaran...'),
+                      onPressed: () {
+                        _showNotice('Mengunduh jadwal pelajaran...');
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF4F46E5),
                         foregroundColor: Colors.white,
@@ -789,56 +564,4 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
       ],
     );
   }
-}
-
-// --- CUSTOM PAINTER: LUNGS BIOLOGY ICON ---
-class _LungsIconPainter extends CustomPainter {
-  final Color color;
-
-  _LungsIconPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.5
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final scaleX = size.width / 24.0;
-    final scaleY = size.height / 24.0;
-
-    canvas.save();
-    canvas.scale(scaleX, scaleY);
-
-    // Trachea
-    canvas.drawLine(const Offset(12, 3), const Offset(12, 10), paint);
-
-    // Left Lung branch & lobe
-    final leftPath = Path()
-      ..moveTo(12, 10)
-      ..cubicTo(10, 10, 9, 11, 8, 13)
-      ..cubicTo(5, 13, 5, 16, 5, 18)
-      ..cubicTo(5, 19.5, 7, 20.5, 10, 19)
-      ..cubicTo(11, 18, 12, 15, 12, 13);
-
-    canvas.drawPath(leftPath, paint);
-
-    // Right Lung branch & lobe
-    final rightPath = Path()
-      ..moveTo(12, 10)
-      ..cubicTo(14, 10, 15, 11, 16, 13)
-      ..cubicTo(19, 13, 19, 16, 19, 18)
-      ..cubicTo(19, 19.5, 17, 20.5, 14, 19)
-      ..cubicTo(13, 18, 12, 15, 12, 13);
-
-    canvas.drawPath(rightPath, paint);
-
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant _LungsIconPainter oldDelegate) =>
-      oldDelegate.color != color;
 }
