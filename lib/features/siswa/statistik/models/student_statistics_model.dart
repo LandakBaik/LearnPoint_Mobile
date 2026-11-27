@@ -104,8 +104,8 @@ class StudentStatisticsModel {
     final progress = rawProgress is Map<String, dynamic>
         ? rawProgress
         : rawProgress is Map
-            ? Map<String, dynamic>.from(rawProgress)
-            : <String, dynamic>{};
+        ? Map<String, dynamic>.from(rawProgress)
+        : <String, dynamic>{};
     return StudentStatisticsModel(
       hasRealData: json['has_real_data'] == true,
       average: _asDouble(json['rata_rata_semua']),
@@ -119,7 +119,9 @@ class StudentStatisticsModel {
       kuisTotal: _asInt(json['kuis_total']),
       ujianGraded: _asInt(json['ujian_dinilai']),
       ujianTotal: _asInt(json['ujian_total']),
-      subjects: _asList(json['nilai_mapel']).map(SubjectScoreModel.fromJson).toList(),
+      subjects: _asList(json['nilai_mapel'])
+          .map(SubjectScoreModel.fromJson)
+          .toList(),
       monthlyScores: _asList(progress['monthly_summary'])
           .map(MonthlyScoreModel.fromJson)
           .toList(),
@@ -155,9 +157,15 @@ class StudentStatisticsResponse {
 }
 
 List<Map<String, dynamic>> _asList(dynamic value) => value is List
-    ? value.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList()
+    ? value
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList()
     : const [];
 
-int _asInt(dynamic value) => value is num ? value.toInt() : int.tryParse('$value') ?? 0;
-double _asDouble(dynamic value) => value is num ? value.toDouble() : double.tryParse('$value') ?? 0;
-double? _asNullableDouble(dynamic value) => value == null ? null : _asDouble(value);
+int _asInt(dynamic value) =>
+    value is num ? value.toInt() : int.tryParse('$value') ?? 0;
+double _asDouble(dynamic value) =>
+    value is num ? value.toDouble() : double.tryParse('$value') ?? 0;
+double? _asNullableDouble(dynamic value) =>
+    value == null ? null : _asDouble(value);
