@@ -21,8 +21,12 @@ class _MateriTerbaruScreenState extends State<MateriTerbaruScreen> {
   String _selectedSort = 'terbaru';
 
   static const Color primaryColor = Color(0xFF4F46E5);
-  static const Color darkColor = Color(0xFF202D43);
-  static const Color mutedColor = Color(0xFF71809A);
+  static const Color purpleHeaderStart = Color(0xFF7B4AE2);
+  static const Color purpleHeaderMid = Color(0xFF6D3CE0);
+  static const Color purpleHeaderEnd = Color(0xFF8154E8);
+  static const Color darkColor = Color(0xFF1E1B4B);
+  static const Color mutedColor = Color(0xFF64748B);
+  static const Color borderColor = Color(0xFFE2E8F0);
 
   static const List<Map<String, String>> _sortOptions = [
     {'value': 'terbaru', 'label': 'Terbaru'},
@@ -122,40 +126,125 @@ class _MateriTerbaruScreenState extends State<MateriTerbaruScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FC),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isSmallScreen = constraints.maxWidth < 360;
-            final horizontalPadding = isSmallScreen ? 16.0 : 20.0;
+      backgroundColor: const Color(0xFFF6F7FB),
+      body: Column(
+        children: [
+          _buildPurpleHeader(context),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isSmallScreen = constraints.maxWidth < 360;
+                final horizontalPadding = isSmallScreen ? 16.0 : 20.0;
 
-            return RefreshIndicator(
-              color: primaryColor,
-              onRefresh: _loadMateri,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(
-                  horizontalPadding,
-                  5,
-                  horizontalPadding,
-                  35,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 5),
-                    _buildBackButton(),
-                    const SizedBox(height: 10),
-                    _buildPageTitle(isSmallScreen),
-                    const SizedBox(height: 20),
-                    _buildSortDropdown(),
-                    const SizedBox(height: 18),
-                    _buildMateriList(isSmallScreen),
-                  ],
+                return RefreshIndicator(
+                  color: purpleHeaderStart,
+                  onRefresh: _loadMateri,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      18,
+                      horizontalPadding,
+                      35,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSortDropdown(),
+                        const SizedBox(height: 18),
+                        _buildMateriList(isSmallScreen),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPurpleHeader(BuildContext context) {
+    final isSmallScreen = MediaQuery.sizeOf(context).width < 360;
+    final materiCount = _materiList.length;
+
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            purpleHeaderStart,
+            purpleHeaderMid,
+            purpleHeaderEnd,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(28),
+          bottomRight: Radius.circular(28),
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            isSmallScreen ? 16 : 20,
+            12,
+            isSmallScreen ? 16 : 20,
+            24,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildBackButton(),
+                  if (!_isLoading)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '$materiCount Materi',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'Materi Terbaru',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: isSmallScreen ? 22 : 25,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: -0.4,
                 ),
               ),
-            );
-          },
+              const SizedBox(height: 4),
+              Text(
+                'Daftar materi yang baru diunggah dalam 7 hari terakhir.',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: isSmallScreen ? 12 : 13,
+                  height: 1.45,
+                  color: Colors.white.withValues(alpha: 0.88),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -164,51 +253,33 @@ class _MateriTerbaruScreenState extends State<MateriTerbaruScreen> {
   Widget _buildBackButton() {
     return InkWell(
       onTap: () => Navigator.maybePop(context),
-      borderRadius: BorderRadius.circular(10),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.arrow_back_rounded,
-            size: 19,
-            color: primaryColor,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'Kembali',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: primaryColor,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.chevron_left_rounded,
+              size: 18,
+              color: Colors.white,
             ),
-          ),
-        ],
+            const SizedBox(width: 2),
+            Text(
+              'Kembali',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
       ),
-    );
-  }
-
-  Widget _buildPageTitle(bool isSmallScreen) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Materi Terbaru',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: isSmallScreen ? 23 : 27,
-            fontWeight: FontWeight.w800,
-            color: darkColor,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Daftar materi yang baru diunggah dalam 7 hari terakhir.',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: isSmallScreen ? 12 : 13,
-            height: 1.5,
-            color: mutedColor,
-          ),
-        ),
-      ],
     );
   }
 
@@ -218,56 +289,60 @@ class _MateriTerbaruScreenState extends State<MateriTerbaruScreen> {
         const Icon(
           Icons.sort_rounded,
           size: 19,
-          color: Color(0xFF71809A),
+          color: primaryColor,
         ),
         const SizedBox(width: 8),
         Text(
           'Urutkan:',
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF52627B),
+            fontSize: 12.5,
+            fontWeight: FontWeight.w700,
+            color: darkColor,
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 10),
         Expanded(
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: const Color(0xFFDCE3EE)),
-                borderRadius: BorderRadius.circular(9),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedSort,
-                  isExpanded: true,
-                  isDense: true,
-                  icon: const Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: Color(0xFF71809A),
-                    size: 20,
-                  ),
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: darkColor,
-                  ),
-                  items: _sortOptions.map((option) {
-                    return DropdownMenuItem<String>(
-                      value: option['value'],
-                      child: Text(option['label']!),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() {
-                      _selectedSort = value;
-                    });
-                  },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: borderColor),
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF0F172A).withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
                 ),
+              ],
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _selectedSort,
+                isExpanded: true,
+                isDense: true,
+                icon: const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: mutedColor,
+                  size: 20,
+                ),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: darkColor,
+                ),
+                items: _sortOptions.map((option) {
+                  return DropdownMenuItem<String>(
+                    value: option['value'],
+                    child: Text(option['label']!),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setState(() {
+                    _selectedSort = value;
+                  });
+                },
               ),
             ),
           ),
@@ -353,8 +428,15 @@ class _MateriTerbaruScreenState extends State<MateriTerbaruScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 45),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(17),
-        border: Border.all(color: const Color(0xFFE1E6EF)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.035),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -368,7 +450,7 @@ class _MateriTerbaruScreenState extends State<MateriTerbaruScreen> {
             child: const Icon(
               Icons.menu_book_outlined,
               size: 32,
-              color: Color(0xFF818CF8),
+              color: primaryColor,
             ),
           ),
           const SizedBox(height: 15),
@@ -405,107 +487,83 @@ class _MateriTerbaruScreenState extends State<MateriTerbaruScreen> {
 
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 15),
-      padding: EdgeInsets.all(isSmallScreen ? 14 : 17),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.all(isSmallScreen ? 14 : 18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(17),
-        border: Border.all(color: const Color(0xFFDCE5F3), width: 1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.025),
-            blurRadius: 9,
-            offset: const Offset(0, 3),
+            color: const Color(0xFF0F172A).withValues(alpha: 0.045),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // BARIS ATAS: GURU DAN JENIS MATERI
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
+          // BARIS ATAS: MAPEL DAN JENIS MATERI
+          Row(
             children: [
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 11,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEEF2FF),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      entry.subject,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF3730A3),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
-                  vertical: 7,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0F4FA),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.person_outline_rounded,
-                      size: 14,
-                      color: Color(0xFF657894),
-                    ),
-                    const SizedBox(width: 5),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 170),
-                      child: Text(
-                        teacherName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF52627B),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 9,
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2FF),
+                  color: const Color(0xFFF3EEFF),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   entry.typeLabel,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 9,
+                    fontSize: 10.5,
                     fontWeight: FontWeight.w700,
-                    color: primaryColor,
+                    color: purpleHeaderStart,
                   ),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 15),
-
-          // MATA PELAJARAN
-          Text(
-            entry.subject,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: primaryColor,
-            ),
-          ),
-
-          const SizedBox(height: 6),
+          const SizedBox(height: 14),
 
           // JUDUL MATERI
           Text(
             materi.judul,
             style: GoogleFonts.plusJakartaSans(
-              fontSize: isSmallScreen ? 14 : 15,
+              fontSize: isSmallScreen ? 15 : 16.5,
               fontWeight: FontWeight.w800,
               color: darkColor,
-              height: 1.4,
+              height: 1.35,
             ),
           ),
 
@@ -523,22 +581,85 @@ class _MateriTerbaruScreenState extends State<MateriTerbaruScreen> {
             ),
           ],
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
+
+          // GURU & BADGE BARU
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF6F7FB),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.person_outline_rounded,
+                      size: 13.5,
+                      color: mutedColor,
+                    ),
+                    const SizedBox(width: 5),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 170),
+                      child: Text(
+                        teacherName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: mutedColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: darkColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Baru',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
 
           // TANGGAL UNGGAH
           Row(
             children: [
               const Icon(
                 Icons.calendar_today_outlined,
-                size: 14,
-                color: Color(0xFF8291A8),
+                size: 13.5,
+                color: Color(0xFF94A3B8),
               ),
               const SizedBox(width: 7),
               Expanded(
                 child: Text(
                   'Diunggah ${_formatDate(materi.createdAtDate)}',
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 10,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w500,
                     color: mutedColor,
                   ),
@@ -547,12 +668,12 @@ class _MateriTerbaruScreenState extends State<MateriTerbaruScreen> {
             ],
           ),
 
-          const SizedBox(height: 15),
+          const SizedBox(height: 16),
 
           // TOMBOL PELAJARI MATERI
           SizedBox(
             width: double.infinity,
-            height: 40,
+            height: 44,
             child: ElevatedButton(
               onPressed: () => _openMateriDetail(entry),
               style: ElevatedButton.styleFrom(
@@ -560,7 +681,7 @@ class _MateriTerbaruScreenState extends State<MateriTerbaruScreen> {
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(9),
+                  borderRadius: BorderRadius.circular(22),
                 ),
               ),
               child: Row(
@@ -569,14 +690,14 @@ class _MateriTerbaruScreenState extends State<MateriTerbaruScreen> {
                   Text(
                     'Pelajari Materi',
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11,
+                      fontSize: 13,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(width: 7),
                   const Icon(
                     Icons.arrow_forward_rounded,
-                    size: 15,
+                    size: 16,
                   ),
                 ],
               ),
