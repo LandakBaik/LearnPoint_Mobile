@@ -96,6 +96,40 @@ class MateriService {
     return detail.materis;
   }
 
+  /// Mengambil seluruh materi terbaru siswa dalam rentang [days] hari terakhir,
+  /// diurutkan dari yang paling baru diunggah.
+  static Future<List<MateriTerbaruItem>> fetchMateriTerbaru({
+    int days = 7,
+  }) async {
+    final mapels = await fetchDaftarMapelSiswa();
+    final validMapels = mapels.where((mapel) => mapel.id != null).toList();
+
+    final detailLists = await Future.wait<List<MateriTerbaruItem>>(
+      validMapels.map((mapel) async {
+        final detail = await fetchDetailMapelSiswa(mapel.id!);
+        return detail.materis
+            .map((materi) => MateriTerbaruItem(subject: mapel.materi, item: materi))
+            .toList();
+      }),
+    );
+
+    final allMateri = detailLists.expand((list) => list).toList();
+    final now = DateTime.now();
+    final cutoff = now.subtract(Duration(days: days));
+
+    final filteredMateri = allMateri.where((materi) {
+      final uploadedAt = materi.item.createdAtDate;
+      if (uploadedAt == null) return false;
+      return !uploadedAt.isBefore(cutoff) && !uploadedAt.isAfter(now);
+    }).toList();
+
+    filteredMateri.sort(
+      (a, b) => b.item.createdAtDate!.compareTo(a.item.createdAtDate!),
+    );
+
+    return filteredMateri;
+  }
+
   /// GET terpusat: validasi token, panggil API, cek `success`, dan
   /// terjemahkan semua kegagalan menjadi [MateriException].
   static Future<Map<String, dynamic>> _get(String path) async {

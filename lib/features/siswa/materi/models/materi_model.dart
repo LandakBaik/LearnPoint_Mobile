@@ -225,6 +225,30 @@ class MapelDetailModel {
   }
 }
 
+/// Model untuk item materi terbaru beserta nama mata pelajarannya.
+class MateriTerbaruItem {
+  final String subject;
+  final MateriItemModel item;
+
+  const MateriTerbaruItem({
+    required this.subject,
+    required this.item,
+  });
+
+  String get typeLabel {
+    if (item.hasVideo && item.hasFile) {
+      return 'Video & PDF Rangkuman';
+    }
+    if (item.hasVideo) {
+      return 'Video Pembelajaran';
+    }
+    if (item.hasFile) {
+      return 'Modul PDF';
+    }
+    return 'Materi Pembelajaran';
+  }
+}
+
 /// Model untuk 1 item materi di dalam suatu mata pelajaran
 /// Sesuai response GET /api/siswa/mapel/{mapelId} dari MateriController Laravel
 class MateriItemModel {

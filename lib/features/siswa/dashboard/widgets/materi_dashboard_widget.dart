@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/models/materi_model.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/data/materi_service.dart';
 import 'package:learnpoint_mobile/features/siswa/materi/screens/detail_materi_screen.dart';
-import 'package:learnpoint_mobile/features/siswa/mapel/screens/mapel_screen.dart';
+import 'package:learnpoint_mobile/features/siswa/materi/screens/materi_terbaru_screen.dart';
 
 class MateriDashboardWidget extends StatefulWidget {
   const MateriDashboardWidget({super.key});
@@ -17,7 +17,7 @@ class MateriDashboardWidgetState extends State<MateriDashboardWidget> {
   Future<void> refresh() => _loadMateri();
   int _currentMateriIndex = 0;
 
-  List<_DashboardMateri> _materiList = [];
+  List<MateriTerbaruItem> _materiList = [];
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -56,43 +56,7 @@ class MateriDashboardWidgetState extends State<MateriDashboardWidget> {
     });
 
     try {
-      // 1. Ambil seluruh mata pelajaran milik siswa.
-      final mapels = await MateriService.fetchDaftarMapelSiswa();
-
-      // 2. Ambil detail materi dari setiap mata pelajaran.
-      final validMapels = mapels.where((mapel) => mapel.id != null).toList();
-
-      final detailLists = await Future.wait<List<_DashboardMateri>>(
-        validMapels.map((mapel) async {
-          final detail = await MateriService.fetchDetailMapelSiswa(mapel.id!);
-
-          return detail.materis.map((materi) {
-            return _DashboardMateri(subject: mapel.materi, item: materi);
-          }).toList();
-        }),
-      );
-
-      // 3. Gabungkan seluruh materi.
-      final allMateri = detailLists.expand((materiList) => materiList).toList();
-
-      // 4. Filter materi dalam 7 hari terakhir.
-      final now = DateTime.now();
-      final sevenDaysAgo = now.subtract(const Duration(days: 7));
-
-      final filteredMateri = allMateri.where((materi) {
-        final uploadedAt = materi.item.createdAtDate;
-
-        // Tanggal kosong atau format tidak valid tidak ditampilkan.
-        if (uploadedAt == null) return false;
-
-        // Hanya materi dalam rentang 7 hari terakhir.
-        return !uploadedAt.isBefore(sevenDaysAgo) && !uploadedAt.isAfter(now);
-      }).toList();
-
-      // 5. Urutkan dari materi terbaru.
-      filteredMateri.sort((a, b) {
-        return b.item.createdAtDate!.compareTo(a.item.createdAtDate!);
-      });
+      final filteredMateri = await MateriService.fetchMateriTerbaru();
 
       if (!mounted) return;
 
@@ -158,30 +122,10 @@ class MateriDashboardWidgetState extends State<MateriDashboardWidget> {
   }
 
   // ============================================================
-  // JENIS MATERI
-  // ============================================================
-
-  String _getMateriType(MateriItemModel materi) {
-    if (materi.hasVideo && materi.hasFile) {
-      return 'Video & PDF Rangkuman';
-    }
-
-    if (materi.hasVideo) {
-      return 'Video Pembelajaran';
-    }
-
-    if (materi.hasFile) {
-      return 'Modul PDF';
-    }
-
-    return 'Materi Pembelajaran';
-  }
-
-  // ============================================================
   // BUKA DETAIL MATERI
   // ============================================================
 
-  void _openMateri(_DashboardMateri materi) {
+  void _openMateri(MateriTerbaruItem materi) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => DetailMateriPage(
@@ -199,8 +143,9 @@ class MateriDashboardWidgetState extends State<MateriDashboardWidget> {
   // ============================================================
 
   void _openAllMateri() {
-    Navigator.of(context)
-        .push(MaterialPageRoute<void>(builder: (_) => const MapelScreen()));
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const MateriTerbaruScreen()),
+    );
   }
 
   // ============================================================
@@ -293,7 +238,7 @@ class MateriDashboardWidgetState extends State<MateriDashboardWidget> {
   // CARD MATERI
   // ============================================================
 
-  Widget _buildMateriCard(_DashboardMateri currentMateri, int safeIndex) {
+  Widget _buildMateriCard(MateriTerbaruItem currentMateri, int safeIndex) {
     final materi = currentMateri.item;
     final uploadedAt = materi.createdAtDate;
 
@@ -411,7 +356,7 @@ class MateriDashboardWidgetState extends State<MateriDashboardWidget> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        _getMateriType(materi),
+                        currentMateri.typeLabel,
                         style: _textStyle(
                           fontSize: 12,
                           color: const Color(0xFF3730A3),
@@ -639,17 +584,6 @@ class MateriDashboardWidgetState extends State<MateriDashboardWidget> {
       ],
     );
   }
-}
-
-// ============================================================
-// MODEL KHUSUS UNTUK CARD DASHBOARD
-// ============================================================
-
-class _DashboardMateri {
-  final String subject;
-  final MateriItemModel item;
-
-  const _DashboardMateri({required this.subject, required this.item});
 }
 
 // ============================================================
