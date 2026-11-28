@@ -49,8 +49,8 @@ class HeroBannerWidget extends StatelessWidget {
             gradient: LinearGradient(
               colors: [
                 Color(0xFF1E3A8A),
+                Color(0xFF1D4ED8),
                 Color(0xFF2563EB),
-                Color(0xFF4F46E5),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -177,7 +177,7 @@ class HeroBannerWidget extends StatelessWidget {
                         Text(
                           'Siap jelajahi galaksi ilmu hari ini? ✦',
                           style: GoogleFonts.plusJakartaSans(
-                            color: const Color(0xFFE0E7FF),
+                            color: const Color(0xFFDBEAFE),
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                             shadows: const [
@@ -265,11 +265,15 @@ class HeroBannerWidget extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF4F46E5),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1D4ED8), Color(0xFF2563EB)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF1E1B4B).withValues(alpha: 0.25),
+                  color: const Color(0xFF1D4ED8).withValues(alpha: 0.28),
                   offset: const Offset(0, 8),
                   blurRadius: 20,
                 ),
@@ -332,7 +336,7 @@ class HeroBannerWidget extends StatelessWidget {
                   onPressed: onContinueTap,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF4F46E5),
+                    foregroundColor: const Color(0xFF2563EB),
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20,

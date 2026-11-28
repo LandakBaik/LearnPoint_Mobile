@@ -29,9 +29,9 @@ class TugasSectionState extends State<TugasSection> {
   // WARNA
   // ============================================================
 
-  static const Color primary = Color.fromARGB(255, 114, 61, 237);
-  static const Color dark = Color(0xFF172747);
-  static const Color muted = Color(0xFF71809A);
+  static const Color primary = Color(0xFF2563EB);
+  static const Color dark = Color(0xFF1E293B);
+  static const Color muted = Color(0xFF64748B);
   static const Color border = Color(0xFFE4EAF4);
 
   static const Color orange = Color(0xFFED9B32);
@@ -41,7 +41,7 @@ class TugasSectionState extends State<TugasSection> {
   static const Color orangeBg = Color(0xFFFFF5E9);
   static const Color redBg = Color(0xFFFFEEEE);
   static const Color greenBg = Color(0xFFEAF6EF);
-  static const Color blueBg = Color(0xFFF0EBFF);
+  static const Color blueBg = Color(0xFFEFF6FF);
 
   @override
   void initState() {

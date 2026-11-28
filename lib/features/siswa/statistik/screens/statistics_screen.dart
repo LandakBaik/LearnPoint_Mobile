@@ -24,20 +24,20 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     final response = provider.response;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7FB),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: Text('Statistik Belajar', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800)),
         backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF1E1B4B),
+        foregroundColor: const Color(0xFF1E293B),
         elevation: 0,
       ),
       body: provider.isLoading && response == null
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF4F46E5)))
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF2563EB)))
           : provider.errorMessage != null && response == null
               ? _ErrorState(message: provider.errorMessage!, onRetry: provider.load)
               : RefreshIndicator(
                   onRefresh: () => provider.load(periodId: response?.selectedPeriod?.id),
-                  color: const Color(0xFF4F46E5),
+                  color: const Color(0xFF2563EB),
                   child: ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
@@ -79,7 +79,7 @@ class _PeriodSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Icon(Icons.calendar_month_rounded, color: Color(0xFF4F46E5)),
+        const Icon(Icons.calendar_month_rounded, color: Color(0xFF2563EB)),
         const SizedBox(width: 10),
         Expanded(
           child: Text('Periode akademik', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: const Color(0xFF374151))),
@@ -100,7 +100,7 @@ class _PeriodSelector extends StatelessWidget {
             },
           )
         else
-          Text(selected?.label ?? 'Belum tersedia', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF4F46E5))),
+          Text(selected?.label ?? 'Belum tersedia', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF2563EB))),
       ],
     );
   }
@@ -116,7 +116,7 @@ class _SummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [Color(0xFF4F46E5), Color(0xFF312E81)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+        gradient: const LinearGradient(colors: [Color(0xFF1D4ED8), Color(0xFF1E3A8A)], begin: Alignment.topLeft, end: Alignment.bottomRight),
         borderRadius: BorderRadius.circular(24),
       ),
       child: statistics.hasRealData
@@ -174,7 +174,7 @@ class _ComponentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFEAECF0))), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     Icon(icon, size: 20, color: color), const SizedBox(height: 10), Text(label, style: GoogleFonts.plusJakartaSans(fontSize: 12, color: const Color(0xFF667085), fontWeight: FontWeight.w700)), const SizedBox(height: 3),
-    Text(graded > 0 ? _score(average) : '-', style: GoogleFonts.plusJakartaSans(fontSize: 19, color: const Color(0xFF1E1B4B), fontWeight: FontWeight.w800)), const SizedBox(height: 4),
+    Text(graded > 0 ? _score(average) : '-', style: GoogleFonts.plusJakartaSans(fontSize: 19, color: const Color(0xFF1E293B), fontWeight: FontWeight.w800)), const SizedBox(height: 4),
     Text('$graded/$total dinilai', style: GoogleFonts.plusJakartaSans(fontSize: 10, color: const Color(0xFF98A2B3), fontWeight: FontWeight.w600)),
   ]));
 }
@@ -334,7 +334,7 @@ class _SelectedMonthTooltip extends StatelessWidget {
             style: GoogleFonts.plusJakartaSans(
               fontSize: 12,
               fontWeight: FontWeight.w800,
-              color: const Color(0xFF1E1B4B),
+              color: const Color(0xFF1E293B),
             ),
           ),
           const SizedBox(width: 10),
@@ -427,13 +427,13 @@ class _SubjectCard extends StatelessWidget {
     final color = subject.score == null ? const Color(0xFF98A2B3) : completed ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
     return Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFEAECF0))), child: Row(children: [
       Container(width: 42, height: 42, decoration: BoxDecoration(color: color.withValues(alpha: .12), borderRadius: BorderRadius.circular(12)), child: Icon(Icons.menu_book_rounded, color: color)), const SizedBox(width: 12),
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(subject.name, style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, color: const Color(0xFF1E1B4B))), const SizedBox(height: 4), Text('KKM ${_score(subject.kkm)}', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF667085)))])),
+      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(subject.name, style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, color: const Color(0xFF1E293B))), const SizedBox(height: 4), Text('KKM ${_score(subject.kkm)}', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF667085)))])),
       Column(crossAxisAlignment: CrossAxisAlignment.end, children: [Text(subject.score == null ? '-' : _score(subject.score!), style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: color)), const SizedBox(height: 3), Text(subject.score == null ? 'Belum ada nilai' : completed ? 'Tuntas' : 'Belum tuntas', style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w700, color: color))]),
     ]));
   }
 }
 
-class _SectionTitle extends StatelessWidget { const _SectionTitle({required this.title}); final String title; @override Widget build(BuildContext context) => Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF1E1B4B))); }
+class _SectionTitle extends StatelessWidget { const _SectionTitle({required this.title}); final String title; @override Widget build(BuildContext context) => Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF1E293B))); }
 class _Legend extends StatelessWidget {
   const _Legend();
   @override
@@ -501,7 +501,7 @@ class _ProgressPainter extends CustomPainter {
         selectedIndex! < months.length) {
       final selectedX = _xForIndex(selectedIndex!, plotWidth);
       final guidePaint = Paint()
-        ..color = const Color(0xFF4F46E5).withValues(alpha: 0.22)
+        ..color = const Color(0xFF2563EB).withValues(alpha: 0.22)
         ..strokeWidth = 1.5;
       canvas.drawLine(
         Offset(selectedX, topPadding),
@@ -555,7 +555,7 @@ class _ProgressPainter extends CustomPainter {
           text: months[i].label,
           style: isSelected
               ? axisLabelStyle.copyWith(
-                  color: const Color(0xFF4F46E5),
+                  color: const Color(0xFF2563EB),
                   fontWeight: FontWeight.w800,
                 )
               : axisLabelStyle,

@@ -171,7 +171,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
   }
 
   Map<String, Color> _getSubjectColors(String subject) {
-    return {'bg': const Color(0xFFE0E7FF), 'text': const Color(0xFF3730A3)};
+    return {'bg': const Color(0xFFDBEAFE), 'text': const Color(0xFF1D4ED8)};
   }
 
   String _getTaskRemaining(String deadline) {
@@ -330,9 +330,9 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7FB),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: RefreshIndicator(
-        color: const Color(0xFF4F46E5),
+        color: const Color(0xFF2563EB),
         onRefresh: _handleRefresh,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -456,7 +456,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1E1B4B),
+                  color: const Color(0xFF1E293B),
                   letterSpacing: -0.3,
                   height: 1.25,
                 ),
@@ -465,13 +465,13 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFFE5E7EB),
+                color: const Color(0xFFEFF6FF),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 'Sem. Ganjil 2026/2027',
                 style: GoogleFonts.plusJakartaSans(
-                  color: const Color(0xFF374151),
+                  color: const Color(0xFF1D4ED8),
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -489,7 +489,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFFEEF2FF), Color(0xFFE0F2FE)],
+              colors: [Color(0xFFDBEAFE), Color(0xFFEFF6FF)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -511,7 +511,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
                         const Icon(
                           Icons.image_outlined,
                           size: 56,
-                          color: Color(0xFF3730A3),
+                          color: Color(0xFF2563EB),
                         ),
                         const SizedBox(height: 10),
                         Text(
@@ -519,7 +519,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: const Color(0xFF3730A3),
+                            color: const Color(0xFF1D4ED8),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -527,7 +527,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
                           'Ganti dengan foto jadwal kelas VIII-A',
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
-                            color: const Color(0xFF5B6275),
+                            color: const Color(0xFF64748B),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -547,7 +547,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
                       onPressed: _showScheduleZoomDialog,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
-                        foregroundColor: const Color(0xFF1E1B4B),
+                        foregroundColor: const Color(0xFF1E293B),
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,
@@ -570,7 +570,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
                         _showNotice('Mengunduh jadwal pelajaran...');
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4F46E5),
+                        backgroundColor: const Color(0xFF2563EB),
                         foregroundColor: Colors.white,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(

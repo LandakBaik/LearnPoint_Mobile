@@ -117,12 +117,12 @@ class MateriListSectionWidget extends StatelessWidget {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF3EEFF),
+                            color: const Color(0xFFEFF6FF),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(
                             Icons.menu_book_rounded,
-                            color: Color(0xFF7B4AE2),
+                            color: Color(0xFF2563EB),
                             size: 22,
                           ),
                         ),

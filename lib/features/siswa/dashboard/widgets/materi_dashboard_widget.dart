@@ -103,7 +103,7 @@ class MateriDashboardWidgetState extends State<MateriDashboardWidget> {
 
   TextStyle _textStyle({
     double fontSize = 13,
-    Color color = const Color(0xFF1E1B4B),
+    Color color = const Color(0xFF1E293B),
     FontWeight fontWeight = FontWeight.w500,
   }) {
     return GoogleFonts.plusJakartaSans(
@@ -168,7 +168,7 @@ class MateriDashboardWidgetState extends State<MateriDashboardWidget> {
       ),
       child: Column(
         children: [
-          Icon(icon, size: 36, color: const Color(0xFF818CF8)),
+          Icon(icon, size: 36, color: const Color(0xFF3B82F6)),
           const SizedBox(height: 12),
           Text(
             title,
@@ -179,7 +179,7 @@ class MateriDashboardWidgetState extends State<MateriDashboardWidget> {
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: _textStyle(fontSize: 12, color: const Color(0xFF6B7280)),
+            style: _textStyle(fontSize: 12, color: const Color(0xFF64748B)),
           ),
           if (action != null) ...[const SizedBox(height: 14), action],
         ],
@@ -210,7 +210,7 @@ class MateriDashboardWidgetState extends State<MateriDashboardWidget> {
               const SizedBox(height: 2),
               Text(
                 'Diunggah guru untuk bahan ujian',
-                style: _textStyle(fontSize: 13, color: const Color(0xFF5B6275)),
+                style: _textStyle(fontSize: 13, color: const Color(0xFF64748B)),
               ),
             ],
           ),
@@ -224,7 +224,7 @@ class MateriDashboardWidgetState extends State<MateriDashboardWidget> {
               'Lihat Semua ›',
               style: _textStyle(
                 fontSize: 13,
-                color: const Color(0xFF4F46E5),
+                color: const Color(0xFF2563EB),
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -271,7 +271,7 @@ class MateriDashboardWidgetState extends State<MateriDashboardWidget> {
                 width: double.infinity,
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFFDBEAFE), Color(0xFFCCFBF1)],
+                    colors: [Color(0xFFDBEAFE), Color(0xFFEFF6FF)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -283,7 +283,7 @@ class MateriDashboardWidgetState extends State<MateriDashboardWidget> {
                       child: CustomPaint(
                         size: const Size(64, 64),
                         painter: _LungsIconPainter(
-                          color: const Color(0xFF0F5F57),
+                          color: const Color(0xFF1D4ED8),
                         ),
                       ),
                     ),
@@ -305,7 +305,7 @@ class MateriDashboardWidgetState extends State<MateriDashboardWidget> {
                           currentMateri.subject,
                           style: _textStyle(
                             fontSize: 12,
-                            color: const Color(0xFF0F5F57),
+                            color: const Color(0xFF1D4ED8),
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -322,7 +322,7 @@ class MateriDashboardWidgetState extends State<MateriDashboardWidget> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E1B4B),
+                          color: const Color(0xFF1D4ED8),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -352,14 +352,14 @@ class MateriDashboardWidgetState extends State<MateriDashboardWidget> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEEF2FF),
+                        color: const Color(0xFFEFF6FF),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         currentMateri.typeLabel,
                         style: _textStyle(
                           fontSize: 12,
-                          color: const Color(0xFF3730A3),
+                          color: const Color(0xFF1D4ED8),
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -389,7 +389,7 @@ class MateriDashboardWidgetState extends State<MateriDashboardWidget> {
                       overflow: TextOverflow.ellipsis,
                       style: _textStyle(
                         fontSize: 13,
-                        color: const Color(0xFF5B6275),
+                        color: const Color(0xFF64748B),
                       ),
                     ),
 
@@ -423,8 +423,8 @@ class MateriDashboardWidgetState extends State<MateriDashboardWidget> {
                       child: ElevatedButton(
                         onPressed: () => _openMateri(currentMateri),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFEEF2FF),
-                          foregroundColor: const Color(0xFF4F46E5),
+                          backgroundColor: const Color(0xFFEFF6FF),
+                          foregroundColor: const Color(0xFF2563EB),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(22),
@@ -476,7 +476,7 @@ class MateriDashboardWidgetState extends State<MateriDashboardWidget> {
                   height: 8,
                   decoration: BoxDecoration(
                     color: isActive
-                        ? const Color(0xFF4F46E5)
+                        ? const Color(0xFF2563EB)
                         : const Color(0xFFD1D5DB),
                     borderRadius: BorderRadius.circular(4),
                   ),
@@ -521,7 +521,7 @@ class MateriDashboardWidgetState extends State<MateriDashboardWidget> {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: isEnabled ? const Color(0xFF4F46E5) : const Color(0xFFE5E7EB),
+          color: isEnabled ? const Color(0xFF2563EB) : const Color(0xFFE5E7EB),
           shape: BoxShape.circle,
         ),
         child: Icon(

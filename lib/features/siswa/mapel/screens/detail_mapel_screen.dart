@@ -82,9 +82,9 @@ class _DetailMapelScreenState extends State<DetailMapelScreen> {
         _mapelDetail?.namaMapel ?? widget.subject?.materi ?? 'Mata Pelajaran';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7FB),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: RefreshIndicator(
-        color: const Color(0xFF7B4AE2),
+        color: const Color(0xFF2563EB),
         onRefresh: _handleRefresh,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -98,9 +98,9 @@ class _DetailMapelScreenState extends State<DetailMapelScreen> {
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        Color(0xFF7B4AE2),
-                        Color(0xFF6D3CE0),
-                        Color(0xFF8154E8),
+                        Color(0xFF1E3A8A),
+                        Color(0xFF1D4ED8),
+                        Color(0xFF2563EB),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,

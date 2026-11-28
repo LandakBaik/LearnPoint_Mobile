@@ -101,7 +101,7 @@ class _TaskCardWidgetState extends State<TaskCardWidget> {
 
   TextStyle _textStyle({
     double fontSize = 13,
-    Color color = const Color(0xFF1E1B4B),
+    Color color = const Color(0xFF1E293B),
     FontWeight fontWeight = FontWeight.w500,
   }) {
     return GoogleFonts.plusJakartaSans(
@@ -118,7 +118,7 @@ class _TaskCardWidgetState extends State<TaskCardWidget> {
       return const Padding(
         padding: EdgeInsets.only(top: 24, bottom: 30),
         child: Center(
-          child: CircularProgressIndicator(color: Color(0xFF4F46E5)),
+          child: CircularProgressIndicator(color: Color(0xFF2563EB)),
         ),
       );
     }
@@ -233,7 +233,7 @@ class _TaskCardWidgetState extends State<TaskCardWidget> {
                       'Lihat Semua ›',
                       style: _textStyle(
                         fontSize: 13,
-                        color: const Color(0xFF4F46E5),
+                        color: const Color(0xFF2563EB),
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -299,7 +299,7 @@ class _TaskCardWidgetState extends State<TaskCardWidget> {
                       const Icon(
                         Icons.calendar_today_outlined,
                         size: 14,
-                        color: Color(0xFF5B6275),
+                        color: Color(0xFF64748B),
                       ),
                       const SizedBox(width: 6),
                       Expanded(
@@ -308,7 +308,7 @@ class _TaskCardWidgetState extends State<TaskCardWidget> {
                               'Batas: Tidak tersedia',
                           style: _textStyle(
                             fontSize: 13,
-                            color: const Color(0xFF5B6275),
+                            color: const Color(0xFF64748B),
                           ),
                         ),
                       ),
@@ -332,7 +332,7 @@ class _TaskCardWidgetState extends State<TaskCardWidget> {
                             const Icon(
                               Icons.list_alt_rounded,
                               size: 16,
-                              color: Color(0xFF5B6275),
+                              color: Color(0xFF64748B),
                             ),
                             const SizedBox(width: 6),
                             Flexible(
@@ -342,7 +342,7 @@ class _TaskCardWidgetState extends State<TaskCardWidget> {
                                 overflow: TextOverflow.ellipsis,
                                 style: _textStyle(
                                   fontSize: 13,
-                                  color: const Color(0xFF5B6275),
+                                  color: const Color(0xFF64748B),
                                 ),
                               ),
                             ),
@@ -355,7 +355,7 @@ class _TaskCardWidgetState extends State<TaskCardWidget> {
                       ElevatedButton.icon(
                         onPressed: () => widget.onTapTask(currentTask),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4F46E5),
+                          backgroundColor: const Color(0xFF2563EB),
                           foregroundColor: Colors.white,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(
@@ -407,7 +407,7 @@ class _TaskCardWidgetState extends State<TaskCardWidget> {
             'Lihat Semua ›',
             style: _textStyle(
               fontSize: 12,
-              color: const Color(0xFF4F46E5),
+              color: const Color(0xFF2563EB),
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -424,10 +424,10 @@ class _TaskCardWidgetState extends State<TaskCardWidget> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE8E7F5)),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF4F46E5).withOpacity(0.045),
+            color: const Color(0xFF2563EB).withValues(alpha: 0.05),
             blurRadius: 16,
             offset: const Offset(0, 5),
           ),
@@ -439,13 +439,13 @@ class _TaskCardWidgetState extends State<TaskCardWidget> {
             width: 76,
             height: 76,
             decoration: BoxDecoration(
-              color: const Color(0xFFEEEAFE),
+              color: const Color(0xFFEFF6FF),
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Icon(
               Icons.assignment_turned_in_rounded,
               size: 38,
-              color: Color(0xFF6255E8),
+              color: Color(0xFF2563EB),
             ),
           ),
           const SizedBox(width: 14),
@@ -471,7 +471,7 @@ class _TaskCardWidgetState extends State<TaskCardWidget> {
                   'Semangat belajar ✨',
                   style: _textStyle(
                     fontSize: 11,
-                    color: const Color(0xFF6255E8),
+                    color: const Color(0xFF2563EB),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -570,7 +570,7 @@ class _TaskCardWidgetState extends State<TaskCardWidget> {
                   height: 8,
                   decoration: BoxDecoration(
                     color: isActive
-                        ? const Color(0xFF4F46E5)
+                        ? const Color(0xFF2563EB)
                         : const Color(0xFFD1D5DB),
                     borderRadius: BorderRadius.circular(4),
                   ),
@@ -615,7 +615,7 @@ class _TaskCardWidgetState extends State<TaskCardWidget> {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: isEnabled ? const Color(0xFF4F46E5) : const Color(0xFFE5E7EB),
+          color: isEnabled ? const Color(0xFF2563EB) : const Color(0xFFE5E7EB),
           shape: BoxShape.circle,
         ),
         child: Icon(

@@ -297,7 +297,7 @@ class MapelMenuSectionWidgetState extends State<MapelMenuSectionWidget> {
                       padding: const EdgeInsets.symmetric(vertical: 9),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? const Color(0xFF7B4AE2)
+                            ? const Color(0xFF2563EB)
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(11),
                       ),

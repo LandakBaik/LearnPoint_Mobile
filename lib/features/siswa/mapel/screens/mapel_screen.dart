@@ -250,14 +250,14 @@ class _MapelScreenState extends State<MapelScreen> {
     final filtered = _filteredMapel;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7FB),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: Column(
         children: [
           _buildHeader(context, studentName, textScale),
           const SizedBox(height: 36),
           Expanded(
             child: RefreshIndicator(
-              color: const Color(0xFF7B4AE2),
+              color: const Color(0xFF2563EB),
               onRefresh: _handleRefresh,
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -377,9 +377,9 @@ class _MapelScreenState extends State<MapelScreen> {
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Color(0xFF7B4AE2),
-                Color(0xFF6D3CE0),
-                Color(0xFF8154E8),
+                Color(0xFF1E3A8A),
+                Color(0xFF1D4ED8),
+                Color(0xFF2563EB),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -447,7 +447,7 @@ class _MapelScreenState extends State<MapelScreen> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF1E1B4B).withValues(alpha: 0.08),
+                  color: const Color(0xFF1D4ED8).withValues(alpha: 0.08),
                   blurRadius: 18,
                   offset: const Offset(0, 6),
                 ),
@@ -456,7 +456,7 @@ class _MapelScreenState extends State<MapelScreen> {
             child: TextField(
               controller: _searchController,
               textAlignVertical: TextAlignVertical.center,
-              cursorColor: const Color(0xFF7B4AE2),
+              cursorColor: const Color(0xFF2563EB),
               onChanged: (value) {
                 setState(() {
                   _searchQuery = value;
@@ -479,7 +479,7 @@ class _MapelScreenState extends State<MapelScreen> {
                 ),
                 prefixIcon: const Icon(
                   Icons.search_rounded,
-                  color: Color(0xFF7B4AE2),
+                  color: Color(0xFF2563EB),
                   size: 22,
                 ),
                 prefixIconConstraints: const BoxConstraints(
