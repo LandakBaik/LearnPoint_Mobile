@@ -228,6 +228,11 @@ class MapelMenuSectionWidgetState extends State<MapelMenuSectionWidget> {
                 child: _buildStatCard(
                   value: '$completedMateri/$totalMateri',
                   label: 'Materi selesai',
+                  icon: Icons.menu_book_rounded,
+                  accentColor: const Color(0xFF2563EB),
+                  iconBgColor: const Color(0xFFEFF6FF),
+                  isActive: selectedIndex == 0,
+                  onTap: () => setState(() => selectedIndex = 0),
                   isLoading: isLoadingApi,
                 ),
               ),
@@ -236,6 +241,11 @@ class MapelMenuSectionWidgetState extends State<MapelMenuSectionWidget> {
                 child: _buildStatCard(
                   value: '$_activeTugasCount',
                   label: 'Tugas aktif',
+                  icon: Icons.assignment_rounded,
+                  accentColor: const Color(0xFFD97706),
+                  iconBgColor: const Color(0xFFFEF3C7),
+                  isActive: selectedIndex == 1,
+                  onTap: () => setState(() => selectedIndex = 1),
                   isLoading: _isLoadingTugas,
                 ),
               ),
@@ -244,6 +254,11 @@ class MapelMenuSectionWidgetState extends State<MapelMenuSectionWidget> {
                 child: _buildStatCard(
                   value: '${apiUjianList.length}',
                   label: 'Ujian',
+                  icon: Icons.fact_check_rounded,
+                  accentColor: const Color(0xFF0284C7),
+                  iconBgColor: const Color(0xFFE0F2FE),
+                  isActive: selectedIndex == 2,
+                  onTap: () => setState(() => selectedIndex = 2),
                   isLoading: isLoadingUjian,
                 ),
               ),
@@ -356,51 +371,83 @@ class MapelMenuSectionWidgetState extends State<MapelMenuSectionWidget> {
   Widget _buildStatCard({
     required String value,
     required String label,
+    required IconData icon,
+    required Color accentColor,
+    required Color iconBgColor,
+    required bool isActive,
+    required VoidCallback onTap,
     bool isLoading = false,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (isLoading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 2),
-              child: ShimmerBone(width: 40, height: 18, radius: 6),
-            )
-          else
-            Text(
-              value,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF0F172A),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: isActive
+                  ? accentColor.withValues(alpha: 0.45)
+                  : const Color(0xFFE2E8F0),
+              width: isActive ? 1.4 : 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: (isActive ? accentColor : const Color(0xFF0F172A))
+                    .withValues(alpha: isActive ? 0.08 : 0.035),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
-            ),
-          const SizedBox(height: 3),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF64748B),
-            ),
+            ],
           ),
-        ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 18, color: accentColor),
+              ),
+              const SizedBox(height: 10),
+              if (isLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 3),
+                  child: ShimmerBone(width: 40, height: 18, radius: 6),
+                )
+              else
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF1E293B),
+                    letterSpacing: -0.3,
+                  ),
+                ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
